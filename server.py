@@ -1,5 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import redis.asyncio as aioredis
@@ -152,11 +152,22 @@ async def force_update():
     await broadcast_state("update")
     return {"ok": True, "pinged": len(driver_connections)}
 
+def no_cache_html(filepath: str):
+    with open(filepath, "rb") as f:
+        content = f.read()
+    return Response(
+        content=content, media_type="text/html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache", "Expires": "0"
+        }
+    )
+
 @app.get("/")
-async def root(): return FileResponse("index.html")
+async def root(): return no_cache_html("index.html")
 
 @app.get("/join")
-async def join_page(): return FileResponse("join.html")
+async def join_page(): return no_cache_html("join.html")
 
 @app.websocket("/ws/admin")
 async def admin_ws(ws: WebSocket):
