@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Rwa7el - مندوب</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Cairo:wght@400;600;700;800&display=swap');
+
+  /* ===== TOKENS ===== */
+  :root {
+    --bg: #07070f;
+    --bg2: #0f0f1a;
+    --surface: rgba(20, 20, 35, 0.75);
+    --surface2: rgba(30, 30, 50, 0.9);
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --primary: #7c6af7;
+    --primary-glow: rgba(124,106,247,0.35);
+    --success: #0fd4c8;
+    --success-glow: rgba(15,212,200,0.3);
+    --warning: #f5a623;
+    --warning-glow: rgba(245,166,35,0.3);
+    --danger: #f4566a;
+    --break-c: #b8aaff;
+    --break-glow: rgba(184,170,255,0.3);
+    --text: #eeeef5;
+    --text-muted: #7878a0;
+    --text-dim: #4a4a6a;
+    --radius: 20px;
+    --radius-sm: 12px;
+    --shadow: 0 20px 60px rgba(0,0,0,0.6);
+    --font: 'Outfit', 'Cairo', sans-serif;
+
+    /* state accent (يتغير حسب الحالة) */
+    --accent: var(--primary);
+    --accent-glow: var(--primary-glow);
+  }
+
+  /* ===== LIGHT THEME ===== */
+  [data-theme="light"] {
+    --bg: #f2f2fb;
+    --bg2: #e8e8f5;
+    --surface: rgba(255,255,255,0.92);
+    --surface2: rgba(245,245,255,0.98);
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.13);
+    --text: #12122a;
+    --text-muted: #5555780;
+    --text-dim: #9999bb;
+    --shadow: 0 20px 60px rgba(0,0,0,0.1);
+  }
+  [data-theme="light"] .bg-canvas {
+    background-image:
+      linear-gradient(rgba(124,106,247,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,247,0.06) 1px, transparent 1px);
+  }
+  [data-theme="light"] .orb { opacity: 0.2; }
+  [data-theme="light"] #splash { background: var(--bg); }
+  [data-theme="light"] .login-card input {
+    background: rgba(0,0,0,0.04);
+    color: var(--text);
+  }
+  [data-theme="light"] .gps-pill { background: rgba(0,0,0,0.05); }
+  [data-theme="light"] .stat-row { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.07); }
+
+  /* ===== RESET ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== BACKGROUND ===== */
+  .bg-canvas {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    animation: gridDrift 30s linear infinite;
+  }
+  @keyframes gridDrift { to { transform: translate(48px, 48px); } }
+
+  .orb {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+    filter: blur(80px); opacity: 0.35;
+    animation: orbFloat 8s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 320px; height: 320px; background: var(--primary); top: -80px; right: -60px; animation-delay: 0s; }
+  .orb-2 { width: 240px; height: 240px; background: var(--success); bottom: -60px; left: -40px; animation-delay: -3s; }
+  @keyframes orbFloat { from { transform: translate(0,0) scale(1); } to { transform: translate(20px, 30px) scale(1.1); } }
+
+  /* ===== SPLASH ===== */
+  #splash {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 9999; transition: opacity 1s ease;
+  }
+  .splash-logo {
+    font-size: 48px; font-weight: 900; letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 30%, var(--primary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: splashPop 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  [data-theme="light"] .splash-logo {
+    background: linear-gradient(135deg, #12122a 30%, var(--primary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .splash-sub {
+    color: var(--text-muted); font-size: 11px; letter-spacing: 6px;
+    margin-top: 10px; text-transform: uppercase; font-weight: 600;
+    animation: fadeIn 0.8s ease 0.3s both;
+  }
+  @keyframes splashPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ===== THEME TOGGLE ===== */
+  .theme-pill {
+    position: fixed; top: 16px; right: 16px; z-index: 10000;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px 7px 10px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 100px; cursor: pointer;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    transition: all 0.25s ease;
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    color: var(--text);
+  }
+  .theme-pill:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(0,0,0,0.35); }
+  .theme-pill .pill-icon { font-size: 15px; line-height: 1; }
+  .theme-pill .pill-label { font-size: 12px; font-weight: 700; }
+
+  /* ===== TOAST ===== */
+  #toast-container {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10001;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .toast {
+    background: var(--surface2); color: var(--text);
+    padding: 10px 22px; border-radius: 100px;
+    font-weight: 700; font-size: 13px;
+    box-shadow: var(--shadow); border: 1px solid var(--border2);
+    backdrop-filter: blur(20px);
+    animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    white-space: nowrap;
+  }
+  @keyframes toastIn { from { transform: translateY(-16px) scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* ===== CONTAINER ===== */
+  .container {
+    width: 100%; max-width: 420px; padding: 20px; z-index: 10;
+    display: none; animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(32px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+  /* ===== LOGIN CARD ===== */
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 32px 24px;
+    backdrop-filter: blur(24px); box-shadow: var(--shadow);
+  }
+  .login-brand {
+    font-size: 28px; font-weight: 900; letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--text) 40%, var(--primary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+  .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; font-weight: 500; }
+  .login-card input {
+    width: 100%; padding: 14px 18px; border-radius: 14px;
+    border: 1.5px solid var(--border2);
+    background: rgba(255,255,255,0.04);
+    color: var(--text); font-size: 16px; text-align: center;
+    font-family: var(--font); font-weight: 600;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    outline: none;
+  }
+  .login-card input::placeholder { color: var(--text-dim); font-weight: 400; }
+  .login-card input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-glow);
+  }
+  .btn-connect {
+    margin-top: 14px; width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--primary), #5b4fd4);
+    color: #fff; font-size: 15px; font-weight: 800;
+    border: none; border-radius: 14px; cursor: pointer;
+    font-family: var(--font); letter-spacing: 0.3px;
+    box-shadow: 0 8px 32px var(--primary-glow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-connect:hover { transform: translateY(-2px); box-shadow: 0 12px 40px var(--primary-glow); }
+  .btn-connect:active { transform: scale(0.98); }
+
+  /* ===== APP SCREEN ===== */
+  #app-screen .container-inner {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); overflow: hidden;
+    backdrop-filter: blur(24px); box-shadow: var(--shadow);
+  }
+
+  /* Top bar */
+  .app-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .driver-label {
+    font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+  }
+  .driver-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+  @keyframes dotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.7); } }
+
+  .state-chip {
+    padding: 5px 14px; border-radius: 100px;
+    font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.4s ease;
+  }
+  .state-waiting { background: rgba(124,106,247,0.15); color: var(--primary); border: 1px solid rgba(124,106,247,0.25); }
+  .state-out     { background: rgba(245,166,35,0.15);  color: var(--warning); border: 1px solid rgba(245,166,35,0.25); }
+  .state-break   { background: rgba(184,170,255,0.15); color: var(--break-c); border: 1px solid rgba(184,170,255,0.25); }
+
+  /* Hero block — الجزء الرئيسي */
+  .hero-block {
+    position: relative; padding: 28px 20px 20px;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden;
+  }
+  .hero-bg-ring {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--accent-glow), transparent 70%);
+    transition: background 0.6s ease;
+  }
+
+  /* الرقم الكبير */
+  .hero-number {
+    font-size: 88px; font-weight: 900; line-height: 1;
+    letter-spacing: -4px;
+    background: linear-gradient(160deg, #fff 40%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    transition: background 0.5s ease;
+    position: relative; z-index: 1;
+  }
+  [data-theme="light"] .hero-number {
+    background: linear-gradient(160deg, #12122a 40%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-top: 4px; margin-bottom: 20px;
+    position: relative; z-index: 1;
+  }
+
+  /* GPS pill */
+  .gps-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border2);
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+    width: 100%; justify-content: center;
+    transition: all 0.3s ease;
+    position: relative; z-index: 1;
+  }
+  .gps-pill.at-branch { color: var(--success); background: rgba(15,212,200,0.08); border-color: rgba(15,212,200,0.2); }
+  .gps-pill.away { color: var(--text-muted); }
+
+  /* Stats row */
+  .stat-row {
+    display: flex; gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .stat-item {
+    flex: 1; text-align: center;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 6px;
+  }
+  .stat-val { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-lbl { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+
+  /* Break timer */
+  .break-hero {
+    font-size: 64px; font-weight: 900; letter-spacing: -3px; line-height: 1;
+    background: linear-gradient(135deg, var(--break-c), #fff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+  .break-hero.urgent {
+    background: linear-gradient(135deg, var(--danger), #ffaa00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: urgentPulse 1s ease-in-out infinite;
+  }
+  @keyframes urgentPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+  /* Waiting message */
+  .wait-msg {
+    padding: 12px 18px 16px; text-align: center;
+    color: var(--text-muted); font-size: 13px; font-weight: 500; line-height: 1.5;
+    border-top: 1px solid var(--border);
+  }
+  .wait-msg span { color: var(--text); font-weight: 700; }
+
+  /* Action button */
+  .btn-action-big {
+    margin: 0 18px 16px; width: calc(100% - 36px);
+    padding: 14px; border-radius: 14px; border: none;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    font-family: var(--font); letter-spacing: 0.3px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-action-big:hover { transform: translateY(-2px); }
+  .btn-action-big:active { transform: scale(0.98); }
+  .btn-return-queue {
+    background: rgba(15,212,200,0.12); color: var(--success);
+    border: 1.5px solid rgba(15,212,200,0.3);
+    box-shadow: 0 4px 20px rgba(15,212,200,0.1);
+  }
+  .btn-return-queue:hover { background: rgba(15,212,200,0.2); box-shadow: 0 8px 28px rgba(15,212,200,0.2); }
+  .btn-end-break {
+    background: rgba(184,170,255,0.12); color: var(--break-c);
+    border: 1.5px solid rgba(184,170,255,0.3);
+    box-shadow: 0 4px 20px rgba(184,170,255,0.1);
+  }
+  .btn-end-break:hover { background: rgba(184,170,255,0.2); }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- Theme toggle -->
+<button class="theme-pill" id="theme-toggle" onclick="toggleTheme()">
+  <span class="pill-icon" id="theme-icon">☀️</span>
+  <span class="pill-label" id="theme-label">فاتح</span>
+</button>
+
+<!-- Splash -->
+<div id="splash">
+  <div class="splash-logo">Rwa7el</div>
+  <div class="splash-sub">BANKAI</div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- LOGIN -->
+<div class="container" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">Rwa7el 🚚</div>
+    <div class="login-sub">ادخل اسمك وابدأ شغل</div>
+    <input type="text" id="name" placeholder="اسم المندوب" autocomplete="off">
+    <button class="btn-connect" onclick="join()">اتصل بالنظام</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="container" id="app-screen">
+  <div class="container-inner">
+
+    <!-- Top bar -->
+    <div class="app-topbar">
+      <div class="driver-label">
+        <div class="driver-dot" id="driver-dot"></div>
+        <span id="driver-name">مندوب</span>
+      </div>
+      <div class="state-chip state-waiting" id="state-chip">انتظار</div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero-block" id="hero-block">
+      <div class="hero-bg-ring" id="hero-bg"></div>
+
+      <!-- Waiting state -->
+      <div id="view-waiting">
+        <div style="text-align:center">
+          <div class="hero-number" id="pos-num">--</div>
+          <div class="hero-label">ترتيبك في الطابور</div>
+        </div>
+      </div>
+
+      <!-- Out state -->
+      <div id="view-out" style="display:none; text-align:center">
+        <div class="hero-number" style="font-size:72px; letter-spacing:-2px;">🚀</div>
+        <div class="hero-label">في الطريق</div>
+      </div>
+
+      <!-- Break state -->
+      <div id="view-break" style="display:none; text-align:center">
+        <div class="break-hero" id="break-timer">60:00</div>
+        <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
+      </div>
+
+      <!-- GPS -->
+      <div class="gps-pill" id="gps-pill">
+        <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-row" id="stat-row" style="display:none">
+      <div class="stat-item">
+        <div class="stat-val" id="stat-orders">0</div>
+        <div class="stat-lbl">أوردر</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="stat-returns">0</div>
+        <div class="stat-lbl">راجع</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="stat-misses">0</div>
+        <div class="stat-lbl">فائت</div>
+      </div>
+    </div>
+
+    <!-- Wait message -->
+    <div class="wait-msg" id="wait-msg">
+      استنى! <span>دورك جاي قريب.</span>
+    </div>
+
+    <!-- Action button -->
+    <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
+      ارجع للطابور
+    </button>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+// ===== THEME =====
+(function() {
+  const saved = localStorage.getItem('rwa7el_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeUI(saved);
+})();
+
+function updateThemeUI(theme) {
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if (!icon) return;
+  if (theme === 'dark') { icon.textContent = '☀️'; label.textContent = 'فاتح'; }
+  else                  { icon.textContent = '🌙'; label.textContent = 'داكن'; }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('rwa7el_theme', next);
+  updateThemeUI(next);
+}
+
+// ===== CORE =====
+const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/driver`;
+let ws, driverName = null, kicked = false;
+let gpsWatchId = null, lastGpsPos = null;
+let pingInterval = null, reconnectTimer = null;
+let currentBreakEnd = null;
+
+function showToast(msg) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.innerText = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ===== GPS =====
+function startGPS() {
+  if (!navigator.geolocation || gpsWatchId !== null) return;
+  gpsWatchId = navigator.geolocation.watchPosition(
+    pos => { lastGpsPos = pos; sendLocation(pos); },
+    () => {
+      document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
+      gpsWatchId = null;
+    },
+    { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 }
+  );
+}
+
+function sendLocation(pos) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'location',
+      lat: pos.coords.latitude, lng: pos.coords.longitude,
+      speed: pos.coords.speed != null ? +(pos.coords.speed * 3.6).toFixed(1) : 0,
+      heading: pos.coords.heading != null ? +pos.coords.heading.toFixed(1) : 0,
+      accuracy: +pos.coords.accuracy.toFixed(1)
+    }));
+  }
+}
+
+// ===== WS =====
+function startPing() {
+  clearInterval(pingInterval);
+  pingInterval = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
+  }, 25000);
+}
+
+function connectWS() {
+  if (kicked) return;
+  if (ws) { try { ws.close(); } catch(e){} }
+  ws = new WebSocket(WSURL);
+  ws.onopen = () => {
+    ws.send(JSON.stringify({type:'join', name: driverName}));
+    showToast('✅ اتصلت بالنظام');
+    startPing();
+    if (lastGpsPos) sendLocation(lastGpsPos);
+  };
+  ws.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'sync') updateUI(d.me);
+    else if (d.type === 'distance') updateGPS(d.meters);
+    else if (d.type === 'kicked') handleKick();
+  };
+  ws.onclose = () => {
+    clearInterval(pingInterval);
+    if (kicked) return;
+    showToast('🔄 بيعيد الاتصال...');
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWS, 3000);
+  };
+  ws.onerror = () => { try { ws.close(); } catch(e){} };
+}
+
+function join() {
+  const name = document.getElementById('name').value.trim();
+  if (!name) { showToast('ادخل اسمك الأول'); return; }
+  driverName = name; kicked = false;
+  localStorage.setItem('fleet_driver_name', name);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('driver-name').innerText = name;
+  startGPS(); trackBattery(); connectWS();
+}
+
+function handleKick() {
+  kicked = true;
+  clearInterval(pingInterval); clearTimeout(reconnectTimer);
+  if (ws) try { ws.close(); } catch(e){}
+  localStorage.removeItem('fleet_driver_name');
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('name').value = '';
+  showToast('❌ تم إزالتك من النظام');
+}
+
+// ===== UI UPDATE =====
+const STATE_CONFIG = {
+  Waiting: { chip: 'state-waiting', label: 'انتظار', accent: 'var(--primary)', accentGlow: 'var(--primary-glow)' },
+  Out:     { chip: 'state-out',     label: 'في الطريق', accent: 'var(--warning)', accentGlow: 'var(--warning-glow)' },
+  Break:   { chip: 'state-break',   label: 'راحة',    accent: 'var(--break-c)', accentGlow: 'var(--break-glow)' },
+};
+
+function updateUI(data) {
+  const state = data.state;
+  const cfg = STATE_CONFIG[state] || STATE_CONFIG.Waiting;
+  currentBreakEnd = data.break_end;
+
+  // state chip
+  const chip = document.getElementById('state-chip');
+  chip.className = `state-chip ${cfg.chip}`;
+  chip.innerText = cfg.label;
+
+  // accent CSS vars على الـ :root
+  document.documentElement.style.setProperty('--accent', cfg.accent);
+  document.documentElement.style.setProperty('--accent-glow', cfg.accentGlow);
+
+  // views
+  document.getElementById('view-waiting').style.display = state === 'Waiting' ? 'block' : 'none';
+  document.getElementById('view-out').style.display     = state === 'Out'     ? 'block' : 'none';
+  document.getElementById('view-break').style.display   = state === 'Break'   ? 'block' : 'none';
+
+  // stats row
+  document.getElementById('stat-row').style.display = 'flex';
+  document.getElementById('stat-orders').innerText  = data.orders  || 0;
+  document.getElementById('stat-returns').innerText = data.returns || 0;
+  document.getElementById('stat-misses').innerText  = data.misses  || 0;
+
+  // wait msg
+  document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
+
+  // action btn
+  const btn = document.getElementById('btn-action');
+  if (state === 'Out') {
+    btn.style.display = 'block';
+    btn.className = 'btn-action-big btn-return-queue';
+    btn.innerText = '✅ رجعت — ادخل الطابور';
+  } else if (state === 'Break') {
+    btn.style.display = 'block';
+    btn.className = 'btn-action-big btn-end-break';
+    btn.innerText = 'خلصت الراحة';
+  } else {
+    btn.style.display = 'none';
+  }
+
+  // waiting number
+  if (state === 'Waiting') {
+    const pos = data.queue_pos;
+    document.getElementById('pos-num').innerText = `#${pos}`;
+    if (pos === 1) confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
+  }
+}
+
+function handleAction() {
+  if (ws && ws.readyState === WebSocket.OPEN)
+    ws.send(JSON.stringify({type: 'change_state', state: 'Waiting'}));
+}
+
+// ===== GPS DISPLAY =====
+function updateGPS(meters) {
+  const pill = document.getElementById('gps-pill');
+  const txt  = document.getElementById('gps-text');
+  if (meters <= 250) {
+    pill.className = 'gps-pill at-branch';
+    txt.innerText = `عند الفرع · ${meters}م`;
+  } else {
+    pill.className = 'gps-pill away';
+    const d = meters >= 1000 ? (meters/1000).toFixed(1)+'كم' : meters+'م';
+    txt.innerText = `بعيد · ${d}`;
+  }
+}
+
+// ===== BREAK TIMER =====
+setInterval(() => {
+  if (!currentBreakEnd) return;
+  const diff = currentBreakEnd - Math.floor(Date.now()/1000);
+  const el = document.getElementById('break-timer');
+  if (diff > 0) {
+    const m = String(Math.floor(diff/60)).padStart(2,'0');
+    const s = String(diff%60).padStart(2,'0');
+    el.innerText = `${m}:${s}`;
+    el.className = diff < 300 ? 'break-hero urgent' : 'break-hero';
+  } else {
+    el.innerText = '00:00';
+    el.className = 'break-hero urgent';
+  }
+}, 1000);
+
+// ===== BATTERY =====
+function trackBattery() {
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then(b => {
+      const send = () => { if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'battery', level: b.level})); };
+      send();
+      b.addEventListener('levelchange', send);
+    });
+  }
+}
+
+// ===== VISIBILITY =====
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && driverName) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) connectWS();
+    else if (lastGpsPos) sendLocation(lastGpsPos);
+  }
+});
+
+// ===== SPLASH =====
+setTimeout(() => {
+  const s = document.getElementById('splash');
+  s.style.opacity = '0';
+  setTimeout(() => {
+    s.style.display = 'none';
+    const saved = localStorage.getItem('fleet_driver_name');
+    if (saved) {
+      document.getElementById('name').value = saved;
+      join();
+    } else {
+      document.getElementById('login-screen').style.display = 'block';
+    }
+  }, 1000);
+}, 1600);
+</script>
+</body>
+</html>
