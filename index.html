@@ -370,12 +370,15 @@ function updateSingleMarkerAndTrail(d) {
   }
 
   // 2. تحديث الماركر والحركة الناعمة (Rotation & Smooth move)
+  const distDisplay = d.distance != null
+    ? (d.distance < 1000 ? `${d.distance}m` : `${(d.distance/1000).toFixed(1)}km`)
+    : '--';
   const popupHtml = `
     <div class="popup-info">
       <strong>${d.name}</strong><br>
       Status: ${statusText}<br>
       Speed: ${speed} km/h<br>
-      Distance: ${d.distance}m
+      Distance: ${distDisplay}
     </div>
   `;
 
@@ -393,6 +396,8 @@ function updateSingleMarkerAndTrail(d) {
       if (arrow) arrow.style.display = speed > 3 ? 'block' : 'none';
     }
     driverMarkers[d.name].getPopup().setContent(popupHtml);
+    // لو الـ popup مفتوح → حدّثه فوراً
+    if (driverMarkers[d.name].isPopupOpen()) driverMarkers[d.name].openPopup();
   } else {
     const icon = L.divIcon({
       className: 'custom-div-icon',
