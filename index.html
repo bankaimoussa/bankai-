@@ -253,9 +253,65 @@ function initMap() {
   });
   map.addLayer(markersCluster);
 
+  // --- Radar animation around branch ---
+  const radarStyle = document.createElement('style');
+  radarStyle.textContent = `
+    @keyframes radar-ping {
+      0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0.8; }
+      100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
+    }
+    .radar-ring {
+      position: absolute;
+      width: var(--radar-px, 100px); height: var(--radar-px, 100px);
+      pointer-events: none;
+    }
+    .radar-ring::before, .radar-ring::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(108,92,231,0.7);
+      animation: radar-ping 2s ease-out infinite;
+    }
+    .radar-ring::after { animation-delay: 1s; }
+  `;
+  document.head.appendChild(radarStyle);
+
+  const radarIcon = L.divIcon({
+    className: '',
+    html: '<div class="radar-ring"></div>',
+    iconSize: [0, 0],
+    iconAnchor: [0, 0]
+  });
+  L.marker([BRANCH_LAT, BRANCH_LNG], { icon: radarIcon, interactive: false, zIndexOffset: -1000 }).addTo(map);
+
+  // الدايرة الثابتة 200m
+  window._branchCircle = L.circle([BRANCH_LAT, BRANCH_LNG], {
+    radius: 200,
+    color: '#6c5ce7',
+    fillColor: '#6c5ce7',
+    fillOpacity: 0.06,
+    weight: 1.5,
+    dashArray: '6 4'
+  }).addTo(map);
+
   L.marker([BRANCH_LAT, BRANCH_LNG], {
     icon: L.divIcon({ html: '<div style="font-size:26px;">🏢</div>', className: '', iconSize: [26, 26], iconAnchor: [13, 13] })
-  }).addTo(map).bindPopup('<b>Main Branch</b>');
+  }).addTo(map).bindPopup('<b>Main Branch — نطاق الإرجاع التلقائي: 200m</b>');
+}
+
+function updateRadarSize() {
+  if (!map || !window._branchCircle) return;
+  const bounds = window._branchCircle.getBounds();
+  const p1 = map.latLngToContainerPoint(bounds.getNorthEast());
+  const p2 = map.latLngToContainerPoint(bounds.getSouthWest());
+  const px = Math.abs(p1.x - p2.x);
+  const rings = document.querySelectorAll('.radar-ring');
+  rings.forEach(r => {
+    r.style.width  = px + 'px';
+    r.style.height = px + 'px';
+  });
+  // update ::before/::after size via CSS var
+  document.documentElement.style.setProperty('--radar-px', px + 'px');
 }
 
 function toggleMap() {
@@ -513,6 +569,8 @@ window.onload = () => {
   document.getElementById('theme-icon').textContent  = saved === 'dark' ? '☀️' : '🌙';
   document.getElementById('theme-label').textContent = saved === 'dark' ? 'فاتح' : 'داكن';
   initMap(); connect();
+  map.on('zoomend moveend', updateRadarSize);
+  setTimeout(updateRadarSize, 500);
 };
 </script>
 <script>
