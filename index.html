@@ -83,6 +83,12 @@
   .header-actions { display: flex; gap: 10px; }
   .btn-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; }
   .btn-action:hover { background: var(--surface-hover); }
+  .btn-force-update { background: rgba(0,210,211,0.12); border: 1.5px solid rgba(0,210,211,0.35); color: var(--success); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 6px; }
+  .btn-force-update:hover { background: rgba(0,210,211,0.22); transform: scale(1.04); }
+  .btn-force-update.pinging { opacity: 0.6; pointer-events: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-force-update .spin-icon { display: inline-block; }
+  .btn-force-update.pinging .spin-icon { animation: spin 0.7s linear infinite; }
   
   /* Map & Markers */
   #map-container { position: relative; z-index: 1; margin-bottom: 12px; transition: margin 0.4s ease; flex-shrink: 0; }
@@ -184,6 +190,9 @@
 <header>
   <h1>🚚 Rwa7el Bankai</h1>
   <div class="header-actions">
+    <button class="btn-force-update" id="btn-force-update" onclick="forceUpdate()">
+      <span class="spin-icon">🔄</span> تحديث فوري
+    </button>
     <button class="btn-action" id="lang-toggle" onclick="toggleLang()">🌐 العربية</button>
     <button class="theme-pill-admin" id="theme-toggle" onclick="toggleTheme()">
       <span id="theme-icon">☀️</span><span id="theme-label">فاتح</span>
@@ -447,6 +456,27 @@ function connect() {
       }
     }
   };
+}
+
+async function forceUpdate() {
+  const btn = document.getElementById('btn-force-update');
+  btn.classList.add('pinging');
+  btn.querySelector('.spin-icon').textContent = '⏳';
+  try {
+    const res = await fetch('/api/force_update', { method: 'POST' });
+    const data = await res.json();
+    btn.querySelector('.spin-icon').textContent = '✅';
+    setTimeout(() => {
+      btn.querySelector('.spin-icon').textContent = '🔄';
+      btn.classList.remove('pinging');
+    }, 1500);
+  } catch(e) {
+    btn.querySelector('.spin-icon').textContent = '❌';
+    setTimeout(() => {
+      btn.querySelector('.spin-icon').textContent = '🔄';
+      btn.classList.remove('pinging');
+    }, 2000);
+  }
 }
 
 function locateDriver(name) {
