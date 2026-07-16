@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import redis.asyncio as aioredis
 import json, math, time
 from typing import Dict, List
@@ -13,7 +14,10 @@ BRANCH_LAT = 31.2071871
 BRANCH_LNG = 29.9328765
 
 # الاتصال بـ Redis مع استخدام بروتوكول 2 للتوافق
-redis_client = aioredis.from_url("redis://localhost:6379", decode_responses=True, protocol=2)
+redis_client = aioredis.from_url(
+    os.environ.get("REDIS_URL", "redis://localhost:6379"),
+    decode_responses=True, protocol=2
+)
 
 admin_connections: list[WebSocket] = []
 driver_connections: Dict[str, WebSocket] = {}
@@ -136,9 +140,6 @@ async def root(): return FileResponse("index.html")
 
 @app.get("/join")
 async def join_page(): return FileResponse("join.html")
-
-@app.get("/qr.png")
-async def qr_image(): return FileResponse("qr.png")
 
 @app.websocket("/ws/admin")
 async def admin_ws(ws: WebSocket):
