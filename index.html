@@ -468,11 +468,8 @@ function connect() {
       const dIndex = currentDrivers.findIndex(x => x.name === data.driver);
       if (dIndex > -1) currentDrivers[dIndex].battery = data.battery;
       // تحديث الـ badge مباشرة بدون ريندر الـ board كله
-      const card = document.getElementById(safeId(data.driver));
-      if (card) {
-        const badges = card.querySelectorAll('.badge');
-        badges.forEach(b => { if (b.textContent.includes('🔋')) b.textContent = `🔋 ${data.battery}`; });
-      }
+      const batEl = document.getElementById(`bat-${safeId(data.driver)}`);
+      if (batEl) batEl.textContent = `🔋 ${data.battery}`;
     }
   };
 }
@@ -559,7 +556,7 @@ function renderBoard() {
           <div class="indicators">
             <button class="btn-locate" onclick="locateDriver('${d.name}')">📍 Locate</button>
             <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
-            <span class="badge">🔋 ${d.battery || '100%'}</span>
+            <span class="badge" id="bat-${safeId(d.name)}">🔋 ${d.battery || '100%'}</span>
             <button class="badge badge-offline" onclick="kickDriver('${d.name}')" style="cursor:pointer; border:none;">✖</button>
           </div>
         </div>
