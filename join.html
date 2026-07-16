@@ -483,6 +483,8 @@ function showToast(msg) {
 }
 
 // ===== GPS =====
+let gpsForceInterval = null;
+
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
   gpsWatchId = navigator.geolocation.watchPosition(
@@ -491,8 +493,20 @@ function startGPS() {
       document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
       gpsWatchId = null;
     },
-    { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 }
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
+  // force-send آخر موقع معروف كل 15 ثانية حتى لو الدرايفر واقف
+  clearInterval(gpsForceInterval);
+  gpsForceInterval = setInterval(() => {
+    if (lastGpsPos) sendLocation(lastGpsPos);
+    else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => { lastGpsPos = pos; sendLocation(pos); },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }
+  }, 15000);
 }
 
 function sendLocation(pos) {
@@ -530,6 +544,18 @@ function connectWS() {
     if (d.type === 'sync') updateUI(d.me);
     else if (d.type === 'distance') updateGPS(d.meters);
     else if (d.type === 'kicked') handleKick();
+    else if (d.type === 'force_refresh') {
+      // أدمن طلب تحديث فوري - بعت location + battery دلوقتي
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => { lastGpsPos = pos; sendLocation(pos); },
+          () => { if (lastGpsPos) sendLocation(lastGpsPos); },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+        );
+      } else if (lastGpsPos) sendLocation(lastGpsPos);
+      if (batteryRef && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify({ type: 'battery', level: batteryRef.level }));
+    }
   };
   ws.onclose = () => {
     clearInterval(pingInterval);
@@ -656,21 +682,37 @@ setInterval(() => {
 }, 1000);
 
 // ===== BATTERY =====
+let batteryRef = null, batteryInterval = null;
+
 function trackBattery() {
-  if ('getBattery' in navigator) {
-    navigator.getBattery().then(b => {
-      const send = () => { if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'battery', level: b.level})); };
-      send();
-      b.addEventListener('levelchange', send);
-    });
-  }
+  if (!('getBattery' in navigator)) return;
+  navigator.getBattery().then(b => {
+    batteryRef = b;
+    const send = () => {
+      if (ws && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify({ type: 'battery', level: b.level }));
+    };
+    send();
+    b.addEventListener('levelchange', send);
+    // بعت البطارية كل 60 ثانية حتى لو مش اتغيرت
+    clearInterval(batteryInterval);
+    batteryInterval = setInterval(send, 60000);
+  });
 }
+
+// لما يتفتح التاب تاني → بعت البطارية فوراً
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && batteryRef && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'battery', level: batteryRef.level }));
+  }
+});
 
 // ===== VISIBILITY =====
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && driverName) {
     if (!ws || ws.readyState !== WebSocket.OPEN) connectWS();
     else if (lastGpsPos) sendLocation(lastGpsPos);
+    // battery sent separately in the battery visibilitychange listener above
   }
 });
 
