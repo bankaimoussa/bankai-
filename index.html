@@ -86,6 +86,8 @@
   .btn-force-update { background: rgba(0,210,211,0.12); border: 1.5px solid rgba(0,210,211,0.35); color: var(--success); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 6px; }
   .btn-force-update:hover { background: rgba(0,210,211,0.22); transform: scale(1.04); }
   .btn-force-update.pinging { opacity: 0.6; pointer-events: none; }
+  @keyframes distFlash { 0%,100%{opacity:1} 40%{opacity:0.3} }
+  .dist-flash { animation: distFlash 0.4s ease; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .btn-force-update .spin-icon { display: inline-block; }
   .btn-force-update.pinging .spin-icon { animation: spin 0.7s linear infinite; }
@@ -442,7 +444,19 @@ function connect() {
         Object.assign(currentDrivers[dIndex], data);
         updateSingleMarkerAndTrail(currentDrivers[dIndex]);
         const distEl = document.getElementById(`dist-${safeId(data.driver)}`);
-        if (distEl) distEl.innerHTML = getDistanceBadge(data.distance, data.last_seen, currentDrivers[dIndex].state);
+        if (distEl) {
+          distEl.innerHTML = getDistanceBadge(data.distance, data.last_seen, currentDrivers[dIndex].state);
+          // visual flash عشان يبان إن التحديث وصل
+          distEl.classList.remove('dist-flash');
+          void distEl.offsetWidth; // force reflow
+          distEl.classList.add('dist-flash');
+        } else {
+          // element مش موجود = renderBoard قديم، نعمل re-render كامل
+          renderBoard();
+        }
+      } else {
+        // درايفر مش في الـ list = reconnect فاتنا، نعمل re-render
+        renderBoard();
       }
     }
     else if (data.type === 'battery_update') {
