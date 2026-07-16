@@ -135,6 +135,23 @@ async def change_driver_state(driver_name: str, new_state: str):
     await save_queue_to_redis(queue)
     await broadcast_state("update")
 
+@app.post("/api/force_update")
+async def force_update():
+    """
+    أدمن يضغط زرار → السيرفر يبعت لكل الدرايفرز المتصلين رسالة force_refresh
+    الدرايفر يعيد بعت location + battery فوراً
+    """
+    msg = json.dumps({"type": "force_refresh"})
+    dead = []
+    for d_name, d_ws in driver_connections.items():
+        try: await d_ws.send_text(msg)
+        except: dead.append(d_name)
+    for d in dead:
+        if d in driver_connections: del driver_connections[d]
+    # broadcast full state للأدمن بعدها
+    await broadcast_state("update")
+    return {"ok": True, "pinged": len(driver_connections)}
+
 @app.get("/")
 async def root(): return FileResponse("index.html")
 
