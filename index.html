@@ -432,7 +432,7 @@ function connect() {
       if (dIndex > -1) {
         Object.assign(currentDrivers[dIndex], data);
         updateSingleMarkerAndTrail(currentDrivers[dIndex]);
-        const distEl = document.getElementById(`dist-${data.driver}`);
+        const distEl = document.getElementById(`dist-${safeId(data.driver)}`);
         if (distEl) distEl.innerHTML = getDistanceBadge(data.distance, data.last_seen, currentDrivers[dIndex].state);
       }
     }
@@ -440,7 +440,7 @@ function connect() {
       const dIndex = currentDrivers.findIndex(x => x.name === data.driver);
       if (dIndex > -1) currentDrivers[dIndex].battery = data.battery;
       // تحديث الـ badge مباشرة بدون ريندر الـ board كله
-      const card = document.getElementById(data.driver);
+      const card = document.getElementById(safeId(data.driver));
       if (card) {
         const badges = card.querySelectorAll('.badge');
         badges.forEach(b => { if (b.textContent.includes('🔋')) b.textContent = `🔋 ${data.battery}`; });
@@ -466,6 +466,8 @@ function renderStats(stats) {
   container.innerHTML = '';
   for (const [key, val] of Object.entries(stats)) { container.innerHTML += `<div class="stat-card"><span>${key}</span><strong>${val}</strong></div>`; }
 }
+
+function safeId(name) { return name.replace(/\s+/g, '_').replace(/[^\w-]/g, ''); }
 
 function getDistanceBadge(dist, lastSeen, state) {
   const { statusClass, statusText } = getDriverStatusDetails(lastSeen, state);
@@ -498,16 +500,16 @@ function renderBoard() {
     // Break timer display
     let breakLine = '';
     if (d.state === 'Break' && d.break_end) {
-      breakLine = `<div class="break-timer" id="btimer-${d.name}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
+      breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
     }
     
     let html = `
-      <div class="driver-card" id="${d.name}">
+      <div class="driver-card" id="${safeId(d.name)}">
         <div class="card-top">
           <div class="card-name">${d.queue_pos > 0 && d.state === 'Waiting' ? `<b>#${d.queue_pos}</b> ` : ''}${d.name}</div>
           <div class="indicators">
             <button class="btn-locate" onclick="locateDriver('${d.name}')">📍 Locate</button>
-            <span id="dist-${d.name}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
+            <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
             <span class="badge">🔋 ${d.battery || '100%'}</span>
             <button class="badge badge-offline" onclick="kickDriver('${d.name}')" style="cursor:pointer; border:none;">✖</button>
           </div>
