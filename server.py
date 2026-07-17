@@ -135,6 +135,22 @@ async def change_driver_state(driver_name: str, new_state: str):
     await save_queue_to_redis(queue)
     await broadcast_state("update")
 
+@app.post("/api/clear_all")
+async def clear_all():
+    """
+    أدمن يضغط Clear → نمسح كل الدرايفرز من Redis ونقفل كل connections
+    """
+    msg = json.dumps({"type": "kicked"})
+    for d_name, d_ws in list(driver_connections.items()):
+        try: await d_ws.send_text(msg)
+        except: pass
+    driver_connections.clear()
+
+    await redis_client.delete("fleet:drivers")
+    await redis_client.delete("fleet:queue")
+    await broadcast_state("update")
+    return {"ok": True}
+
 @app.post("/api/force_update")
 async def force_update():
     """
