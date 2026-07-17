@@ -14,7 +14,40 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Cairo:wght@400;600;700;800&display=swap');
   
+  /* ── Light (default) ── */
   :root {
+    --bg: #f0f5ff;
+    --surface: rgba(255, 255, 255, 0.92);
+    --surface-hover: rgba(235, 242, 255, 0.98);
+    --border: rgba(37, 99, 235, 0.12);
+    --primary: #2563eb;
+    --out: #d97706;
+    --break: #7c3aed;
+    --text: #0f172a;
+    --muted: #64748b;
+    --danger: #dc2626;
+    --success: #059669;
+    --offline: #94a3b8;
+    --weak: #d97706;
+    --radius: 16px;
+    --shadow: 0 8px 32px rgba(37,99,235,0.10);
+  }
+  .bg-grid {
+    background-image: linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px) !important;
+  }
+  header h1 {
+    background: linear-gradient(135deg, #1e40af, #2563eb) !important;
+    -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
+  }
+  .column { background: rgba(255,255,255,0.95) !important; box-shadow: 0 2px 12px rgba(37,99,235,0.07); }
+  .column h2 { background: rgba(255,255,255,0.95) !important; }
+  .driver-card { background: rgba(240,247,255,0.85) !important; }
+  .custom-popup .leaflet-popup-content-wrapper { background: white !important; color: #0f172a !important; }
+  .custom-popup .leaflet-popup-tip { background: white !important; }
+
+  /* ── Dark theme ── */
+  [data-theme="dark"] {
     --bg: #0a0a0f;
     --surface: rgba(18, 18, 26, 0.6);
     --surface-hover: rgba(30, 30, 42, 0.8);
@@ -28,33 +61,21 @@
     --success: #00d2d3;
     --offline: #636e72;
     --weak: #f39c12;
-    --radius: 16px;
     --shadow: 0 12px 40px rgba(0,0,0,0.5);
   }
-  
-  [data-theme="light"] {
-    --bg: #f0f0f7;
-    --surface: rgba(255, 255, 255, 0.85);
-    --surface-hover: rgba(240, 240, 247, 0.95);
-    --border: rgba(0,0,0,0.08);
-    --text: #1a1a2e;
-    --muted: #6b6b80;
-    --shadow: 0 12px 40px rgba(0,0,0,0.12);
-    --offline: #9b9bae;
+  [data-theme="dark"] .bg-grid {
+    background-image: linear-gradient(rgba(108,92,231,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(108,92,231,0.03) 1px, transparent 1px) !important;
   }
-  [data-theme="light"] .bg-grid {
-    background-image: linear-gradient(rgba(108, 92, 231, 0.05) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(108, 92, 231, 0.05) 1px, transparent 1px);
+  [data-theme="dark"] header h1 {
+    background: linear-gradient(135deg, #f0f0f5, #8a8a9e) !important;
+    -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
   }
-  [data-theme="light"] header h1 {
-    background: linear-gradient(135deg, #1a1a2e, #6c5ce7);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  [data-theme="light"] .column { background: rgba(255,255,255,0.9); }
-  [data-theme="light"] .column h2 { background: rgba(255,255,255,0.9); }
-  [data-theme="light"] .driver-card { background: rgba(240,240,247,0.8); }
-  [data-theme="light"] .custom-popup .leaflet-popup-content-wrapper { background: white; color: #1a1a2e; }
-  [data-theme="light"] .custom-popup .leaflet-popup-tip { background: white; }
+  [data-theme="dark"] .column { background: var(--surface) !important; box-shadow: none; }
+  [data-theme="dark"] .column h2 { background: var(--surface) !important; }
+  [data-theme="dark"] .driver-card { background: rgba(18,18,26,0.8) !important; }
+  [data-theme="dark"] .custom-popup .leaflet-popup-content-wrapper { background: var(--surface) !important; color: var(--text) !important; }
+  [data-theme="dark"] .custom-popup .leaflet-popup-tip { background: var(--surface) !important; }
 
   /* Theme pill — admin */
   .theme-pill-admin {
@@ -64,12 +85,11 @@
     color: var(--text); font-family: 'Outfit','Cairo',sans-serif;
     font-size: 12px; font-weight: 700; cursor: pointer;
     transition: all 0.25s ease; white-space: nowrap;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 12px rgba(37,99,235,0.10);
   }
   .theme-pill-admin:hover { background: var(--surface-hover); transform: scale(1.04); }
-  [data-theme="light"] .theme-pill-admin {
-    background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.15);
-    color: #1a1a2e; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  [data-theme="dark"] .theme-pill-admin {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Cairo', sans-serif; }
@@ -83,9 +103,11 @@
   .header-actions { display: flex; gap: 10px; }
   .btn-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; }
   .btn-action:hover { background: var(--surface-hover); }
-  .btn-force-update { background: rgba(0,210,211,0.12); border: 1.5px solid rgba(0,210,211,0.35); color: var(--success); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 6px; }
-  .btn-force-update:hover { background: rgba(0,210,211,0.22); transform: scale(1.04); }
+  .btn-force-update { background: rgba(5,150,105,0.10); border: 1.5px solid rgba(5,150,105,0.30); color: var(--success); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 6px; }
+  .btn-force-update:hover { background: rgba(5,150,105,0.18); transform: scale(1.04); }
   .btn-force-update.pinging { opacity: 0.6; pointer-events: none; }
+  .btn-clear-all { background: rgba(220,38,38,0.08); border: 1.5px solid rgba(220,38,38,0.28); color: var(--danger); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 6px; }
+  .btn-clear-all:hover { background: rgba(220,38,38,0.16); transform: scale(1.04); }
   @keyframes distFlash { 0%,100%{opacity:1} 40%{opacity:0.3} }
   .dist-flash { animation: distFlash 0.4s ease; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -160,20 +182,22 @@
   /* ===== TABS ===== */
   .tab-bar {
     position: relative; z-index: 1;
-    display: flex; gap: 6px; margin-bottom: 12px; flex-shrink: 0;
+    display: flex; gap: 4px; margin-bottom: 12px; flex-shrink: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 100px; padding: 4px; width: fit-content;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.07);
   }
   .tab-btn {
-    padding: 7px 18px; border-radius: 100px;
-    border: 1px solid var(--border); background: var(--surface);
+    padding: 6px 20px; border-radius: 100px;
+    border: none; background: transparent;
     color: var(--muted); font-family: 'Outfit','Cairo',sans-serif;
-    font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.18s;
   }
   .tab-btn.active {
     background: var(--primary); color: #fff;
-    border-color: var(--primary);
-    box-shadow: 0 4px 16px rgba(108,92,231,0.35);
+    box-shadow: 0 2px 10px rgba(37,99,235,0.25);
   }
-  .tab-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); }
+  .tab-btn:not(.active):hover { color: var(--text); background: var(--surface-hover); }
 
   .tab-panel { display: none; flex: 1; min-height: 0; }
   .tab-panel.active { display: flex; flex-direction: column; }
@@ -195,6 +219,7 @@
     <button class="btn-force-update" id="btn-force-update" onclick="forceUpdate()">
       <span class="spin-icon">🔄</span> تحديث فوري
     </button>
+    <button class="btn-clear-all" onclick="clearAll()">🗑 مسح الكل</button>
     <button class="btn-action" id="lang-toggle" onclick="toggleLang()">🌐 العربية</button>
     <button class="theme-pill-admin" id="theme-toggle" onclick="toggleTheme()">
       <span id="theme-icon">☀️</span><span id="theme-label">فاتح</span>
@@ -251,7 +276,7 @@ function initMap() {
     minZoom: 12
   }).fitBounds(BRANCH_BOUNDS);
 
-  const isDark = (localStorage.getItem('rwa7el_theme') || 'dark') === 'dark';
+  const isDark = (localStorage.getItem('rwa7el_theme') || 'light') === 'dark';
   const tileUrl = isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
@@ -474,6 +499,15 @@ function connect() {
   };
 }
 
+async function clearAll() {
+  if (!confirm('هتمسح كل المندوبين؟ مفيش رجعة!')) return;
+  try {
+    await fetch('/api/clear_all', { method: 'POST' });
+  } catch(e) {
+    alert('فيه مشكلة في الاتصال');
+  }
+}
+
 async function forceUpdate() {
   const btn = document.getElementById('btn-force-update');
   btn.classList.add('pinging');
@@ -579,13 +613,12 @@ function formatBreakRemaining(breakEnd) {
 
 function toggleTheme() {
   const html = document.documentElement;
-  const isLight = html.getAttribute('data-theme') === 'light';
-  const next = isLight ? 'dark' : 'light';
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
   localStorage.setItem('rwa7el_theme', next);
-  document.getElementById('theme-icon').textContent  = next === 'dark' ? '☀️' : '🌙';
-  document.getElementById('theme-label').textContent = next === 'dark' ? 'فاتح' : 'داكن';
-  // swap map tiles
+  document.getElementById('theme-icon').textContent  = next === 'dark' ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = next === 'dark' ? 'داكن' : 'فاتح';
   if (window._mapTileLayer && map) {
     map.removeLayer(window._mapTileLayer);
     const url = next === 'dark'
@@ -612,10 +645,10 @@ setInterval(() => {
 }, 1000);
 
 window.onload = () => {
-  const saved = localStorage.getItem('rwa7el_theme') || 'dark';
+  const saved = localStorage.getItem('rwa7el_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
-  document.getElementById('theme-icon').textContent  = saved === 'dark' ? '☀️' : '🌙';
-  document.getElementById('theme-label').textContent = saved === 'dark' ? 'فاتح' : 'داكن';
+  document.getElementById('theme-icon').textContent  = saved === 'dark' ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = saved === 'dark' ? 'داكن' : 'فاتح';
   initMap(); connect();
   map.on('zoomend moveend', updateRadarSize);
   setTimeout(updateRadarSize, 500);
