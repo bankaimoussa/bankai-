@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07070f">
 <title>Rwa7el - مندوب</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Cairo:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
   /* ===== TOKENS ===== */
   :root {
@@ -27,8 +28,8 @@
     --text: #eeeef5;
     --text-muted: #7878a0;
     --text-dim: #4a4a6a;
-    --radius: 20px;
-    --radius-sm: 12px;
+    --radius: 22px;
+    --radius-sm: 14px;
     --shadow: 0 20px 60px rgba(0,0,0,0.6);
     --font: 'Outfit', 'Cairo', sans-serif;
 
@@ -46,7 +47,7 @@
     --border: rgba(0,0,0,0.07);
     --border2: rgba(0,0,0,0.13);
     --text: #12122a;
-    --text-muted: #5555780;
+    --text-muted: #555578;
     --text-dim: #9999bb;
     --shadow: 0 20px 60px rgba(0,0,0,0.1);
   }
@@ -61,8 +62,9 @@
     background: rgba(0,0,0,0.04);
     color: var(--text);
   }
-  [data-theme="light"] .gps-pill { background: rgba(0,0,0,0.05); }
+  [data-theme="light"] .gps-card { background: rgba(0,0,0,0.03); }
   [data-theme="light"] .stat-row { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.07); }
+  [data-theme="light"] .info-tile { background: rgba(0,0,0,0.03); }
 
   /* ===== RESET ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -166,18 +168,18 @@
   /* ===== LOGIN CARD ===== */
   .login-card {
     background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 32px 24px;
+    border-radius: var(--radius); padding: 36px 28px;
     backdrop-filter: blur(24px); box-shadow: var(--shadow);
   }
   .login-brand {
-    font-size: 28px; font-weight: 900; letter-spacing: -1px;
+    font-size: 30px; font-weight: 900; letter-spacing: -1px;
     background: linear-gradient(135deg, var(--text) 40%, var(--primary));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     margin-bottom: 4px;
   }
-  .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; font-weight: 500; }
+  .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; font-weight: 500; }
   .login-card input {
-    width: 100%; padding: 14px 18px; border-radius: 14px;
+    width: 100%; padding: 16px 18px; border-radius: 14px;
     border: 1.5px solid var(--border2);
     background: rgba(255,255,255,0.04);
     color: var(--text); font-size: 16px; text-align: center;
@@ -191,7 +193,7 @@
     box-shadow: 0 0 0 4px var(--primary-glow);
   }
   .btn-connect {
-    margin-top: 14px; width: 100%; padding: 14px;
+    margin-top: 16px; width: 100%; padding: 16px;
     background: linear-gradient(135deg, var(--primary), #5b4fd4);
     color: #fff; font-size: 15px; font-weight: 800;
     border: none; border-radius: 14px; cursor: pointer;
@@ -212,21 +214,21 @@
   /* Top bar */
   .app-topbar {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 18px 14px;
+    padding: 18px 20px 16px;
     border-bottom: 1px solid var(--border);
   }
   .driver-label {
-    font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;
   }
   .driver-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--success);
-    box-shadow: 0 0 8px var(--success);
+    width: 9px; height: 9px; border-radius: 50%; background: var(--success);
+    box-shadow: 0 0 10px var(--success);
     animation: dotPulse 2s ease-in-out infinite;
   }
   @keyframes dotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.7); } }
 
   .state-chip {
-    padding: 5px 14px; border-radius: 100px;
+    padding: 6px 16px; border-radius: 100px;
     font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
     transition: all 0.4s ease;
   }
@@ -236,7 +238,7 @@
 
   /* Hero block — الجزء الرئيسي */
   .hero-block {
-    position: relative; padding: 28px 20px 20px;
+    position: relative; padding: 32px 20px 24px;
     display: flex; flex-direction: column; align-items: center;
     overflow: hidden;
   }
@@ -248,7 +250,7 @@
 
   /* الرقم الكبير */
   .hero-number {
-    font-size: 88px; font-weight: 900; line-height: 1;
+    font-size: 92px; font-weight: 900; line-height: 1;
     letter-spacing: -4px;
     background: linear-gradient(160deg, #fff 40%, var(--accent));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -262,17 +264,60 @@
   .hero-label {
     font-size: 10px; font-weight: 700; letter-spacing: 3px;
     text-transform: uppercase; color: var(--text-muted);
-    margin-top: 4px; margin-bottom: 20px;
+    margin-top: 6px; margin-bottom: 24px;
     position: relative; z-index: 1;
   }
 
-  /* GPS pill */
+  /* ===== GPS + BATTERY CARDS ===== */
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    padding: 0 18px 16px;
+    position: relative; z-index: 1;
+  }
+  .info-tile {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: all 0.3s ease;
+  }
+  .info-tile.active-gps { border-color: rgba(15,212,200,0.25); background: rgba(15,212,200,0.06); }
+  .info-tile.active-bat { border-color: rgba(124,106,247,0.25); background: rgba(124,106,247,0.06); }
+  .info-tile.warn { border-color: rgba(245,166,35,0.25); background: rgba(245,166,35,0.06); }
+  .info-tile.danger { border-color: rgba(244,86,106,0.25); background: rgba(244,86,106,0.06); }
+
+  .info-icon {
+    font-size: 22px; line-height: 1;
+  }
+  .info-value {
+    font-size: 22px; font-weight: 800; line-height: 1; color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .info-value.small { font-size: 16px; }
+  .info-label {
+    font-size: 9px; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  /* GPS detail row */
+  .gps-detail {
+    display: flex; justify-content: center; gap: 16px;
+    padding: 0 18px 18px;
+    position: relative; z-index: 1;
+  }
+  .gps-detail-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+  }
+  .gps-detail-item strong { color: var(--text); font-weight: 700; }
+
+  /* GPS pill (status) */
   .gps-pill {
     display: flex; align-items: center; gap: 8px;
-    padding: 8px 16px; border-radius: 100px;
+    padding: 9px 18px; border-radius: 100px;
     background: rgba(255,255,255,0.05); border: 1px solid var(--border2);
     font-size: 12px; font-weight: 700; color: var(--text-muted);
-    width: 100%; justify-content: center;
+    width: calc(100% - 36px); justify-content: center;
+    margin: 0 18px 16px;
     transition: all 0.3s ease;
     position: relative; z-index: 1;
   }
@@ -288,14 +333,14 @@
   .stat-item {
     flex: 1; text-align: center;
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 6px;
+    border-radius: var(--radius-sm); padding: 12px 6px;
   }
-  .stat-val { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
-  .stat-lbl { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+  .stat-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-lbl { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
 
   /* Break timer */
   .break-hero {
-    font-size: 64px; font-weight: 900; letter-spacing: -3px; line-height: 1;
+    font-size: 68px; font-weight: 900; letter-spacing: -3px; line-height: 1;
     background: linear-gradient(135deg, var(--break-c), #fff);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     position: relative; z-index: 1;
@@ -310,7 +355,7 @@
 
   /* Waiting message */
   .wait-msg {
-    padding: 12px 18px 16px; text-align: center;
+    padding: 14px 18px 18px; text-align: center;
     color: var(--text-muted); font-size: 13px; font-weight: 500; line-height: 1.5;
     border-top: 1px solid var(--border);
   }
@@ -318,9 +363,9 @@
 
   /* Action button */
   .btn-action-big {
-    margin: 0 18px 16px; width: calc(100% - 36px);
-    padding: 14px; border-radius: 14px; border: none;
-    font-size: 14px; font-weight: 800; cursor: pointer;
+    margin: 0 18px 18px; width: calc(100% - 36px);
+    padding: 16px; border-radius: 14px; border: none;
+    font-size: 15px; font-weight: 800; cursor: pointer;
     font-family: var(--font); letter-spacing: 0.3px;
     transition: transform 0.2s, box-shadow 0.2s;
   }
@@ -338,6 +383,22 @@
     box-shadow: 0 4px 20px rgba(184,170,255,0.1);
   }
   .btn-end-break:hover { background: rgba(184,170,255,0.2); }
+
+  /* Background status indicator */
+  .bg-status {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 10000; display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 100px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    letter-spacing: 0.5px;
+  }
+  .bg-status.active { color: var(--success); border-color: rgba(15,212,200,0.25); }
+  .bg-status .bg-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+  }
+  .bg-status.active .bg-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: dotPulse 2s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -359,6 +420,12 @@
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Background keep-alive status -->
+<div class="bg-status" id="bg-status" style="display:none">
+  <div class="bg-dot"></div>
+  <span id="bg-status-text">خلفية نشطة</span>
+</div>
 
 <!-- LOGIN -->
 <div class="container" id="login-screen">
@@ -397,7 +464,7 @@
 
       <!-- Out state -->
       <div id="view-out" style="display:none; text-align:center">
-        <div class="hero-number" style="font-size:72px; letter-spacing:-2px;">🚀</div>
+        <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
         <div class="hero-label">في الطريق</div>
       </div>
 
@@ -406,11 +473,31 @@
         <div class="break-hero" id="break-timer">60:00</div>
         <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
       </div>
+    </div>
 
-      <!-- GPS -->
-      <div class="gps-pill" id="gps-pill">
-        <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
+    <!-- GPS + Battery info tiles -->
+    <div class="info-grid">
+      <div class="info-tile" id="gps-tile">
+        <div class="info-icon">📍</div>
+        <div class="info-value small" id="gps-distance">--</div>
+        <div class="info-label">المسافة</div>
       </div>
+      <div class="info-tile" id="bat-tile">
+        <div class="info-icon" id="bat-icon">🔋</div>
+        <div class="info-value" id="bat-percent">--%</div>
+        <div class="info-label">البطارية</div>
+      </div>
+    </div>
+
+    <!-- GPS detail (speed + accuracy) -->
+    <div class="gps-detail">
+      <div class="gps-detail-item">⚡ <strong id="gps-speed">0</strong> كم/س</div>
+      <div class="gps-detail-item">🎯 <strong id="gps-accuracy">--</strong> م</div>
+    </div>
+
+    <!-- GPS status pill -->
+    <div class="gps-pill" id="gps-pill">
+      <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
     </div>
 
     <!-- Stats -->
@@ -482,31 +569,71 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 4000);
 }
 
+// ===== BACKGROUND KEEP-ALIVE =====
+// 1) Wake Lock API — يمنع الشاشة من النوم وبالتالي الصفحة تفضل نشطة
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+      updateBgStatus(true);
+    }
+  } catch(e) { /* user gesture required or not supported */ }
+}
+
+// 2) Silent audio loop — fallback يمنع المتصفح من تعليق الصفحة في الخلفية
+let silentAudio = null;
+function startSilentAudio() {
+  if (silentAudio) return;
+  try {
+    silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    silentAudio.loop = true;
+    silentAudio.volume = 0.001;
+    silentAudio.play().catch(() => {});
+  } catch(e) {}
+}
+
+function updateBgStatus(active) {
+  const el = document.getElementById('bg-status');
+  if (!el) return;
+  el.style.display = 'flex';
+  el.classList.toggle('active', active);
+  document.getElementById('bg-status-text').innerText = active ? 'خلفية نشطة' : 'خلفية متوقفة';
+}
+
+// Re-request wake lock on visibility change
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && driverName) {
+    requestWakeLock();
+  }
+});
+
 // ===== GPS =====
 let gpsForceInterval = null;
 
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
   gpsWatchId = navigator.geolocation.watchPosition(
-    pos => { lastGpsPos = pos; sendLocation(pos); },
+    pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
     () => {
       document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
       gpsWatchId = null;
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
-  // force-send آخر موقع معروف كل 15 ثانية حتى لو الدرايفر واقف
+  // force-send آخر موقع معروف كل 10 ثانية (مهم للخلفية)
   clearInterval(gpsForceInterval);
   gpsForceInterval = setInterval(() => {
     if (lastGpsPos) sendLocation(lastGpsPos);
     else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => { lastGpsPos = pos; sendLocation(pos); },
+        pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
         () => {},
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
     }
-  }, 15000);
+  }, 10000);
 }
 
 function sendLocation(pos) {
@@ -519,6 +646,13 @@ function sendLocation(pos) {
       accuracy: +pos.coords.accuracy.toFixed(1)
     }));
   }
+}
+
+function updateGpsDisplay(pos) {
+  const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : 0;
+  const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
+  document.getElementById('gps-speed').innerText = speed;
+  document.getElementById('gps-accuracy').innerText = acc;
 }
 
 // ===== WS =====
@@ -548,7 +682,7 @@ function connectWS() {
       // أدمن طلب تحديث فوري - بعت location + battery دلوقتي
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          pos => { lastGpsPos = pos; sendLocation(pos); },
+          pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
           () => { if (lastGpsPos) sendLocation(lastGpsPos); },
           { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
         );
@@ -576,6 +710,9 @@ function join() {
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
   startGPS(); trackBattery(); connectWS();
+  // Activate background keep-alive
+  requestWakeLock();
+  startSilentAudio();
 }
 
 function handleKick() {
@@ -655,14 +792,23 @@ function handleAction() {
 function updateGPS(meters) {
   const pill = document.getElementById('gps-pill');
   const txt  = document.getElementById('gps-text');
+  const distEl = document.getElementById('gps-distance');
+  const tile = document.getElementById('gps-tile');
+
+  let distText;
   if (meters <= 250) {
     pill.className = 'gps-pill at-branch';
     txt.innerText = `عند الفرع · ${meters}م`;
+    tile.className = 'info-tile active-gps';
+    distText = `${meters}م`;
   } else {
     pill.className = 'gps-pill away';
     const d = meters >= 1000 ? (meters/1000).toFixed(1)+'كم' : meters+'م';
     txt.innerText = `بعيد · ${d}`;
+    tile.className = meters > 1000 ? 'info-tile warn' : 'info-tile';
+    distText = d;
   }
+  distEl.innerText = distText;
 }
 
 // ===== BREAK TIMER =====
@@ -691,13 +837,33 @@ function trackBattery() {
     const send = () => {
       if (ws && ws.readyState === WebSocket.OPEN)
         ws.send(JSON.stringify({ type: 'battery', level: b.level }));
+      updateBatteryDisplay(b.level);
     };
     send();
     b.addEventListener('levelchange', send);
-    // بعت البطارية كل 60 ثانية حتى لو مش اتغيرت
+    // بعت البطارية كل 30 ثانية حتى لو مش اتغيرت (مهم للخلفية)
     clearInterval(batteryInterval);
-    batteryInterval = setInterval(send, 60000);
+    batteryInterval = setInterval(send, 30000);
   });
+}
+
+function updateBatteryDisplay(level) {
+  const pct = Math.round(level * 100);
+  const el = document.getElementById('bat-percent');
+  const icon = document.getElementById('bat-icon');
+  const tile = document.getElementById('bat-tile');
+  el.innerText = `${pct}%`;
+
+  // Battery icon based on level
+  if (pct >= 80) icon.innerText = '🔋';
+  else if (pct >= 50) icon.innerText = '🔋';
+  else if (pct >= 20) icon.innerText = '🪫';
+  else icon.innerText = '🪫';
+
+  // Tile color based on level
+  if (pct >= 50) tile.className = 'info-tile active-bat';
+  else if (pct >= 20) tile.className = 'info-tile warn';
+  else tile.className = 'info-tile danger';
 }
 
 // لما يتفتح التاب تاني → بعت البطارية فوراً
@@ -712,6 +878,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && driverName) {
     if (!ws || ws.readyState !== WebSocket.OPEN) connectWS();
     else if (lastGpsPos) sendLocation(lastGpsPos);
+    requestWakeLock();
     // battery sent separately in the battery visibilitychange listener above
   }
 });
