@@ -185,6 +185,43 @@ async def root(): return no_cache_html("index.html")
 @app.get("/join")
 async def join_page(): return no_cache_html("join.html")
 
+@app.get("/sw.js")
+async def service_worker():
+    """Service Worker — يُخدَم بدون cache عشان التحديثات تتطبق فوراً"""
+    with open("sw.js", "rb") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Service-Worker-Allowed": "/"
+        }
+    )
+
+@app.get("/manifest.json")
+async def manifest():
+    """PWA Manifest — بيخلي Android يعاملها كـ app حقيقية"""
+    import json as _json
+    data = {
+        "name": "Rwa7el - رواحل",
+        "short_name": "Rwa7el",
+        "start_url": "/join",
+        "display": "standalone",
+        "background_color": "#07070f",
+        "theme_color": "#07070f",
+        "orientation": "portrait",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    }
+    return Response(
+        content=_json.dumps(data),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"}
+    )
+
 @app.websocket("/ws/admin")
 async def admin_ws(ws: WebSocket):
     await ws.accept()
