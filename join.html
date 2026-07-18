@@ -733,14 +733,16 @@ function connectWS() {
     }
     else if (d.type === 'chat_message') showChatPopup(d.text);
     else if (d.type === 'force_refresh') {
-      // أدمن طلب تحديث فوري - بعت location + battery دلوقتي
+      // بعت آخر موقع معروف فوراً بدون انتظار
+      if (lastGpsPos) sendLocation(lastGpsPos);
+      // وبعدين طلب تحديث جديد في الخلفية
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
-          () => { if (lastGpsPos) sendLocation(lastGpsPos); },
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
         );
-      } else if (lastGpsPos) sendLocation(lastGpsPos);
+      }
       if (batteryRef && ws.readyState === WebSocket.OPEN)
         ws.send(JSON.stringify({ type: 'battery', level: batteryRef.level }));
     }
