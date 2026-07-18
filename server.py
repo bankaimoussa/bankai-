@@ -7,6 +7,8 @@ import redis.asyncio as aioredis
 import json, math, time, httpx
 from typing import Dict, List
 from datetime import datetime
+import google.auth.transport.requests
+import google.oauth2.service_account
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -14,8 +16,19 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 BRANCH_LAT = 31.2071871
 BRANCH_LNG = 29.9328765
 
-# Firebase Server Key — حطه في environment variable
-FIREBASE_SERVER_KEY = os.environ.get("FIREBASE_SERVER_KEY", "")
+# FCM v1 — Service Account JSON من environment variable
+FIREBASE_PROJECT_ID = "rwa7el-87810"
+_FCM_SA_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "")
+
+def _get_fcm_access_token() -> str:
+    """يجيب OAuth2 access token من الـ service account"""
+    sa_info = json.loads(_FCM_SA_JSON)
+    credentials = google.oauth2.service_account.Credentials.from_service_account_info(
+        sa_info,
+        scopes=["https://www.googleapis.com/auth/firebase.messaging"]
+    )
+    credentials.refresh(google.auth.transport.requests.Request())
+    return credentials.token
 
 redis_client = aioredis.from_url(
     os.environ.get("REDIS_URL", "redis://localhost:6379"),
@@ -185,27 +198,34 @@ async def notify_driver(body: NotifyBody):
     token = await redis_client.hget("fleet:fcm_tokens", body.driver)
     if not token:
         return {"ok": False, "reason": "no_token"}
-    if not FIREBASE_SERVER_KEY:
-        return {"ok": False, "reason": "no_server_key"}
+    if not _FCM_SA_JSON:
+        return {"ok": False, "reason": "no_service_account"}
+
+    try:
+        access_token = _get_fcm_access_token()
+    except Exception as e:
+        return {"ok": False, "reason": f"auth_error: {e}"}
 
     payload = {
-        "to": token,
-        "data": {
-            "type": "your_turn",
-            "title": "🚚 دورك جه!",
-            "body": f"يا {body.driver}، دورك في الطابور — روح استلم الأوردر!"
-        },
-        "android": {
-            "priority": "high"
+        "message": {
+            "token": token,
+            "data": {
+                "type": "your_turn",
+                "title": "🚚 دورك جه!",
+                "body": f"يا {body.driver}، دورك في الطابور — روح استلم الأوردر!"
+            },
+            "android": {
+                "priority": "high"
+            }
         }
     }
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            "https://fcm.googleapis.com/fcm/send",
+            f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
             json=payload,
             headers={
-                "Authorization": f"key={FIREBASE_SERVER_KEY}",
+                "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
             },
             timeout=10
