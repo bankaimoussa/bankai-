@@ -706,7 +706,13 @@ function connectWS() {
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(WSURL);
   ws.onopen = () => {
-    ws.send(JSON.stringify({type:'join', name: driverName}));
+    // بنبعت الـ lat/lng مع رسالة الـ join عشان الـ server يتأكد من المسافة
+    const joinMsg = {type:'join', name: driverName};
+    if (lastGpsPos) {
+      joinMsg.lat = lastGpsPos.coords.latitude;
+      joinMsg.lng = lastGpsPos.coords.longitude;
+    }
+    ws.send(JSON.stringify(joinMsg));
     startPing();
     if (lastGpsPos) sendLocation(lastGpsPos);
   };
@@ -715,6 +721,16 @@ function connectWS() {
     if (d.type === 'sync') updateUI(d.me);
     else if (d.type === 'distance') updateGPS(d.meters);
     else if (d.type === 'kicked') handleKick();
+    else if (d.type === 'join_rejected') {
+      // السيرفر رفض الـ join — نرجع لشاشة اللوجين
+      showToast(d.msg || '❌ تم رفض التسجيل');
+      stopAllServices();
+      driverName = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+      const btn = document.getElementById('btn-start-shift');
+      if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
+    }
     else if (d.type === 'chat_message') showChatPopup(d.text);
     else if (d.type === 'force_refresh') {
       // أدمن طلب تحديث فوري - بعت location + battery دلوقتي
@@ -751,14 +767,62 @@ function connectWS() {
   }
 })();
 
+// إحداثيات الفرع — لازم تتطابق مع قيم الـ server
+const BRANCH_LAT = 31.2071871;
+const BRANCH_LNG = 29.9328765;
+const MAX_JOIN_DISTANCE = 50; // متر
+
+function haversineClient(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+  const dp = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
 function join() {
   const name = document.getElementById('name').value.trim();
   if (!name) { showToast('ادخل اسمك الأول'); return; }
+
+  if (!navigator.geolocation) {
+    showToast('❌ الجهاز ده مش بيدعم GPS');
+    return;
+  }
+
+  const btn = document.getElementById('btn-start-shift');
+  btn.disabled = true;
+  btn.innerText = '📍 بنحدد موقعك...';
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const dist = haversineClient(pos.coords.latitude, pos.coords.longitude, BRANCH_LAT, BRANCH_LNG);
+      if (dist > MAX_JOIN_DISTANCE) {
+        btn.disabled = false;
+        btn.innerText = '🟢 ابدأ الشيفت';
+        showToast(`❌ أنت بعيد عن الفرع (${dist}م) — لازم تكون في نطاق 50م`);
+        return;
+      }
+      // ✅ قريب من الفرع — كمّل
+      _doJoin(name, pos);
+    },
+    (err) => {
+      btn.disabled = false;
+      btn.innerText = '🟢 ابدأ الشيفت';
+      const msgs = {1: 'رفضت إذن الموقع — لازم تسمح للتطبيق', 2: 'مش قادر يحدد موقعك دلوقتي', 3: 'انتهى وقت تحديد الموقع — حاول تاني'};
+      showToast('❌ ' + (msgs[err.code] || 'خطأ في GPS'));
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+function _doJoin(name, pos) {
   driverName = name; kicked = false;
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
+  lastGpsPos = pos;
   startGPS(); trackBattery(); connectWS();
   requestWakeLock();
   startSilentAudio();
@@ -769,10 +833,24 @@ function join() {
 }
 
 // لما الـ Android يعيد تحميل الصفحة، بيستدعي الدالة دي عشان يعيد الـ join تلقائياً
+// ملحوظة: androidAutoJoin ده reconnect بعد reload — مش بيعمل check للمسافة
+// لأن السواق أصلاً كان connected ومش بيعمل join جديد من الصفر
 window.androidAutoJoin = function(name) {
   if (!name || driverName) return;
   document.getElementById('name').value = name;
-  join();
+  // reconnect بعد reload — بنتجاوز الـ proximity check
+  // (السواق أصلاً كان داخل قبل كده)
+  driverName = name; kicked = false;
+  localStorage.setItem('fleet_driver_name', name);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('driver-name').innerText = name;
+  startGPS(); trackBattery(); connectWS();
+  requestWakeLock();
+  startSilentAudio();
+  if (window.AndroidBridge) {
+    try { window.AndroidBridge.onDriverJoined(name); } catch(e) {}
+  }
 };
 
 // === End Shift ===
