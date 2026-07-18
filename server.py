@@ -1,9 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import os
 import redis.asyncio as aioredis
-import json, math, time
+import json, math, time, httpx
 from typing import Dict, List
 from datetime import datetime
 
@@ -13,7 +14,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 BRANCH_LAT = 31.2071871
 BRANCH_LNG = 29.9328765
 
-# الاتصال بـ Redis مع استخدام بروتوكول 2 للتوافق
+# Firebase Server Key — حطه في environment variable
+FIREBASE_SERVER_KEY = os.environ.get("FIREBASE_SERVER_KEY", "")
+
 redis_client = aioredis.from_url(
     os.environ.get("REDIS_URL", "redis://localhost:6379"),
     decode_responses=True, protocol=2
@@ -153,10 +156,6 @@ async def clear_all():
 
 @app.post("/api/force_update")
 async def force_update():
-    """
-    أدمن يضغط زرار → السيرفر يبعت لكل الدرايفرز المتصلين رسالة force_refresh
-    الدرايفر يعيد بعت location + battery فوراً
-    """
     msg = json.dumps({"type": "force_refresh"})
     dead = []
     for d_name, d_ws in driver_connections.items():
@@ -164,9 +163,54 @@ async def force_update():
         except: dead.append(d_name)
     for d in dead:
         if d in driver_connections: del driver_connections[d]
-    # broadcast full state للأدمن بعدها
     await broadcast_state("update")
     return {"ok": True, "pinged": len(driver_connections)}
+
+class FcmTokenBody(BaseModel):
+    name: str
+    token: str
+
+@app.post("/api/fcm_token")
+async def save_fcm_token(body: FcmTokenBody):
+    """السواق بيبعت الـ FCM token لما يفتح الـ App"""
+    await redis_client.hset("fleet:fcm_tokens", body.name, body.token)
+    return {"ok": True}
+
+class NotifyBody(BaseModel):
+    driver: str
+
+@app.post("/api/notify_driver")
+async def notify_driver(body: NotifyBody):
+    """الأدمن يضغط زرار → إشعار للسواق إن دوره جه"""
+    token = await redis_client.hget("fleet:fcm_tokens", body.driver)
+    if not token:
+        return {"ok": False, "reason": "no_token"}
+    if not FIREBASE_SERVER_KEY:
+        return {"ok": False, "reason": "no_server_key"}
+
+    payload = {
+        "to": token,
+        "data": {
+            "type": "your_turn",
+            "title": "🚚 دورك جه!",
+            "body": f"يا {body.driver}، دورك في الطابور — روح استلم الأوردر!"
+        },
+        "android": {
+            "priority": "high"
+        }
+    }
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            "https://fcm.googleapis.com/fcm/send",
+            json=payload,
+            headers={
+                "Authorization": f"key={FIREBASE_SERVER_KEY}",
+                "Content-Type": "application/json"
+            },
+            timeout=10
+        )
+    return {"ok": r.status_code == 200, "fcm": r.json()}
 
 def no_cache_html(filepath: str):
     with open(filepath, "rb") as f:
