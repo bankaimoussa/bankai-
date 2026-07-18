@@ -4,3 +4,4 @@ redis
 websockets
 httpx
 google-auth
+requests
