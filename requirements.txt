@@ -3,3 +3,4 @@ uvicorn[standard]
 redis
 websockets
 httpx
+google-auth
