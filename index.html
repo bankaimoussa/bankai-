@@ -114,7 +114,7 @@
 
   /* Map & Markers */
   #map-container { position: relative; z-index: 1; margin-bottom: 14px; transition: margin 0.4s ease; flex-shrink: 0; }
-  #map { height: 420px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); background: #12121e; transition: height 0.4s ease, opacity 0.3s ease; overflow: hidden; }
+  #map { height: 460px; width: 100%; border-radius: var(--radius); border: 1px solid rgba(124,106,247,0.35); box-shadow: 0 0 0 1px rgba(124,106,247,0.1), 0 8px 40px rgba(0,0,0,0.5); background: #0d0d1a; transition: height 0.4s ease, opacity 0.3s ease; overflow: hidden; }
   #map-container.collapsed #map { height: 0; opacity: 0; border: none; box-shadow: none; margin: 0; }
   #map-container.collapsed { margin-bottom: 14px; }
 
@@ -127,17 +127,61 @@
   .btn-autofit:hover { transform: scale(1.05); box-shadow: 0 6px 28px var(--primary-glow); }
   .leaflet-marker-icon { transition: transform 1s linear; }
 
+  /* === Driver Markers === */
+  .driver-marker-wrap {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+  }
+  .driver-marker-pulse {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid currentColor;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    animation: markerPulse 2.2s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes markerPulse {
+    0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.9; }
+    100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; }
+  }
+
   .driver-marker-point {
-    width: 22px; height: 22px; border-radius: 50%; border: 3px solid #06060d; position: relative;
-    box-shadow: 0 0 12px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.3), 0 0 14px currentColor;
+    position: relative;
+    transition: background 0.4s, transform 0.5s cubic-bezier(.4,2,.6,1), box-shadow 0.4s;
+    z-index: 2;
   }
   .driver-marker-arrow {
-    width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
-    border-bottom: 9px solid white; position: absolute; top: -7px;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid rgba(255,255,255,0.85);
+    position: absolute;
+    top: -12px; left: 50%;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
   }
   .driver-marker-name {
-    color: #fff; font-size: 11px; font-weight: 700; margin-top: 26px; text-align: center;
-    background: rgba(0,0,0,0.75); padding: 3px 9px; border-radius: 5px; white-space: nowrap; transform: translateX(-35%); backdrop-filter: blur(4px);
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6);
+    white-space: nowrap;
+    background: rgba(0,0,0,0.55);
+    padding: 2px 6px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(255,255,255,0.1);
   }
 
   /* Popups */
@@ -276,14 +320,22 @@ function initMap() {
   map = L.map('map', {
     maxBounds: BRANCH_BOUNDS,
     maxBoundsViscosity: 1.0,
-    minZoom: 12
+    minZoom: 12,
+    zoomControl: false
   }).fitBounds(BRANCH_BOUNDS);
+
+  // Zoom control — top left
+  L.control.zoom({ position: 'topleft' }).addTo(map);
 
   const isDark = (localStorage.getItem('rwa7el_theme') || 'dark') === 'dark';
   const tileUrl = isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-  window._mapTileLayer = L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
+  window._mapTileLayer = L.tileLayer(tileUrl, { maxZoom: 19, opacity: 0 }).addTo(map);
+  // fade-in tiles smoothly
+  setTimeout(() => {
+    window._mapTileLayer.setOpacity(1);
+  }, 300);
 
   markersCluster = L.markerClusterGroup({
     disableClusteringAtZoom: 15,
@@ -292,65 +344,94 @@ function initMap() {
   });
   map.addLayer(markersCluster);
 
-  // --- Radar animation around branch ---
-  const radarStyle = document.createElement('style');
-  radarStyle.textContent = `
-    @keyframes radar-ping {
-      0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 0.8; }
+  // === Geofence 50m — animated ===
+  const geofenceStyle = document.createElement('style');
+  geofenceStyle.textContent = `
+    @keyframes geofencePulse {
+      0%, 100% { stroke-opacity: 0.9; stroke-width: 2.5; }
+      50%       { stroke-opacity: 0.4; stroke-width: 1.5; }
+    }
+    @keyframes geofenceFill {
+      0%, 100% { fill-opacity: 0.12; }
+      50%       { fill-opacity: 0.05; }
+    }
+    @keyframes radarSweep {
+      0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
       100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
     }
-    .radar-ring {
-      position: absolute;
-      width: var(--radar-px, 100px); height: var(--radar-px, 100px);
-      pointer-events: none;
+    @keyframes branchPing {
+      0%   { transform: scale(1);   opacity: 1; }
+      50%  { transform: scale(1.3); opacity: 0.7; }
+      100% { transform: scale(1);   opacity: 1; }
     }
-    .radar-ring::before, .radar-ring::after {
-      content: '';
+    .geofence-path {
+      animation: geofencePulse 3s ease-in-out infinite, geofenceFill 3s ease-in-out infinite;
+    }
+    .radar-sweep {
       position: absolute;
       border-radius: 50%;
-      border: 2px solid rgba(124,106,247,0.7);
-      animation: radar-ping 2s ease-out infinite;
+      border: 2px solid rgba(124,106,247,0.8);
+      pointer-events: none;
+      width: var(--radar-px, 80px);
+      height: var(--radar-px, 80px);
+      animation: radarSweep 2s ease-out infinite;
     }
-    .radar-ring::after { animation-delay: 1s; }
+    .radar-sweep-2 { animation-delay: 0.7s; }
+    .radar-sweep-3 { animation-delay: 1.4s; }
+    .branch-icon { animation: branchPing 3s ease-in-out infinite; display:inline-block; }
   `;
-  document.head.appendChild(radarStyle);
+  document.head.appendChild(geofenceStyle);
 
+  // Geofence circle 50m
+  window._branchCircle = L.circle([BRANCH_LAT, BRANCH_LNG], {
+    radius: 50,
+    color: '#a78bfa',
+    fillColor: '#7c6af7',
+    fillOpacity: 0.12,
+    weight: 2.5,
+    dashArray: '8 5',
+    className: 'geofence-path'
+  }).addTo(map);
+
+  // Radar sweep rings
   const radarIcon = L.divIcon({
     className: '',
-    html: '<div class="radar-ring"></div>',
+    html: `<div class="radar-sweep"></div><div class="radar-sweep radar-sweep-2"></div><div class="radar-sweep radar-sweep-3"></div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0]
   });
-  L.marker([BRANCH_LAT, BRANCH_LNG], { icon: radarIcon, interactive: false, zIndexOffset: -1000 }).addTo(map);
+  window._radarMarker = L.marker([BRANCH_LAT, BRANCH_LNG], { icon: radarIcon, interactive: false, zIndexOffset: -1000 }).addTo(map);
 
-  // الدايرة الثابتة 200m
-  window._branchCircle = L.circle([BRANCH_LAT, BRANCH_LNG], {
-    radius: 200,
-    color: '#7c6af7',
-    fillColor: '#7c6af7',
-    fillOpacity: 0.06,
-    weight: 1.5,
-    dashArray: '6 4'
-  }).addTo(map);
-
+  // Branch icon
   L.marker([BRANCH_LAT, BRANCH_LNG], {
-    icon: L.divIcon({ html: '<div style="font-size:26px;">🏢</div>', className: '', iconSize: [26, 26], iconAnchor: [13, 13] })
-  }).addTo(map).bindPopup('<b>Main Branch — نطاق الإرجاع التلقائي: 200m</b>');
+    icon: L.divIcon({
+      html: `<div style="text-align:center;">
+        <div class="branch-icon" style="font-size:28px;filter:drop-shadow(0 0 8px rgba(124,106,247,0.9));">🏢</div>
+      </div>`,
+      className: '',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    }),
+    zIndexOffset: 1000
+  }).addTo(map).bindPopup('<div style="text-align:center;font-weight:800;font-size:13px;">🏢 الفرع الرئيسي<br><span style="color:#a78bfa;font-size:11px;">نطاق الإرجاع التلقائي: 50م</span></div>');
+
+  // update radar size on zoom
+  map.on('zoom zoomend moveend', updateRadarSize);
+  setTimeout(updateRadarSize, 500);
 }
 
 function updateRadarSize() {
-  if (!map || !window._branchCircle) return;
+  if (!map || !window._branchCircle || !window._radarMarker) return;
   const bounds = window._branchCircle.getBounds();
   const p1 = map.latLngToContainerPoint(bounds.getNorthEast());
   const p2 = map.latLngToContainerPoint(bounds.getSouthWest());
-  const px = Math.abs(p1.x - p2.x);
-  const rings = document.querySelectorAll('.radar-ring');
-  rings.forEach(r => {
+  const px = Math.max(20, Math.abs(p1.x - p2.x));
+  document.documentElement.style.setProperty('--radar-px', px + 'px');
+  const sweeps = document.querySelectorAll('.radar-sweep');
+  sweeps.forEach(r => {
     r.style.width  = px + 'px';
     r.style.height = px + 'px';
   });
-  // update ::before/::after size via CSS var
-  document.documentElement.style.setProperty('--radar-px', px + 'px');
 }
 
 function toggleMap() {
@@ -387,11 +468,15 @@ function updateSingleMarkerAndTrail(d) {
 
   // 1. تحديث أو رسم الـ Trail (مسار المندوب الأخير)
   if (!driverTrails[d.name]) {
-    driverTrails[d.name] = L.polyline([], {color: color, weight: 3, opacity: 0.4, dashArray: '5, 10'}).addTo(map);
+    driverTrails[d.name] = L.polyline([], {
+      color: color, weight: 3.5, opacity: 0.55,
+      dashArray: '6 8',
+      lineCap: 'round', lineJoin: 'round'
+    }).addTo(map);
   }
   driverTrails[d.name].setStyle({color: color});
   driverTrails[d.name].addLatLng([d.lat, d.lng]);
-  if (driverTrails[d.name].getLatLngs().length > 15) { // الاحتفاظ بآخر 15 نقطة فقط
+  if (driverTrails[d.name].getLatLngs().length > 20) {
     const latlngs = driverTrails[d.name].getLatLngs();
     latlngs.shift();
     driverTrails[d.name].setLatLngs(latlngs);
@@ -430,12 +515,15 @@ function updateSingleMarkerAndTrail(d) {
     const icon = L.divIcon({
       className: 'custom-div-icon',
       html: `
-        <div class="driver-marker-point" style="background: ${color}; transform: rotate(${heading}deg); transition: background 0.3s, transform 0.5s linear;">
-          ${speed > 3 ? '<div class="driver-marker-arrow"></div>' : ''}
+        <div class="driver-marker-wrap">
+          <div class="driver-marker-pulse" style="color:${color};border-color:${color};"></div>
+          <div class="driver-marker-point" style="background:${color};color:${color};transform:rotate(${heading}deg);">
+            ${speed > 3 ? '<div class="driver-marker-arrow"></div>' : ''}
+          </div>
+          <div class="driver-marker-name">${d.name}</div>
         </div>
-        <div class="driver-marker-name">${d.name}</div>
       `,
-      iconSize: [20, 20], iconAnchor: [10, 10]
+      iconSize: [24, 40], iconAnchor: [12, 12]
     });
     const marker = L.marker([d.lat, d.lng], {icon: icon}).bindPopup(popupHtml, {className: 'custom-popup'});
     driverMarkers[d.name] = marker;
