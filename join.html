@@ -740,10 +740,20 @@ function join() {
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
   startGPS(); trackBattery(); connectWS();
-  // Activate background keep-alive
   requestWakeLock();
   startSilentAudio();
+  // أبلغ الـ Android Native Service باسم السواق عشان يبدأ GPS في الخلفية
+  if (window.AndroidBridge) {
+    try { window.AndroidBridge.onDriverJoined(name); } catch(e) {}
+  }
 }
+
+// لما الـ Android يعيد تحميل الصفحة، بيستدعي الدالة دي عشان يعيد الـ join تلقائياً
+window.androidAutoJoin = function(name) {
+  if (!name || driverName) return; // لو بالفعل joined، متعملش حاجة
+  document.getElementById('name').value = name;
+  join();
+};
 
 function handleKick() {
   kicked = true;
