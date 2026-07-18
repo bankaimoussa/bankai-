@@ -576,6 +576,8 @@ let pingInterval = null, reconnectTimer = null;
 let currentBreakEnd = null;
 
 function showToast(msg) {
+  // لو على Android والصفحة في الخلفية، متعرضش toast
+  if (window.AndroidBridge && document.visibilityState === 'hidden') return;
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className = 'toast'; t.innerText = msg;
@@ -724,6 +726,8 @@ function connectWS() {
   ws.onclose = () => {
     clearInterval(pingInterval);
     if (kicked) return;
+    // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
+    if (window.AndroidBridge && document.visibilityState === 'hidden') return;
     showToast('🔄 بيعيد الاتصال...');
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connectWS, 3000);
