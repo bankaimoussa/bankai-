@@ -374,20 +374,46 @@ async def driver_ws(ws: WebSocket):
             
             if data["type"] == "join":
                 driver_name = data["name"].strip()
+                drivers = await get_drivers_from_redis()
+
+                is_reconnect = driver_name in drivers
+
+                # ── Proximity check (فقط للـ join الجديد مش reconnect) ──
+                if not is_reconnect:
+                    join_lat = data.get("lat")
+                    join_lng = data.get("lng")
+                    if join_lat is None or join_lng is None:
+                        # السواق ما بعتش موقعه — ارفض
+                        await ws.send_text(json.dumps({
+                            "type": "join_rejected",
+                            "reason": "no_location",
+                            "msg": "❌ لازم تسمح بالـ GPS قبل ما تبدأ الشيفت"
+                        }))
+                        continue
+                    dist_to_branch = haversine(join_lat, join_lng, BRANCH_LAT, BRANCH_LNG)
+                    if dist_to_branch > 50:
+                        await ws.send_text(json.dumps({
+                            "type": "join_rejected",
+                            "reason": "too_far",
+                            "dist": dist_to_branch,
+                            "msg": f"❌ أنت بعيد عن الفرع ({dist_to_branch}م) — لازم تكون في نطاق 50م"
+                        }))
+                        continue
+                # ── ✅ مقبول ──
+
                 # لو في connection قديم لنفس الدرايفر (reconnect)، بنبدّله بالجديد بدون أي noise
                 driver_connections[driver_name] = ws
-                drivers = await get_drivers_from_redis()
                 queue = await get_queue_from_redis()
                 
-                is_new = driver_name not in drivers
-                if is_new:
+                if driver_name not in drivers:
                     # دخول جديد خالص - نسجله من الأول
                     drivers[driver_name] = {
                         "name": driver_name, "state": "Waiting", 
                         "orders": 0, "returns": 0, "misses": 0,
                         "last_out": "-", "last_return": datetime.now().strftime("%I:%M %p"),
                         "battery": "100%", "queue_pos": 0, "distance": None, "break_end": None,
-                        "lat": None, "lng": None, "speed": 0, "heading": 0, "last_seen": int(time.time())
+                        "lat": data.get("lat"), "lng": data.get("lng"),
+                        "speed": 0, "heading": 0, "last_seen": int(time.time())
                     }
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                 else:
