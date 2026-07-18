@@ -444,9 +444,9 @@
 <div class="container" id="login-screen">
   <div class="login-card">
     <div class="login-brand">Rwa7el 🚚</div>
-    <div class="login-sub">ادخل اسمك وابدأ شغل</div>
-    <input type="text" id="name" placeholder="اسم المندوب" autocomplete="off">
-    <button class="btn-connect" onclick="join()">اتصل بالنظام</button>
+    <div class="login-sub" id="login-sub">ادخل اسمك وابدأ شغلك</div>
+    <input type="text" id="name" placeholder="اسم المندوب" autocomplete="off" id="name-input">
+    <button class="btn-connect" id="btn-start-shift" onclick="join()">🟢 ابدأ الشيفت</button>
     <button class="btn-install" id="btn-install" style="display:none" onclick="installPWA()">📲 ثبّت التطبيق على موبايلك</button>
   </div>
 </div>
@@ -461,7 +461,10 @@
         <div class="driver-dot" id="driver-dot"></div>
         <span id="driver-name">مندوب</span>
       </div>
-      <div class="state-chip state-waiting" id="state-chip">انتظار</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="state-chip state-waiting" id="state-chip">انتظار</div>
+        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹</button>
+      </div>
     </div>
 
     <!-- Hero -->
@@ -550,6 +553,21 @@
   const saved = localStorage.getItem('rwa7el_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
   updateThemeUI(saved);
+})();
+
+// === Auto-fill saved driver name ===
+(function() {
+  const savedName = localStorage.getItem('fleet_driver_name');
+  if (savedName) {
+    const nameInput = document.getElementById('name');
+    const loginSub  = document.getElementById('login-sub');
+    const btnStart  = document.getElementById('btn-start-shift');
+    if (nameInput) nameInput.style.display = 'none';
+    if (loginSub)  loginSub.textContent = 'أهلاً ' + savedName + ' 👋';
+    if (btnStart)  btnStart.textContent = '🟢 ابدأ الشيفت';
+    // pre-fill hidden so join() can read it
+    if (nameInput) nameInput.value = savedName;
+  }
 })();
 
 function updateThemeUI(theme) {
@@ -644,9 +662,10 @@ document.addEventListener('visibilitychange', () => {
 // ===== GPS =====
 let gpsForceInterval = null;
 
+let gpsWatchId = null;
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
-  gpsWatchId = navigator.geolocation.watchPosition(
+  gpsWatchId = gpsWatchId = navigator.geolocation.watchPosition(
     pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
     () => {
       document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
@@ -695,6 +714,45 @@ function startPing() {
   }, 25000);
 }
 
+
+// === End Shift ===
+function confirmEndShift() {
+  const overlay = document.getElementById('end-shift-overlay');
+  overlay.style.display = 'flex';
+}
+function cancelEndShift() {
+  document.getElementById('end-shift-overlay').style.display = 'none';
+}
+function endShift() {
+  document.getElementById('end-shift-overlay').style.display = 'none';
+  kicked = true;
+  clearInterval(pingInterval); clearTimeout(reconnectTimer);
+  if (ws) try { ws.close(); } catch(e) {}
+  if (navigator.geolocation && gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+  // Don't clear the name — keep it for next shift
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+  showToast('✅ انتهى الشيفت — إلى اللقاء!');
+  kicked = false; // reset so next join works
+}
+
+// === Chat Notification ===
+let chatPopupTimer = null;
+function showChatPopup(text) {
+  const popup = document.getElementById('chat-popup');
+  const textEl = document.getElementById('chat-popup-text');
+  const timeEl = document.getElementById('chat-popup-time');
+  if (!popup || !textEl) return;
+  textEl.textContent = text;
+  const now = new Date();
+  timeEl.textContent = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  popup.classList.add('show');
+  playAlarm('chat');
+  if (chatPopupTimer) clearTimeout(chatPopupTimer);
+  chatPopupTimer = setTimeout(() => popup.classList.remove('show'), 6000);
+  popup.onclick = () => { popup.classList.remove('show'); clearTimeout(chatPopupTimer); };
+}
+
 function connectWS() {
   if (kicked) return;
   if (ws) { try { ws.close(); } catch(e){} }
@@ -710,6 +768,7 @@ function connectWS() {
     if (d.type === 'sync') updateUI(d.me);
     else if (d.type === 'distance') updateGPS(d.meters);
     else if (d.type === 'kicked') handleKick();
+    else if (d.type === 'chat_message') showChatPopup(d.text);
     else if (d.type === 'force_refresh') {
       // أدمن طلب تحديث فوري - بعت location + battery دلوقتي
       if (navigator.geolocation) {
@@ -995,5 +1054,44 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- Chat Notification Popup -->
+<div id="chat-popup" style="
+  position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-120px);
+  width:calc(100% - 32px); max-width:400px;
+  background:linear-gradient(135deg,#1e1b4b,#1a1a2e);
+  border:1px solid rgba(124,106,247,0.4);
+  border-radius:18px; padding:16px 20px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,106,247,0.15);
+  z-index:9999; transition:transform 0.45s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+  opacity:0; pointer-events:none;
+  backdrop-filter:blur(20px);
+">
+  <div style="font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:6px;letter-spacing:0.5px;">📢 رسالة من الإدارة</div>
+  <div id="chat-popup-text" style="font-size:15px;font-weight:700;color:#fff;line-height:1.5;"></div>
+  <div style="font-size:10px;color:#4b5563;margin-top:8px;" id="chat-popup-time"></div>
+</div>
+
+<!-- End Shift Confirm Dialog -->
+<div id="end-shift-overlay" style="
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  z-index:9998; backdrop-filter:blur(8px);
+  align-items:center; justify-content:center;
+">
+  <div style="
+    background:#12121e; border:1px solid rgba(239,68,68,0.3);
+    border-radius:24px; padding:32px 28px; text-align:center;
+    max-width:320px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.8);
+  ">
+    <div style="font-size:44px;margin-bottom:12px;">⏹</div>
+    <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:8px;">إنهاء الشيفت؟</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:24px;line-height:1.6;">هتتسجل خروج من النظام<br>وهتحتاج تبدأ شيفت جديد</div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button onclick="cancelEndShift()" style="flex:1;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#9ca3af;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">إلغاء</button>
+      <button onclick="endShift()" style="flex:1;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;">إنهاء ✓</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
