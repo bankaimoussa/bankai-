@@ -190,6 +190,41 @@ async def save_fcm_token(body: FcmTokenBody):
     await redis_client.hset("fleet:fcm_tokens", body.name, body.token)
     return {"ok": True}
 
+class ChatBody(BaseModel):
+    text: str
+
+@app.post("/api/chat")
+async def send_chat(body: ChatBody):
+    if not body.text.strip():
+        return {"ok": False, "reason": "empty"}
+    msg = json.dumps({"type": "chat_message", "text": body.text.strip()})
+    dead = []
+    sent_ws = []
+    for name, dws in driver_connections.items():
+        try:
+            await dws.send_text(msg)
+            sent_ws.append(name)
+        except:
+            dead.append(name)
+    for d in dead:
+        if d in driver_connections: del driver_connections[d]
+    sent_fcm = []
+    if _FCM_SA_JSON:
+        try:
+            access_token = _get_fcm_access_token()
+            all_tokens = await redis_client.hgetall("fleet:fcm_tokens")
+            async with httpx.AsyncClient() as client:
+                for name, token in all_tokens.items():
+                    r = await client.post(
+                        f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
+                        json={"message": {"token": token, "data": {"type": "chat_message", "title": "📢 رسالة من الإدارة", "body": body.text.strip()}, "android": {"priority": "high"}}},
+                        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                        timeout=10
+                    )
+                    if r.status_code == 200: sent_fcm.append(name)
+        except: pass
+    return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
+
 class NotifyBody(BaseModel):
     driver: str
 
