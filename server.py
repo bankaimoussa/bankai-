@@ -250,6 +250,9 @@ async def root(): return no_cache_html("index.html")
 @app.get("/join")
 async def join_page(): return no_cache_html("join.html")
 
+@app.get("/download")
+async def download_page(): return no_cache_html("download.html")
+
 @app.get("/sw.js")
 async def service_worker():
     """Service Worker — يُخدَم بدون cache عشان التحديثات تتطبق فوراً"""
