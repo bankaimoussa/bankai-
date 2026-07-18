@@ -404,6 +404,14 @@
     width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
   }
   .bg-status.active .bg-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: dotPulse 2s ease-in-out infinite; }
+
+  .btn-install {
+    width: 100%; padding: 13px; border-radius: 14px; border: 1.5px solid rgba(15,212,200,0.35);
+    background: rgba(15,212,200,0.08); color: var(--success);
+    font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px;
+    font-family: 'Cairo', sans-serif; transition: 0.2s;
+  }
+  .btn-install:hover { background: rgba(15,212,200,0.15); }
 </style>
 </head>
 <body>
@@ -439,6 +447,7 @@
     <div class="login-sub">ادخل اسمك وابدأ شغل</div>
     <input type="text" id="name" placeholder="اسم المندوب" autocomplete="off">
     <button class="btn-connect" onclick="join()">اتصل بالنظام</button>
+    <button class="btn-install" id="btn-install" style="display:none" onclick="installPWA()">📲 ثبّت التطبيق على موبايلك</button>
   </div>
 </div>
 
@@ -926,6 +935,23 @@ setTimeout(() => {
     }
   }, 1000);
 }, 1600);
+
+// ===== PWA INSTALL PROMPT =====
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  document.getElementById('btn-install').style.display = 'block';
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('btn-install').style.display = 'none';
+  _installPrompt = null;
+});
+function installPWA() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(() => { _installPrompt = null; });
+}
 
 // ===== SERVICE WORKER + AUTO-UPDATE =====
 if ('serviceWorker' in navigator) {
