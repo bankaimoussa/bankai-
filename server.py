@@ -170,15 +170,39 @@ async def clear_all():
 
 @app.post("/api/force_update")
 async def force_update():
-    msg = json.dumps({"type": "force_refresh"})
+    # 1) WebSocket — للمناديب اللي connected دلوقتي
+    ws_msg = json.dumps({"type": "force_refresh"})
     dead = []
     for d_name, d_ws in driver_connections.items():
-        try: await d_ws.send_text(msg)
+        try: await d_ws.send_text(ws_msg)
         except: dead.append(d_name)
     for d in dead:
         if d in driver_connections: del driver_connections[d]
+
+    # 2) FCM — للمناديب اللي الـ app عندهم في الخلفية أو الـ WS انقطع
+    sent_fcm = []
+    if _FCM_SA_JSON:
+        try:
+            access_token = _get_fcm_access_token()
+            all_tokens = await redis_client.hgetall("fleet:fcm_tokens")
+            async with httpx.AsyncClient() as client:
+                for name, token in all_tokens.items():
+                    r = await client.post(
+                        f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
+                        json={"message": {
+                            "token": token,
+                            "data": {"type": "force_refresh"},
+                            "android": {"priority": "high"}
+                        }},
+                        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                        timeout=10
+                    )
+                    if r.status_code == 200: sent_fcm.append(name)
+        except: pass
+
+    # 3) broadcast فوري بأحدث داتا من Redis للأدمن
     await broadcast_state("update")
-    return {"ok": True, "pinged": len(driver_connections)}
+    return {"ok": True, "ws": len(driver_connections), "fcm": sent_fcm}
 
 class FcmTokenBody(BaseModel):
     name: str
