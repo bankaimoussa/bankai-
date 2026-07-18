@@ -707,7 +707,6 @@ function connectWS() {
   ws = new WebSocket(WSURL);
   ws.onopen = () => {
     ws.send(JSON.stringify({type:'join', name: driverName}));
-    showToast('✅ اتصلت بالنظام');
     startPing();
     if (lastGpsPos) sendLocation(lastGpsPos);
   };
@@ -735,7 +734,6 @@ function connectWS() {
     if (kicked) return;
     // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
     if (window.AndroidBridge && document.visibilityState === 'hidden') return;
-    showToast('🔄 بيعيد الاتصال...');
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connectWS, 3000);
   };
@@ -784,15 +782,29 @@ function confirmEndShift() {
 function cancelEndShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
 }
+// === Stop everything ===
+function stopAllServices() {
+  clearInterval(pingInterval);
+  clearTimeout(reconnectTimer);
+  if (ws) try { ws.close(); } catch(e) {}
+  if (navigator.geolocation && gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  if (wakeLock) try { wakeLock.release(); } catch(e) {}
+  driverName = null;
+  lastGpsPos = null;
+  if (window.AndroidBridge) {
+    try { window.AndroidBridge.onDriverLeft(); } catch(e) {}
+  }
+}
+
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-  kicked = true;
-  clearInterval(pingInterval); clearTimeout(reconnectTimer);
-  if (ws) try { ws.close(); } catch(e) {}
+  stopAllServices();
+  kicked = false;
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'block';
-  showToast('✅ انتهى الشيفت — إلى اللقاء!');
-  kicked = false;
 }
 
 // === Chat Notification ===
@@ -813,13 +825,15 @@ function showChatPopup(text) {
 }
 
 function handleKick() {
-  kicked = true;
-  clearInterval(pingInterval); clearTimeout(reconnectTimer);
-  if (ws) try { ws.close(); } catch(e){}
+  stopAllServices();
+  kicked = false;
   localStorage.removeItem('fleet_driver_name');
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'block';
   document.getElementById('name').value = '';
+  const sub = document.getElementById('login-sub');
+  if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
+  document.getElementById('name').style.display = '';
   showToast('❌ تم إزالتك من النظام');
 }
 
