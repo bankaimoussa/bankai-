@@ -142,6 +142,7 @@ async def change_driver_state(driver_name: str, new_state: str):
         if driver_name in queue: queue.remove(driver_name)
         if new_state == "Out":
             drivers[driver_name]["last_out"] = datetime.now().strftime("%I:%M %p")
+            drivers[driver_name]["out_since"] = int(time.time())
             drivers[driver_name]["orders"] += 1
             drivers[driver_name]["break_end"] = None
         elif new_state == "Break":
@@ -384,9 +385,42 @@ async def driver_ws(ws: WebSocket):
                     # تحديث المندوب بحالته
                     await ws.send_text(json.dumps({"type": "distance", "meters": dist}))
 
-                    # AUTO-RETURN: لو Out وراجع للفرع (≤200m) → Waiting تلقائي
-                    if drivers[driver_name]["state"] == "Out" and dist <= 200:
+                    # AUTO-RETURN: لو Out فأكتر من دقيقتين وراجع للفرع (≤50m) → Waiting تلقائي
+                    out_since = drivers[driver_name].get("out_since", 0)
+                    two_mins_passed = (now_ts - out_since) >= 120
+                    if drivers[driver_name]["state"] == "Out" and dist <= 50 and two_mins_passed:
                         await change_driver_state(driver_name, "Waiting")
+                        # بلّغ السواق إنه رجع في الطابور
+                        try:
+                            await ws.send_text(json.dumps({
+                                "type": "auto_returned",
+                                "msg": "🏠 رجعت للفرع — اتضفت في الطابور تلقائياً"
+                            }))
+                        except: pass
+                        # FCM notification لو الـ app في الخلفية
+                        try:
+                            fcm_token = await redis_client.hget("fleet:fcm_tokens", driver_name)
+                            if fcm_token and _FCM_SA_JSON:
+                                access_token = _get_fcm_access_token()
+                                fcm_payload = {
+                                    "message": {
+                                        "token": fcm_token,
+                                        "data": {
+                                            "type": "auto_returned",
+                                            "title": "🏠 رجعت للفرع",
+                                            "body": "اتضفت في الطابور تلقائياً"
+                                        },
+                                        "android": {"priority": "high"}
+                                    }
+                                }
+                                async with httpx.AsyncClient() as client:
+                                    await client.post(
+                                        f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
+                                        json=fcm_payload,
+                                        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                                        timeout=10
+                                    )
+                        except: pass
 
             elif data["type"] == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))
