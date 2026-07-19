@@ -537,6 +537,24 @@ body{background-image:radial-gradient(circle at top right,rgba(37,99,235,0.07),t
   <div id="chat-popup-time"></div>
 </div>
 
+<!-- Admin Bypass Modal -->
+<div id="admin-bypass-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:28px 24px;max-width:290px;width:88%;text-align:center;box-shadow:var(--shadow-lg);">
+    <div style="font-size:36px;margin-bottom:10px;">🔐</div>
+    <h3 style="font-size:16px;font-weight:900;margin-bottom:6px;">وضع المشرف</h3>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:20px;line-height:1.6;">ادخل الباسورد عشان تسجّل بدون قرب من الفرع</p>
+    <div style="position:relative;margin-bottom:14px;">
+      <input type="password" id="admin-bypass-input" placeholder="الباسورد"
+        style="width:100%;padding:14px 16px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-weight:700;color:var(--text);font-family:var(--font);outline:none;text-align:center;letter-spacing:3px;"
+        onkeydown="if(event.key==='Enter')submitAdminBypass()">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeAdminBypass()" style="flex:1;padding:13px;border-radius:13px;border:1px solid var(--border);background:transparent;color:var(--text-2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;">إلغاء</button>
+      <button onclick="submitAdminBypass()" style="flex:1;padding:13px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer;">دخول</button>
+    </div>
+  </div>
+</div>
+
 <!-- End Shift Overlay -->
 <div id="end-shift-overlay">
   <div class="end-dialog">
@@ -562,7 +580,7 @@ body{background-image:radial-gradient(circle at top right,rgba(37,99,235,0.07),t
         </svg>
       </div>
       <div class="brand-text">
-        <h1>رواحل</h1>
+        <h1 id="brand-title" onclick="handleBrandTap()" style="cursor:default;user-select:none;">رواحل</h1>
         <p>نظام إدارة المناديب</p>
       </div>
     </div>
@@ -1059,7 +1077,7 @@ function _doJoin(name, pos) {
   document.getElementById('driver-name').innerText = name;
   // أول حرف في الاسم للـ avatar
   document.getElementById('driver-avatar').innerText = name.charAt(0).toUpperCase();
-  lastGpsPos = pos;
+  if (pos) lastGpsPos = pos;
   startGPS(); trackBattery(); connectWS();
   requestWakeLock(); startSilentAudio();
   if (window.AndroidBridge) { try { window.AndroidBridge.onDriverJoined(name); } catch(e) {} }
@@ -1340,6 +1358,42 @@ function installPWA() {
   if (!_installPrompt) return;
   _installPrompt.prompt();
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
+}
+
+// ── Admin Bypass (brand tap) ──
+let _brandTapCount = 0, _brandTapTimer = null;
+function handleBrandTap() {
+  _brandTapCount++;
+  clearTimeout(_brandTapTimer);
+  if (_brandTapCount >= 5) {
+    _brandTapCount = 0;
+    openAdminBypass();
+  } else {
+    _brandTapTimer = setTimeout(() => { _brandTapCount = 0; }, 1500);
+  }
+}
+function openAdminBypass() {
+  const overlay = document.getElementById('admin-bypass-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => { document.getElementById('admin-bypass-input').focus(); }, 100);
+}
+function closeAdminBypass() {
+  document.getElementById('admin-bypass-overlay').style.display = 'none';
+  document.getElementById('admin-bypass-input').value = '';
+}
+function submitAdminBypass() {
+  const val = document.getElementById('admin-bypass-input').value.trim();
+  if (val !== 'bankai') {
+    document.getElementById('admin-bypass-input').style.borderColor = 'var(--danger)';
+    setTimeout(() => { document.getElementById('admin-bypass-input').style.borderColor = 'var(--border)'; }, 1000);
+    showToast('❌ باسورد غلط');
+    return;
+  }
+  closeAdminBypass();
+  const name = document.getElementById('name').value.trim();
+  if (!name) { showToast('ادخل اسمك الأول الأول'); document.getElementById('login-screen').style.display = 'flex'; return; }
+  showToast('✅ دخول مشرف — تم تخطي التحقق من الموقع');
+  _doJoin(name, null);
 }
 
 // ── Service Worker ──
