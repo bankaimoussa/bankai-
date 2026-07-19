@@ -3,559 +3,759 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#07070f">
+<meta name="theme-color" content="#0a0f1c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Rwa7el">
 <link rel="manifest" href="/manifest.json">
 <title>Rwa7el - مندوب</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cairo@5.0.0/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.0/index.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#2563eb;--blue-deep:#1e40af;--blue-soft:#3b82f6;
+  --blue-bg:#eff6ff;--blue-pale:#dbeafe;
+  --bg:#f8fafc;--surface:#ffffff;--surface-2:#f1f5f9;
+  --text:#0f172a;--text-2:#64748b;--text-3:#94a3b8;
+  --border:#e2e8f0;
+  --success:#10b981;--warn:#f59e0b;--danger:#ef4444;
+  --shadow:0 8px 24px rgba(15,23,42,0.06);
+  --shadow-lg:0 20px 50px rgba(37,99,235,0.15);
+  --font:'Cairo',sans-serif;
+  /* state accent */
+  --accent:var(--blue);--accent-glow:rgba(37,99,235,0.3);
+  --out-c:#f59e0b;--break-c:#8b5cf6;
+}
+[data-theme="dark"]{
+  --blue:#3b82f6;--blue-deep:#1e40af;--blue-soft:#60a5fa;
+  --blue-bg:rgba(59,130,246,0.1);--blue-pale:rgba(59,130,246,0.15);
+  --bg:#0a0f1c;--surface:#111827;--surface-2:#1f2937;
+  --text:#f1f5f9;--text-2:#94a3b8;--text-3:#64748b;
+  --border:rgba(255,255,255,0.08);
+  --shadow:0 8px 24px rgba(0,0,0,0.3);
+  --shadow-lg:0 20px 50px rgba(59,130,246,0.25);
+}
 
-  /* ===== TOKENS ===== */
-  :root {
-    --bg: #07070f;
-    --bg2: #0f0f1a;
-    --surface: rgba(20, 20, 35, 0.75);
-    --surface2: rgba(30, 30, 50, 0.9);
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --primary: #7c6af7;
-    --primary-glow: rgba(124,106,247,0.35);
-    --success: #0fd4c8;
-    --success-glow: rgba(15,212,200,0.3);
-    --warning: #f5a623;
-    --warning-glow: rgba(245,166,35,0.3);
-    --danger: #f4566a;
-    --break-c: #b8aaff;
-    --break-glow: rgba(184,170,255,0.3);
-    --text: #eeeef5;
-    --text-muted: #7878a0;
-    --text-dim: #4a4a6a;
-    --radius: 22px;
-    --radius-sm: 14px;
-    --shadow: 0 20px 60px rgba(0,0,0,0.6);
-    --font: 'Outfit', 'Cairo', sans-serif;
+html,body{
+  background:var(--bg);color:var(--text);
+  min-height:100vh;min-height:100dvh;
+  font-family:var(--font);
+  transition:background .3s,color .3s;
+}
+body{background-image:radial-gradient(circle at top right,rgba(37,99,235,0.07),transparent 55%)}
+[data-theme="dark"] body{background-image:radial-gradient(circle at top right,rgba(59,130,246,0.06),transparent 55%)}
 
-    /* state accent (يتغير حسب الحالة) */
-    --accent: var(--primary);
-    --accent-glow: var(--primary-glow);
-  }
+.app{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative;overflow-x:hidden}
 
-  /* ===== LIGHT THEME ===== */
-  [data-theme="light"] {
-    --bg: #f2f2fb;
-    --bg2: #e8e8f5;
-    --surface: rgba(255,255,255,0.92);
-    --surface2: rgba(245,245,255,0.98);
-    --border: rgba(0,0,0,0.07);
-    --border2: rgba(0,0,0,0.13);
-    --text: #12122a;
-    --text-muted: #555578;
-    --text-dim: #9999bb;
-    --shadow: 0 20px 60px rgba(0,0,0,0.1);
-  }
-  [data-theme="light"] .bg-canvas {
-    background-image:
-      linear-gradient(rgba(124,106,247,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,106,247,0.06) 1px, transparent 1px);
-  }
-  [data-theme="light"] .orb { opacity: 0.2; }
-  [data-theme="light"] #splash { background: var(--bg); }
-  [data-theme="light"] .login-card input {
-    background: rgba(0,0,0,0.04);
-    color: var(--text);
-  }
-  [data-theme="light"] .gps-card { background: rgba(0,0,0,0.03); }
-  [data-theme="light"] .stat-row { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.07); }
-  [data-theme="light"] .info-tile { background: rgba(0,0,0,0.03); }
+/* ── Splash ── */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .6s ease;
+}
+.splash-logo{
+  width:72px;height:72px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  border-radius:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 12px 36px rgba(37,99,235,0.35);
+}
+.splash-logo svg{width:36px;height:36px;color:#fff}
+.splash-title{font-size:24px;font-weight:900;letter-spacing:.5px}
+.splash-sub{font-size:13px;color:var(--text-2)}
 
-  /* ===== RESET ===== */
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100dvh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
+/* ── Toast ── */
+#toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:11px 18px;
+  font-size:13px;font-weight:700;color:var(--text);
+  box-shadow:var(--shadow-lg);
+  animation:toastIn .35s cubic-bezier(.4,0,.2,1) forwards;
+  pointer-events:auto;max-width:88vw;text-align:center;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 
-  /* ===== BACKGROUND ===== */
-  .bg-canvas {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    animation: gridDrift 30s linear infinite;
-  }
-  @keyframes gridDrift { to { transform: translate(48px, 48px); } }
+/* ── Header ── */
+.header{
+  padding:env(safe-area-inset-top,20px) 20px 16px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 20px);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  color:#fff;box-shadow:var(--shadow);
+}
+.brand-logo svg{width:20px;height:20px}
+.brand-text h1{font-size:17px;font-weight:900;letter-spacing:.5px}
+.brand-text p{font-size:10px;color:var(--text-2);font-weight:600;margin-top:-2px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{
+  width:40px;height:40px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;
+  color:var(--text);cursor:pointer;transition:all .2s;
+}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:18px;height:18px}
+.lang-btn{width:auto;padding:0 12px;font-size:11px;font-weight:800;font-family:'Inter',sans-serif;gap:4px}
 
-  .orb {
-    position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
-    filter: blur(80px); opacity: 0.35;
-    animation: orbFloat 8s ease-in-out infinite alternate;
-  }
-  .orb-1 { width: 320px; height: 320px; background: var(--primary); top: -80px; right: -60px; animation-delay: 0s; }
-  .orb-2 { width: 240px; height: 240px; background: var(--success); bottom: -60px; left: -40px; animation-delay: -3s; }
-  @keyframes orbFloat { from { transform: translate(0,0) scale(1); } to { transform: translate(20px, 30px) scale(1.1); } }
+/* ── Login Screen ── */
+#login-screen{
+  display:none;
+  min-height:calc(100vh - 80px);
+  padding:0 24px 40px;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
 
-  /* ===== SPLASH ===== */
-  #splash {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    z-index: 9999; transition: opacity 1s ease;
-  }
-  .splash-logo {
-    font-size: 48px; font-weight: 900; letter-spacing: -2px;
-    background: linear-gradient(135deg, #fff 30%, var(--primary));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    animation: splashPop 0.6s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  [data-theme="light"] .splash-logo {
-    background: linear-gradient(135deg, #12122a 30%, var(--primary));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .splash-sub {
-    color: var(--text-muted); font-size: 11px; letter-spacing: 6px;
-    margin-top: 10px; text-transform: uppercase; font-weight: 600;
-    animation: fadeIn 0.8s ease 0.3s both;
-  }
-  @keyframes splashPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.login-hero{
+  text-align:center;
+  margin-bottom:36px;
+}
+.login-hero-icon{
+  width:80px;height:80px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  border-radius:24px;
+  margin:0 auto 18px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 16px 40px rgba(37,99,235,0.3);
+}
+.login-hero-icon svg{width:40px;height:40px;color:#fff}
+.login-hero h2{font-size:26px;font-weight:900;margin-bottom:6px}
+.login-hero p{font-size:13px;color:var(--text-2);font-weight:500}
+.login-hero p span{color:var(--blue);font-weight:700}
 
-  /* ===== THEME TOGGLE ===== */
-  .theme-pill {
-    position: fixed; top: 16px; right: 16px; z-index: 10000;
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 14px 7px 10px;
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 100px; cursor: pointer;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-    transition: all 0.25s ease;
-    font-family: var(--font); font-size: 13px; font-weight: 600;
-    color: var(--text);
-  }
-  .theme-pill:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(0,0,0,0.35); }
-  .theme-pill .pill-icon { font-size: 15px; line-height: 1; }
-  .theme-pill .pill-label { font-size: 12px; font-weight: 700; }
+.login-form{width:100%;max-width:360px}
 
-  /* ===== TOAST ===== */
-  #toast-container {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10001;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-  }
-  .toast {
-    background: var(--surface2); color: var(--text);
-    padding: 10px 22px; border-radius: 100px;
-    font-weight: 700; font-size: 13px;
-    box-shadow: var(--shadow); border: 1px solid var(--border2);
-    backdrop-filter: blur(20px);
-    animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
-    white-space: nowrap;
-  }
-  @keyframes toastIn { from { transform: translateY(-16px) scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+.input-wrap{
+  position:relative;margin-bottom:14px;
+}
+.input-wrap svg{
+  position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;color:var(--text-3);pointer-events:none;
+}
+.input-wrap input{
+  width:100%;padding:16px 46px 16px 16px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:16px;font-size:15px;font-weight:600;
+  color:var(--text);font-family:var(--font);
+  transition:border-color .2s,box-shadow .2s;
+  outline:none;
+}
+.input-wrap input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(37,99,235,0.12);
+}
+.input-wrap input::placeholder{color:var(--text-3)}
 
-  /* ===== CONTAINER ===== */
-  .container {
-    width: 100%; max-width: 420px; padding: 20px; z-index: 10;
-    display: none; animation: slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(32px) scale(0.97); } to { opacity: 1; transform: none; } }
+.btn-start{
+  width:100%;padding:17px;border:none;
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  color:#fff;font-size:16px;font-weight:800;
+  border-radius:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:var(--shadow-lg);
+  font-family:var(--font);transition:all .25s;
+  margin-bottom:12px;
+}
+.btn-start:active{transform:scale(.97)}
+.btn-start:disabled{opacity:.6;pointer-events:none}
+.btn-start svg{width:20px;height:20px}
 
-  /* ===== LOGIN CARD ===== */
-  .login-card {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 36px 28px;
-    backdrop-filter: blur(24px); box-shadow: var(--shadow);
-  }
-  .login-brand {
-    font-size: 30px; font-weight: 900; letter-spacing: -1px;
-    background: linear-gradient(135deg, var(--text) 40%, var(--primary));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin-bottom: 4px;
-  }
-  .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; font-weight: 500; }
-  .login-card input {
-    width: 100%; padding: 16px 18px; border-radius: 14px;
-    border: 1.5px solid var(--border2);
-    background: rgba(255,255,255,0.04);
-    color: var(--text); font-size: 16px; text-align: center;
-    font-family: var(--font); font-weight: 600;
-    transition: border-color 0.25s, box-shadow 0.25s;
-    outline: none;
-  }
-  .login-card input::placeholder { color: var(--text-dim); font-weight: 400; }
-  .login-card input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px var(--primary-glow);
-  }
-  .btn-connect {
-    margin-top: 16px; width: 100%; padding: 16px;
-    background: linear-gradient(135deg, var(--primary), #5b4fd4);
-    color: #fff; font-size: 15px; font-weight: 800;
-    border: none; border-radius: 14px; cursor: pointer;
-    font-family: var(--font); letter-spacing: 0.3px;
-    box-shadow: 0 8px 32px var(--primary-glow);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .btn-connect:hover { transform: translateY(-2px); box-shadow: 0 12px 40px var(--primary-glow); }
-  .btn-connect:active { transform: scale(0.98); }
+.btn-install{
+  width:100%;padding:13px;border:1.5px solid var(--border);
+  background:transparent;color:var(--text-2);
+  font-size:13px;font-weight:700;
+  border-radius:14px;cursor:pointer;font-family:var(--font);
+  display:none;
+}
 
-  /* ===== APP SCREEN ===== */
-  #app-screen .container-inner {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); overflow: hidden;
-    backdrop-filter: blur(24px); box-shadow: var(--shadow);
-  }
+/* ── App Screen ── */
+#app-screen{display:none;flex-direction:column;padding-bottom:110px}
 
-  /* Top bar */
-  .app-topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 18px 20px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .driver-label {
-    font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;
-  }
-  .driver-dot {
-    width: 9px; height: 9px; border-radius: 50%; background: var(--success);
-    box-shadow: 0 0 10px var(--success);
-    animation: dotPulse 2s ease-in-out infinite;
-  }
-  @keyframes dotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.7); } }
+/* Driver Header Bar */
+.driver-bar{
+  margin:0 16px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow);
+}
+.driver-avatar{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:18px;font-weight:800;
+  flex-shrink:0;
+}
+.driver-info{flex:1;min-width:0}
+.driver-info .name{font-size:15px;font-weight:800;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.driver-info .sub{font-size:11px;color:var(--text-2);font-weight:500}
+.driver-bar-end{display:flex;gap:8px;align-items:center}
+.state-pill{
+  padding:5px 11px;border-radius:20px;
+  font-size:11px;font-weight:800;
+  border:1.5px solid;white-space:nowrap;
+}
+.state-pill.st-waiting{background:rgba(37,99,235,.1);color:var(--blue);border-color:rgba(37,99,235,.25)}
+.state-pill.st-out{background:rgba(245,158,11,.1);color:var(--out-c);border-color:rgba(245,158,11,.25)}
+.state-pill.st-break{background:rgba(139,92,246,.1);color:var(--break-c);border-color:rgba(139,92,246,.25)}
+.btn-end{
+  width:36px;height:36px;border-radius:10px;
+  border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);
+  color:#ef4444;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.btn-end:active{background:rgba(239,68,68,.2)}
 
-  .state-chip {
-    padding: 6px 16px; border-radius: 100px;
-    font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-    transition: all 0.4s ease;
-  }
-  .state-waiting { background: rgba(124,106,247,0.15); color: var(--primary); border: 1px solid rgba(124,106,247,0.25); }
-  .state-out     { background: rgba(245,166,35,0.15);  color: var(--warning); border: 1px solid rgba(245,166,35,0.25); }
-  .state-break   { background: rgba(184,170,255,0.15); color: var(--break-c); border: 1px solid rgba(184,170,255,0.25); }
+/* Queue Card */
+.queue-card{
+  margin:0 16px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px;padding:20px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;
+}
+.queue-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--blue-deep));
+  transition:background .5s;
+}
 
-  /* Hero block — الجزء الرئيسي */
-  .hero-block {
-    position: relative; padding: 32px 20px 24px;
-    display: flex; flex-direction: column; align-items: center;
-    overflow: hidden;
-  }
-  .hero-bg-ring {
-    position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--accent-glow), transparent 70%);
-    transition: background 0.6s ease;
-  }
+.queue-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px}
+.queue-rank{flex:1}
+.queue-rank-label{
+  font-size:11px;color:var(--text-2);font-weight:700;
+  margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.live-dot{
+  width:6px;height:6px;background:var(--success);
+  border-radius:50%;box-shadow:0 0 8px var(--success);
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 
-  /* الرقم الكبير */
-  .hero-number {
-    font-size: 92px; font-weight: 900; line-height: 1;
-    letter-spacing: -4px;
-    background: linear-gradient(160deg, #fff 40%, var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    transition: background 0.5s ease;
-    position: relative; z-index: 1;
-  }
-  [data-theme="light"] .hero-number {
-    background: linear-gradient(160deg, #12122a 40%, var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .hero-label {
-    font-size: 10px; font-weight: 700; letter-spacing: 3px;
-    text-transform: uppercase; color: var(--text-muted);
-    margin-top: 6px; margin-bottom: 24px;
-    position: relative; z-index: 1;
-  }
+.queue-rank-num{
+  font-size:56px;font-weight:900;line-height:1;
+  font-family:'Inter',sans-serif;letter-spacing:-3px;
+  color:var(--text);display:flex;align-items:baseline;gap:4px;
+}
+.queue-rank-num sup{font-size:18px;color:var(--text-3);font-weight:600;letter-spacing:0}
 
-  /* ===== GPS + BATTERY CARDS ===== */
-  .info-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    padding: 0 18px 16px;
-    position: relative; z-index: 1;
-  }
-  .info-tile {
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 14px 12px;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    transition: all 0.3s ease;
-  }
-  .info-tile.active-gps { border-color: rgba(15,212,200,0.25); background: rgba(15,212,200,0.06); }
-  .info-tile.active-bat { border-color: rgba(124,106,247,0.25); background: rgba(124,106,247,0.06); }
-  .info-tile.warn { border-color: rgba(245,166,35,0.25); background: rgba(245,166,35,0.06); }
-  .info-tile.danger { border-color: rgba(244,86,106,0.25); background: rgba(244,86,106,0.06); }
+.queue-status-pill{
+  padding:6px 12px;border-radius:20px;
+  font-size:11px;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface-2);color:var(--text-2);
+  border:1px solid var(--border);white-space:nowrap;align-self:flex-start;
+}
+.queue-status-pill.active{
+  background:rgba(16,185,129,.1);color:var(--success);border-color:rgba(16,185,129,.3);
+}
+.queue-status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.queue-status-pill.active .dot{animation:pulse 1.5s infinite}
 
-  .info-icon {
-    font-size: 22px; line-height: 1;
-  }
-  .info-value {
-    font-size: 22px; font-weight: 800; line-height: 1; color: var(--text);
-    letter-spacing: -0.5px;
-  }
-  .info-value.small { font-size: 16px; }
-  .info-label {
-    font-size: 9px; font-weight: 700; color: var(--text-muted);
-    letter-spacing: 1.5px; text-transform: uppercase;
-  }
+/* Queue List inside card */
+.queue-list-title{
+  font-size:11px;color:var(--text-3);margin-bottom:10px;font-weight:700;
+  letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;
+}
+.queue-list-title .count{color:var(--blue);font-family:'Inter',sans-serif}
 
-  /* GPS detail row */
-  .gps-detail {
-    display: flex; justify-content: center; gap: 16px;
-    padding: 0 18px 18px;
-    position: relative; z-index: 1;
-  }
-  .gps-detail-item {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 600; color: var(--text-muted);
-  }
-  .gps-detail-item strong { color: var(--text); font-weight: 700; }
+.queue-items{position:relative;height:220px;overflow:hidden}
+.queue-item{
+  position:absolute;left:0;right:0;top:0;
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:14px;
+  transition:all .6s cubic-bezier(.4,0,.2,1);
+}
+.queue-item.current{
+  background:var(--blue-bg);border-color:var(--blue);
+  box-shadow:0 4px 16px rgba(37,99,235,.15);
+}
+[data-theme="dark"] .queue-item.current{background:rgba(59,130,246,.12)}
+.queue-item.serving{
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  color:#fff;border-color:transparent;box-shadow:var(--shadow-lg);
+}
 
-  /* GPS pill (status) */
-  .gps-pill {
-    display: flex; align-items: center; gap: 8px;
-    padding: 9px 18px; border-radius: 100px;
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border2);
-    font-size: 12px; font-weight: 700; color: var(--text-muted);
-    width: calc(100% - 36px); justify-content: center;
-    margin: 0 18px 16px;
-    transition: all 0.3s ease;
-    position: relative; z-index: 1;
-  }
-  .gps-pill.at-branch { color: var(--success); background: rgba(15,212,200,0.08); border-color: rgba(15,212,200,0.2); }
-  .gps-pill.away { color: var(--text-muted); }
+.q-avatar{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;flex-shrink:0;color:#fff;
+}
+.q-avatar.c1{background:linear-gradient(135deg,#f97316,#ea580c)}
+.q-avatar.c2{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.q-avatar.c3{background:linear-gradient(135deg,#ec4899,#db2777)}
+.q-avatar.c4{background:linear-gradient(135deg,#14b8a6,#0d9488)}
+.q-avatar.c5{background:linear-gradient(135deg,#eab308,#ca8a04)}
+.q-avatar.c6{background:linear-gradient(135deg,#06b6d4,#0891b2)}
+.q-avatar.c7{background:linear-gradient(135deg,#84cc16,#65a30d)}
+.q-avatar.me{
+  background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+  box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--blue);
+}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-meta{font-size:10px;color:var(--text-3)}
+.queue-item.serving .q-meta{color:rgba(255,255,255,.7)}
+.q-pos{
+  width:30px;height:30px;border-radius:9px;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;font-family:'Inter',sans-serif;
+  color:var(--text-2);flex-shrink:0;
+}
+.queue-item.current .q-pos{background:var(--blue);border-color:transparent;color:#fff}
+.queue-item.serving .q-pos{background:rgba(255,255,255,.2);border-color:transparent;color:#fff}
 
-  /* Stats row */
-  .stat-row {
-    display: flex; gap: 8px;
-    padding: 14px 18px;
-    border-top: 1px solid var(--border);
-  }
-  .stat-item {
-    flex: 1; text-align: center;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px 6px;
-  }
-  .stat-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
-  .stat-lbl { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+/* Out / Break hero views */
+.hero-view{
+  text-align:center;padding:24px 20px 16px;
+}
+.hero-view .hero-icon{
+  font-size:52px;margin-bottom:12px;
+  display:block;
+  animation:heroFloat 3s ease-in-out infinite;
+}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero-view h3{font-size:22px;font-weight:900;margin-bottom:6px;color:var(--text)}
+.hero-view p{font-size:13px;color:var(--text-2)}
+.break-timer{
+  font-size:48px;font-weight:900;font-family:'Inter',sans-serif;
+  letter-spacing:-2px;color:var(--break-c);margin-bottom:8px;
+}
+.break-timer.urgent{color:var(--danger);animation:urgentPulse 1s infinite}
+@keyframes urgentPulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  /* Break timer */
-  .break-hero {
-    font-size: 68px; font-weight: 900; letter-spacing: -3px; line-height: 1;
-    background: linear-gradient(135deg, var(--break-c), #fff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    position: relative; z-index: 1;
-    transition: all 0.3s;
-  }
-  .break-hero.urgent {
-    background: linear-gradient(135deg, var(--danger), #ffaa00);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    animation: urgentPulse 1s ease-in-out infinite;
-  }
-  @keyframes urgentPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+/* Info tiles */
+.info-tiles{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:10px;margin:0 16px 14px;
+}
+.info-tile{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:16px;padding:12px 10px;text-align:center;
+  box-shadow:var(--shadow);transition:all .3s;
+}
+.info-tile .tile-icon{font-size:20px;margin-bottom:4px}
+.info-tile .tile-val{font-size:16px;font-weight:800;font-family:'Inter',sans-serif;color:var(--text);line-height:1.2}
+.info-tile .tile-label{font-size:10px;color:var(--text-2);font-weight:600;margin-top:3px}
+.info-tile.t-active{border-color:var(--success);background:rgba(16,185,129,.06)}
+.info-tile.t-warn{border-color:var(--warn);background:rgba(245,158,11,.06)}
+.info-tile.t-danger{border-color:var(--danger);background:rgba(239,68,68,.06)}
 
-  /* Waiting message */
-  .wait-msg {
-    padding: 14px 18px 18px; text-align: center;
-    color: var(--text-muted); font-size: 13px; font-weight: 500; line-height: 1.5;
-    border-top: 1px solid var(--border);
-  }
-  .wait-msg span { color: var(--text); font-weight: 700; }
+/* GPS Speed row */
+.gps-row{
+  display:flex;gap:8px;margin:0 16px 12px;
+}
+.gps-chip{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:8px 14px;
+  font-size:12px;font-weight:700;color:var(--text-2);
+  display:flex;align-items:center;gap:6px;flex:1;justify-content:center;
+}
+.gps-chip span{font-family:'Inter',sans-serif;font-weight:800;color:var(--text);font-size:14px}
 
-  /* Action button */
-  .btn-action-big {
-    margin: 0 18px 18px; width: calc(100% - 36px);
-    padding: 16px; border-radius: 14px; border: none;
-    font-size: 15px; font-weight: 800; cursor: pointer;
-    font-family: var(--font); letter-spacing: 0.3px;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .btn-action-big:hover { transform: translateY(-2px); }
-  .btn-action-big:active { transform: scale(0.98); }
-  .btn-return-queue {
-    background: rgba(15,212,200,0.12); color: var(--success);
-    border: 1.5px solid rgba(15,212,200,0.3);
-    box-shadow: 0 4px 20px rgba(15,212,200,0.1);
-  }
-  .btn-return-queue:hover { background: rgba(15,212,200,0.2); box-shadow: 0 8px 28px rgba(15,212,200,0.2); }
-  .btn-end-break {
-    background: rgba(184,170,255,0.12); color: var(--break-c);
-    border: 1.5px solid rgba(184,170,255,0.3);
-    box-shadow: 0 4px 20px rgba(184,170,255,0.1);
-  }
-  .btn-end-break:hover { background: rgba(184,170,255,0.2); }
+/* GPS Pill */
+.gps-pill{
+  margin:0 16px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:10px 14px;
+  font-size:12px;font-weight:700;color:var(--text-2);
+  display:flex;align-items:center;gap:8px;
+  box-shadow:var(--shadow);
+}
+.gps-pill.at-branch{border-color:var(--success);color:var(--success);background:rgba(16,185,129,.06)}
+.gps-pill.away{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.06)}
+.gps-pill .pill-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite;flex-shrink:0}
 
-  /* Background status indicator */
-  .bg-status {
-    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-    z-index: 10000; display: flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: 100px;
-    background: var(--surface2); border: 1px solid var(--border2);
-    font-size: 10px; font-weight: 700; color: var(--text-muted);
-    backdrop-filter: blur(16px); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    letter-spacing: 0.5px;
-  }
-  .bg-status.active { color: var(--success); border-color: rgba(15,212,200,0.25); }
-  .bg-status .bg-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
-  }
-  .bg-status.active .bg-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: dotPulse 2s ease-in-out infinite; }
+/* Stats row */
+.stats-row{
+  display:flex;gap:8px;margin:0 16px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:14px;box-shadow:var(--shadow);
+}
+.stat-item{flex:1;text-align:center}
+.stat-item .sv{font-size:20px;font-weight:900;font-family:'Inter',sans-serif;color:var(--blue)}
+.stat-item .sl{font-size:10px;color:var(--text-2);font-weight:600;margin-top:2px}
+.stat-item+.stat-item{border-right:1px solid var(--border)}
 
-  .btn-install {
-    width: 100%; padding: 13px; border-radius: 14px; border: 1.5px solid rgba(15,212,200,0.35);
-    background: rgba(15,212,200,0.08); color: var(--success);
-    font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px;
-    font-family: 'Cairo', sans-serif; transition: 0.2s;
-  }
-  .btn-install:hover { background: rgba(15,212,200,0.15); }
-  .btn-end-shift { width:34px; height:34px; border-radius:10px; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); color:#ef4444; font-size:14px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
-  .btn-end-shift:active { background:rgba(239,68,68,0.25); transform:scale(0.92); }
-  #chat-popup.show { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:auto; }
+/* Wait message */
+.wait-banner{
+  margin:0 16px 16px;
+  background:var(--blue-bg);border:1px solid var(--blue-pale);
+  border-radius:14px;padding:14px 16px;
+  font-size:13px;color:var(--blue);font-weight:700;
+  display:flex;align-items:center;gap:10px;
+  line-height:1.5;
+}
+[data-theme="dark"] .wait-banner{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);color:var(--blue-soft)}
+.wait-banner svg{width:18px;height:18px;flex-shrink:0}
+
+/* Action button */
+.btn-action-big{
+  display:none;
+  width:calc(100% - 32px);margin:0 16px 16px;
+  padding:17px;border:none;border-radius:16px;
+  color:#fff;font-size:16px;font-weight:800;
+  cursor:pointer;font-family:var(--font);
+  transition:all .2s;box-shadow:var(--shadow-lg);
+}
+.btn-action-big:active{transform:scale(.97)}
+.btn-action-big.btn-end-break{background:linear-gradient(135deg,var(--break-c),#7c3aed)}
+
+/* Bottom Nav */
+.nav{
+  position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 32px);max-width:448px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:6px;
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:100;box-shadow:var(--shadow-lg);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:10px 6px;border-radius:14px;cursor:pointer;
+  transition:all .3s;position:relative;
+}
+.nav-item svg{width:22px;height:22px;color:var(--text-3);transition:all .3s;stroke-width:2}
+.nav-item span{font-size:10px;color:var(--text-3);font-weight:600;transition:all .3s}
+.nav-item.active{background:linear-gradient(135deg,var(--blue),var(--blue-deep));box-shadow:0 6px 18px rgba(37,99,235,.35)}
+.nav-item.active svg{color:#fff}
+.nav-item.active span{color:#fff;font-weight:700}
+
+/* bg-status chip */
+#bg-status{
+  position:fixed;top:calc(env(safe-area-inset-top,0px) + 56px);right:14px;
+  z-index:200;display:none;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:4px 10px;font-size:10px;
+  font-weight:700;gap:5px;align-items:center;color:var(--text-2);
+}
+#bg-status.active{color:var(--success);border-color:rgba(16,185,129,.3)}
+#bg-status .bg-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* End shift overlay */
+#end-shift-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.75);z-index:9998;
+  backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;
+}
+.end-dialog{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px;padding:32px 28px;
+  text-align:center;max-width:300px;width:88%;
+  box-shadow:var(--shadow-lg);
+}
+.end-dialog .ed-icon{font-size:44px;margin-bottom:12px}
+.end-dialog h3{font-size:18px;font-weight:900;margin-bottom:6px}
+.end-dialog p{font-size:13px;color:var(--text-2);margin-bottom:24px;line-height:1.6}
+.end-dialog .ed-btns{display:flex;gap:12px}
+.end-dialog .ed-cancel{
+  flex:1;padding:14px;border-radius:14px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--text-2);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;
+}
+.end-dialog .ed-confirm{
+  flex:1;padding:14px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,#ef4444,#b91c1c);
+  color:#fff;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;
+}
+
+/* Chat popup */
+#chat-popup{
+  position:fixed;top:16px;left:50%;
+  transform:translateX(-50%) translateY(-160px);
+  width:calc(100% - 32px);max-width:400px;
+  background:linear-gradient(135deg,#1e1b4b,#1a1a2e);
+  border:1px solid rgba(124,106,247,0.4);
+  border-radius:18px;padding:16px 20px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6);
+  z-index:9999;
+  transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+  opacity:0;pointer-events:none;backdrop-filter:blur(20px);
+}
+#chat-popup.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.chat-popup-label{font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:6px}
+#chat-popup-text{font-size:15px;font-weight:700;color:#fff;line-height:1.5}
+#chat-popup-time{font-size:10px;color:#4b5563;margin-top:8px}
+
+/* Theme toggle */
+.theme-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:6px 12px;cursor:pointer;
+  font-size:11px;font-weight:700;color:var(--text-2);transition:all .2s;
+}
+
+/* Animations */
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.anim-in{animation:fadeSlideIn .4s ease forwards}
 </style>
 </head>
 <body>
 
-<div class="bg-canvas"></div>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-
-<!-- Theme toggle -->
-<button class="theme-pill" id="theme-toggle" onclick="toggleTheme()">
-  <span class="pill-icon" id="theme-icon">☀️</span>
-  <span class="pill-label" id="theme-label">فاتح</span>
-</button>
-
 <!-- Splash -->
 <div id="splash">
-  <div class="splash-logo">Rwa7el</div>
-  <div class="splash-sub">BANKAI</div>
+  <div class="splash-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  </div>
+  <div class="splash-title">رواحل</div>
+  <div class="splash-sub">نظام إدارة المناديب</div>
 </div>
 
+<!-- Toast -->
 <div id="toast-container"></div>
 
-<!-- Background keep-alive status -->
-<div class="bg-status" id="bg-status" style="display:none">
+<!-- BG Status -->
+<div id="bg-status">
   <div class="bg-dot"></div>
   <span id="bg-status-text">خلفية نشطة</span>
 </div>
 
-<!-- LOGIN -->
-<div class="container" id="login-screen">
-  <div class="login-card">
-    <div class="login-brand">Rwa7el 🚚</div>
-    <div class="login-sub" id="login-sub">ادخل اسمك وابدأ شغل</div>
-    <input type="text" id="name" placeholder="اسم المندوب" autocomplete="off">
-    <button class="btn-connect" id="btn-start-shift" onclick="join()">🟢 ابدأ الشيفت</button>
-    <button class="btn-install" id="btn-install" style="display:none" onclick="installPWA()">📲 ثبّت التطبيق على موبايلك</button>
+<!-- Chat Popup -->
+<div id="chat-popup">
+  <div class="chat-popup-label">📢 رسالة من الإدارة</div>
+  <div id="chat-popup-text"></div>
+  <div id="chat-popup-time"></div>
+</div>
+
+<!-- End Shift Overlay -->
+<div id="end-shift-overlay">
+  <div class="end-dialog">
+    <div class="ed-icon">⏹</div>
+    <h3>إنهاء الشيفت؟</h3>
+    <p>هتتسجل خروج من النظام</p>
+    <div class="ed-btns">
+      <button class="ed-cancel" onclick="cancelEndShift()">إلغاء</button>
+      <button class="ed-confirm" onclick="endShift()">إنهاء ✓</button>
+    </div>
   </div>
 </div>
 
-<!-- APP -->
-<div class="container" id="app-screen">
-  <div class="container-inner">
+<div class="app">
 
-    <!-- Top bar -->
-    <div class="app-topbar">
-      <div class="driver-label">
-        <div class="driver-dot" id="driver-dot"></div>
-        <span id="driver-name">مندوب</span>
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="state-chip state-waiting" id="state-chip">انتظار</div>
-        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹</button>
+      <div class="brand-text">
+        <h1>رواحل</h1>
+        <p>نظام إدارة المناديب</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="theme-pill" onclick="toggleTheme()">
+        <span id="theme-icon">☀️</span>
+        <span id="theme-label">فاتح</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="login-screen">
+    <div class="login-hero">
+      <div class="login-hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h2>ابدأ شيفتك</h2>
+      <p id="login-sub">ادخل اسمك وابدأ شغل</p>
+    </div>
+
+    <div class="login-form">
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        <input type="text" id="name" placeholder="اسمك الأول" autocomplete="off">
+      </div>
+
+      <button class="btn-start" id="btn-start-shift" onclick="join()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        ابدأ الشيفت
+      </button>
+
+      <button class="btn-install" id="btn-install" onclick="installPWA()">📲 ثبّت التطبيق على موبايلك</button>
+    </div>
+  </div>
+
+  <!-- ═══ APP SCREEN ═══ -->
+  <div id="app-screen">
+
+    <!-- Driver Bar -->
+    <div class="driver-bar anim-in">
+      <div class="driver-avatar" id="driver-avatar">م</div>
+      <div class="driver-info">
+        <div class="name" id="driver-name">مندوب</div>
+        <div class="sub">متصل بالنظام</div>
+      </div>
+      <div class="driver-bar-end">
+        <div class="state-pill st-waiting" id="state-chip">انتظار</div>
+        <button class="btn-end" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹</button>
       </div>
     </div>
 
-    <!-- Hero -->
-    <div class="hero-block" id="hero-block">
-      <div class="hero-bg-ring" id="hero-bg"></div>
+    <!-- ── Waiting View ── -->
+    <div id="view-waiting">
+      <div class="queue-card anim-in">
+        <div class="queue-top">
+          <div class="queue-rank">
+            <div class="queue-rank-label">
+              <div class="live-dot"></div>
+              ترتيبك في الطابور
+            </div>
+            <div class="queue-rank-num">
+              <span id="pos-num">--</span>
+              <sup></sup>
+            </div>
+          </div>
+          <div class="queue-status-pill active" id="status-pill">
+            <div class="dot"></div>
+            <span>في الانتظار</span>
+          </div>
+        </div>
 
-      <!-- Waiting state -->
-      <div id="view-waiting">
-        <div style="text-align:center">
-          <div class="hero-number" id="pos-num">--</div>
-          <div class="hero-label">ترتيبك في الطابور</div>
+        <!-- Live Queue List -->
+        <div class="queue-list-title">
+          <span>الطابور الحالي</span>
+          <span class="count" id="q-count">0</span>
+        </div>
+        <div class="queue-items" id="queue-items">
+          <!-- populated by JS -->
         </div>
       </div>
 
-      <!-- Out state -->
-      <div id="view-out" style="display:none; text-align:center">
-        <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
-        <div class="hero-label">في الطريق</div>
-      </div>
-
-      <!-- Break state -->
-      <div id="view-break" style="display:none; text-align:center">
-        <div class="break-hero" id="break-timer">60:00</div>
-        <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
+      <!-- Wait banner -->
+      <div class="wait-banner" id="wait-msg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        انتظر دورك — هيجيلك إشعار لما تتأهل للخروج
       </div>
     </div>
 
-    <!-- GPS + Battery info tiles -->
-    <div class="info-grid">
+    <!-- ── Out View ── -->
+    <div id="view-out" style="display:none">
+      <div class="hero-view anim-in">
+        <span class="hero-icon">🛵</span>
+        <h3>في الطريق</h3>
+        <p>خلّص الأوردر وارجع الفرع</p>
+      </div>
+    </div>
+
+    <!-- ── Break View ── -->
+    <div id="view-break" style="display:none">
+      <div class="hero-view anim-in">
+        <span class="hero-icon">☕</span>
+        <div class="break-timer" id="break-timer">60:00</div>
+        <p>وقت الراحة</p>
+      </div>
+    </div>
+
+    <!-- Action Button (Break only) -->
+    <button class="btn-action-big btn-end-break" id="btn-action" onclick="handleAction()">خلصت الراحة</button>
+
+    <!-- Info Tiles: distance · battery · km -->
+    <div class="info-tiles">
       <div class="info-tile" id="gps-tile">
-        <div class="info-icon">📍</div>
-        <div class="info-value small" id="gps-distance">--</div>
-        <div class="info-label">المسافة</div>
+        <div class="tile-icon">📍</div>
+        <div class="tile-val" id="gps-distance">--</div>
+        <div class="tile-label">من الفرع</div>
       </div>
       <div class="info-tile" id="bat-tile">
-        <div class="info-icon" id="bat-icon">🔋</div>
-        <div class="info-value" id="bat-percent">--%</div>
-        <div class="info-label">البطارية</div>
+        <div class="tile-icon" id="bat-icon">🔋</div>
+        <div class="tile-val" id="bat-percent">--%</div>
+        <div class="tile-label">البطارية</div>
+      </div>
+      <div class="info-tile" id="odo-tile">
+        <div class="tile-icon">🛣️</div>
+        <div class="tile-val" id="shift-km">0.0</div>
+        <div class="tile-label">كم الشيفت</div>
       </div>
     </div>
 
-    <!-- GPS detail (speed + accuracy) -->
-    <div class="gps-detail">
-      <div class="gps-detail-item">⚡ <strong id="gps-speed">0</strong> كم/س</div>
-      <div class="gps-detail-item">🎯 <strong id="gps-accuracy">--</strong> م</div>
+    <!-- GPS speed & accuracy -->
+    <div class="gps-row">
+      <div class="gps-chip">⚡ <span id="gps-speed">0</span> كم/س</div>
+      <div class="gps-chip">🎯 <span id="gps-accuracy">--</span> م</div>
     </div>
 
-    <!-- GPS status pill -->
+    <!-- GPS Status Pill -->
     <div class="gps-pill" id="gps-pill">
-      <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
+      <div class="pill-dot"></div>
+      <span id="gps-text">بيحدد الموقع...</span>
     </div>
 
-    <!-- Stats -->
-    <div class="stat-row" id="stat-row" style="display:none">
+    <!-- Stats Row -->
+    <div class="stats-row" id="stat-row" style="display:none">
       <div class="stat-item">
-        <div class="stat-val" id="stat-orders">0</div>
-        <div class="stat-lbl">أوردر</div>
+        <div class="sv" id="stat-orders">0</div>
+        <div class="sl">أوردر</div>
       </div>
       <div class="stat-item">
-        <div class="stat-val" id="stat-returns">0</div>
-        <div class="stat-lbl">راجع</div>
+        <div class="sv" id="stat-returns">0</div>
+        <div class="sl">رجوع</div>
       </div>
       <div class="stat-item">
-        <div class="stat-val" id="stat-misses">0</div>
-        <div class="stat-lbl">فائت</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" id="stat-km">0.0</div>
-        <div class="stat-lbl">كم</div>
+        <div class="sv" id="stat-misses">0</div>
+        <div class="sl">فايت</div>
       </div>
     </div>
 
-    <!-- Wait message -->
-    <div class="wait-msg" id="wait-msg">
-      استنى! <span>دورك جاي قريب.</span>
+  </div><!-- /app-screen -->
+
+  <!-- Bottom Nav (app screen only) -->
+  <div class="nav" id="bottom-nav" style="display:none">
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>الرئيسية</span>
     </div>
-
-    <!-- Action button -->
-    <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
-      ارجع للطابور
-    </button>
-
+    <div class="nav-item" onclick="window.location.href='/chat'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>رسائل</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>حسابي</span>
+    </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</div><!-- /app -->
+
 <script>
-// ===== THEME =====
+// ── Theme ──
 (function() {
   const saved = localStorage.getItem('rwa7el_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
@@ -569,7 +769,6 @@ function updateThemeUI(theme) {
   if (theme === 'dark') { icon.textContent = '☀️'; label.textContent = 'فاتح'; }
   else                  { icon.textContent = '🌙'; label.textContent = 'داكن'; }
 }
-
 function toggleTheme() {
   const html = document.documentElement;
   const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -578,15 +777,15 @@ function toggleTheme() {
   updateThemeUI(next);
 }
 
-// ===== CORE =====
+// ── Core vars ──
 const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/driver`;
 let ws, driverName = null, kicked = false;
 let gpsWatchId = null, lastGpsPos = null;
 let pingInterval = null, reconnectTimer = null;
 let currentBreakEnd = null;
 
+// ── Toast ──
 function showToast(msg) {
-  // لو على Android والصفحة في الخلفية، متعرضش toast
   if (window.AndroidBridge && document.visibilityState === 'hidden') return;
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -595,82 +794,59 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 4000);
 }
 
-// ===== BACKGROUND KEEP-ALIVE =====
-
-// 1) Wake Lock API — يمنع الشاشة من النوم
+// ── Wake Lock ──
 let wakeLock = null;
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
-      if (wakeLock) return; // معندناش حاجة نعملها لو شغال
+      if (wakeLock) return;
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; });
       updateBgStatus(true);
     }
-  } catch(e) { /* not supported or no user gesture */ }
+  } catch(e) {}
 }
 
-// 2) AudioContext Loop — أقوى من Audio element، صعب على المتصفح يوقفه في الخلفية
+// ── Silent Audio (keep-alive) ──
 let _audioCtx = null;
 function startSilentAudio() {
   if (_audioCtx) return;
   try {
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = _audioCtx.createOscillator();
+    const osc = _audioCtx.createOscillator();
     const gain = _audioCtx.createGain();
-    gain.gain.value = 0.00001; // صامت تماماً للأذن
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 1; // 1Hz — مش مسموع
-    oscillator.connect(gain);
-    gain.connect(_audioCtx.destination);
-    oscillator.start();
-    // الـ oscillator مش بيوقف أبداً — ده هو الهدف
+    gain.gain.value = 0.00001;
+    osc.type = 'sine'; osc.frequency.value = 1;
+    osc.connect(gain); gain.connect(_audioCtx.destination);
+    osc.start();
   } catch(e) {}
 }
-
-// لو المتصفح عمل suspend للـ AudioContext (ممكن يحصل على iOS)، أعد تشغيله
 function resumeAudioCtx() {
-  if (_audioCtx && _audioCtx.state === 'suspended') {
-    _audioCtx.resume().catch(() => {});
-  }
+  if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume().catch(() => {});
 }
 
-// 3) صوت تنبيه فعلي (مسموع) — بيستخدم نفس الـ AudioContext الموجود بدل ما يفتح واحد جديد
-// ملحوظة: على iOS، لو الموبايل على وضع صامت (mute switch) أو التطبيق في الخلفية الكاملة،
-// نظام التشغيل بيمنع أي صوت يخرج فعليًا — ده قيد من المتصفح/النظام مش حاجة نقدر نتخطاها برمجيًا.
-// أقصى ما نقدر نضمنه: الصوت يشتغل فورًا أول ما التطبيق يرجع للـ foreground أو الشاشة تتفتح.
+// ── Alarm ──
 function playAlarm(kind) {
   try {
     resumeAudioCtx();
-    if (!_audioCtx) {
-      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (_audioCtx.state === 'suspended') { _audioCtx.resume().catch(() => {}); }
-
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(() => {});
     const now = _audioCtx.currentTime;
-    // نغمتين متتاليتين — أوضح من نغمة واحدة وسط الضوضاء
     const freqs = kind === 'urgent' ? [880, 1046] : [660, 880];
     freqs.forEach((freq, i) => {
       const osc = _audioCtx.createOscillator();
       const gain = _audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
+      osc.type = 'sine'; osc.frequency.value = freq;
       const start = now + i * 0.18;
       gain.gain.setValueAtTime(0, start);
       gain.gain.linearRampToValueAtTime(0.35, start + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
-      osc.connect(gain);
-      gain.connect(_audioCtx.destination);
-      osc.start(start);
-      osc.stop(start + 0.18);
+      osc.connect(gain); gain.connect(_audioCtx.destination);
+      osc.start(start); osc.stop(start + 0.18);
     });
-
-    // اهتزاز كمان لو مدعوم (بيشتغل حتى لو الصوت اتمنع)
     if (navigator.vibrate) navigator.vibrate(kind === 'urgent' ? [200, 100, 200] : [150]);
-  } catch (e) { /* الصوت مش أساسي — متحاولش تكسر باقي الفانكشن لو فشل */ }
+  } catch(e) {}
 }
-
-// لو التطبيق رجع من الخلفية، شغّل الصوت الأول اللي اتفوت (لو كان فيه رسالة وصلت والشاشة مقفولة)
 let _pendingAlarmOnResume = false;
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && _pendingAlarmOnResume) {
@@ -687,17 +863,15 @@ function updateBgStatus(active) {
   document.getElementById('bg-status-text').innerText = active ? 'خلفية نشطة' : 'خلفية متوقفة';
 }
 
-// Re-request wake lock + resume audio on visibility change
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && driverName) {
-    requestWakeLock();
-    resumeAudioCtx();
+    requestWakeLock(); resumeAudioCtx();
   }
 });
 
-// ===== GPS =====
+// ── GPS ──
 let gpsForceInterval = null;
-let _lastSpeedCalc = null; // {lat, lng, ts} — لحساب السرعة يدويًا كـ fallback
+let _lastSpeedCalc = null;
 
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
@@ -709,7 +883,6 @@ function startGPS() {
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
-  // force-send آخر موقع معروف كل 10 ثانية (مهم للخلفية)
   clearInterval(gpsForceInterval);
   gpsForceInterval = setInterval(() => {
     if (lastGpsPos) sendLocation(lastGpsPos);
@@ -723,41 +896,30 @@ function startGPS() {
   }, 10000);
 }
 
-// المسافة بالمتر بين نقطتين (نفس صيغة haversine اللي في السيرفر)
 function _distMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
-  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
-  const dp = (lat2 - lat1) * Math.PI / 180;
-  const dl = (lng2 - lng1) * Math.PI / 180;
+  const p1 = lat1 * Math.PI/180, p2 = lat2 * Math.PI/180;
+  const dp = (lat2-lat1)*Math.PI/180, dl = (lng2-lng1)*Math.PI/180;
   const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-// يحسب السرعة (km/h) — بيفضّل coords.speed لو موجودة ومنطقية، وإلا يحسبها يدويًا من المسافة/الزمن
 function computeSpeedKmh(pos) {
   const now = pos.timestamp || Date.now();
   const lat = pos.coords.latitude, lng = pos.coords.longitude;
-
   let manualKmh = null;
   if (_lastSpeedCalc) {
     const dtSec = (now - _lastSpeedCalc.ts) / 1000;
     if (dtSec >= 1) {
       const distM = _distMeters(_lastSpeedCalc.lat, _lastSpeedCalc.lng, lat, lng);
-      // نتجاهل الـ jitter وهو واقف (حركة أقل من 3م تتحسب صفر)
       manualKmh = distM < 3 ? 0 : (distM / dtSec) * 3.6;
     }
   }
   _lastSpeedCalc = { lat, lng, ts: now };
-
-  // coords.speed غالبًا null أو غير دقيق على شبكات ضعيفة — نستخدمه بس لو موجود ومنطقي (<250 km/h)
   const rawKmh = pos.coords.speed != null ? pos.coords.speed * 3.6 : null;
-  if (rawKmh != null && rawKmh >= 0 && rawKmh < 250) {
-    // متوسط بسيط بين قراءة الـ GPS المباشرة والحساب اليدوي لتقليل التذبذب
-    return manualKmh != null ? (rawKmh * 0.6 + manualKmh * 0.4) : rawKmh;
-  }
+  if (rawKmh != null && rawKmh >= 0 && rawKmh < 250)
+    return manualKmh != null ? rawKmh * 0.6 + manualKmh * 0.4 : rawKmh;
   return manualKmh != null ? manualKmh : 0;
 }
-
 function sendLocation(pos) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     const speedKmh = computeSpeedKmh(pos);
@@ -770,7 +932,6 @@ function sendLocation(pos) {
     }));
   }
 }
-
 function updateGpsDisplay(pos) {
   const speed = Math.round(computeSpeedKmh(pos));
   const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
@@ -778,55 +939,44 @@ function updateGpsDisplay(pos) {
   document.getElementById('gps-accuracy').innerText = acc;
 }
 
-// ===== WS =====
+// ── WebSocket ──
 function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
-  }, 10000); // كل 10 ثواني — هامش أمان كويس قبل حد الـ 35 ثانية في السيرفر (watchdog)
+  }, 10000);
 }
-
 function connectWS() {
   if (kicked) return;
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(WSURL);
   ws.onopen = () => {
-    // بنبعت الـ lat/lng مع رسالة الـ join عشان الـ server يتأكد من المسافة
     const joinMsg = {type:'join', name: driverName};
-    if (lastGpsPos) {
-      joinMsg.lat = lastGpsPos.coords.latitude;
-      joinMsg.lng = lastGpsPos.coords.longitude;
-    }
+    if (lastGpsPos) { joinMsg.lat = lastGpsPos.coords.latitude; joinMsg.lng = lastGpsPos.coords.longitude; }
     ws.send(JSON.stringify(joinMsg));
     startPing();
     if (lastGpsPos) sendLocation(lastGpsPos);
   };
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === 'sync') updateUI(d.me);
+    if (d.type === 'sync') updateUI(d.me, d.queue || []);
     else if (d.type === 'distance') {
       updateGPS(d.meters);
-      if (d.shift_km !== undefined) {
-        const el = document.getElementById('stat-km');
-        if (el) el.innerText = d.shift_km.toFixed(1);
-      }
+      if (d.shift_km !== undefined) updateOdo(d.shift_km);
     }
     else if (d.type === 'kicked') handleKick();
     else if (d.type === 'join_rejected') {
-      // السيرفر رفض الـ join — نرجع لشاشة اللوجين
       showToast(d.msg || '❌ تم رفض التسجيل');
-      stopAllServices();
-      driverName = null;
+      stopAllServices(); driverName = null;
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('bottom-nav').style.display = 'none';
       const btn = document.getElementById('btn-start-shift');
-      if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> ابدأ الشيفت'; }
     }
     else if (d.type === 'chat_message') showChatPopup(d.text);
     else if (d.type === 'force_refresh') {
-      // بعت آخر موقع معروف فوراً بدون انتظار
       if (lastGpsPos) sendLocation(lastGpsPos);
-      // وبعدين طلب تحديث جديد في الخلفية
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
@@ -841,15 +991,14 @@ function connectWS() {
   ws.onclose = () => {
     clearInterval(pingInterval);
     if (kicked) return;
-    // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
     if (window.AndroidBridge && document.visibilityState === 'hidden') return;
     clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWS, 1000); // ثانية واحدة بس — اتصال سريع لأن الانقطاع دلوقتي بيتكشف بسرعة كمان
+    reconnectTimer = setTimeout(connectWS, 1000);
   };
   ws.onerror = () => { try { ws.close(); } catch(e){} };
 }
 
-// === Auto-fill saved name ===
+// ── Auto-fill saved name ──
 (function() {
   const savedName = localStorage.getItem('fleet_driver_name');
   if (savedName) {
@@ -860,16 +1009,15 @@ function connectWS() {
   }
 })();
 
-// إحداثيات الفرع — لازم تتطابق مع قيم الـ server
+// ── Proximity check ──
 const BRANCH_LAT = 31.2071871;
 const BRANCH_LNG = 29.9328765;
-const MAX_JOIN_DISTANCE = 50; // متر
+const MAX_JOIN_DISTANCE = 50;
 
 function haversineClient(lat1, lng1, lat2, lng2) {
   const R = 6371000;
-  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
-  const dp = (lat2 - lat1) * Math.PI / 180;
-  const dl = (lng2 - lng1) * Math.PI / 180;
+  const p1 = lat1*Math.PI/180, p2 = lat2*Math.PI/180;
+  const dp = (lat2-lat1)*Math.PI/180, dl = (lng2-lng1)*Math.PI/180;
   const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
@@ -877,32 +1025,25 @@ function haversineClient(lat1, lng1, lat2, lng2) {
 function join() {
   const name = document.getElementById('name').value.trim();
   if (!name) { showToast('ادخل اسمك الأول'); return; }
-
-  if (!navigator.geolocation) {
-    showToast('❌ الجهاز ده مش بيدعم GPS');
-    return;
-  }
-
+  if (!navigator.geolocation) { showToast('❌ الجهاز مش بيدعم GPS'); return; }
   const btn = document.getElementById('btn-start-shift');
   btn.disabled = true;
-  btn.innerText = '📍 بنحدد موقعك...';
-
+  btn.innerHTML = '📍 بنحدد موقعك...';
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const dist = haversineClient(pos.coords.latitude, pos.coords.longitude, BRANCH_LAT, BRANCH_LNG);
       if (dist > MAX_JOIN_DISTANCE) {
         btn.disabled = false;
-        btn.innerText = '🟢 ابدأ الشيفت';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> ابدأ الشيفت';
         showToast(`❌ أنت بعيد عن الفرع (${dist}م) — لازم تكون في نطاق 50م`);
         return;
       }
-      // ✅ قريب من الفرع — كمّل
       _doJoin(name, pos);
     },
     (err) => {
       btn.disabled = false;
-      btn.innerText = '🟢 ابدأ الشيفت';
-      const msgs = {1: 'رفضت إذن الموقع — لازم تسمح للتطبيق', 2: 'مش قادر يحدد موقعك دلوقتي', 3: 'انتهى وقت تحديد الموقع — حاول تاني'};
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> ابدأ الشيفت';
+      const msgs = {1:'رفضت إذن الموقع',2:'مش قادر يحدد موقعك',3:'انتهى وقت الـ GPS'};
       showToast('❌ ' + (msgs[err.code] || 'خطأ في GPS'));
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -913,72 +1054,52 @@ function _doJoin(name, pos) {
   driverName = name; kicked = false;
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('bottom-nav').style.display = 'flex';
   document.getElementById('driver-name').innerText = name;
+  // أول حرف في الاسم للـ avatar
+  document.getElementById('driver-avatar').innerText = name.charAt(0).toUpperCase();
   lastGpsPos = pos;
   startGPS(); trackBattery(); connectWS();
-  requestWakeLock();
-  startSilentAudio();
-  // أبلغ الـ Android Native Service باسم السواق عشان يبدأ GPS في الخلفية
-  if (window.AndroidBridge) {
-    try { window.AndroidBridge.onDriverJoined(name); } catch(e) {}
-  }
+  requestWakeLock(); startSilentAudio();
+  if (window.AndroidBridge) { try { window.AndroidBridge.onDriverJoined(name); } catch(e) {} }
 }
 
-// لما الـ Android يعيد تحميل الصفحة، بيستدعي الدالة دي عشان يعيد الـ join تلقائياً
-// ملحوظة: androidAutoJoin ده reconnect بعد reload — مش بيعمل check للمسافة
-// لأن السواق أصلاً كان connected ومش بيعمل join جديد من الصفر
 window.androidAutoJoin = function(name) {
   if (!name || driverName) return;
   document.getElementById('name').value = name;
-  // reconnect بعد reload — بنتجاوز الـ proximity check
-  // (السواق أصلاً كان داخل قبل كده)
   driverName = name; kicked = false;
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('bottom-nav').style.display = 'flex';
   document.getElementById('driver-name').innerText = name;
+  document.getElementById('driver-avatar').innerText = name.charAt(0).toUpperCase();
   startGPS(); trackBattery(); connectWS();
-  requestWakeLock();
-  startSilentAudio();
-  if (window.AndroidBridge) {
-    try { window.AndroidBridge.onDriverJoined(name); } catch(e) {}
-  }
+  requestWakeLock(); startSilentAudio();
+  if (window.AndroidBridge) { try { window.AndroidBridge.onDriverJoined(name); } catch(e) {} }
 };
 
-// === End Shift ===
-function confirmEndShift() {
-  document.getElementById('end-shift-overlay').style.display = 'flex';
-}
-function cancelEndShift() {
-  document.getElementById('end-shift-overlay').style.display = 'none';
-}
-// === Stop everything ===
+// ── End Shift ──
+function confirmEndShift() { document.getElementById('end-shift-overlay').style.display = 'flex'; }
+function cancelEndShift()  { document.getElementById('end-shift-overlay').style.display = 'none'; }
 function stopAllServices() {
-  clearInterval(pingInterval);
-  clearTimeout(reconnectTimer);
+  clearInterval(pingInterval); clearTimeout(reconnectTimer);
   if (ws) try { ws.close(); } catch(e) {}
-  if (navigator.geolocation && gpsWatchId !== null) {
-    navigator.geolocation.clearWatch(gpsWatchId);
-    gpsWatchId = null;
-  }
+  if (navigator.geolocation && gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
   if (wakeLock) try { wakeLock.release(); } catch(e) {}
-  driverName = null;
-  lastGpsPos = null;
-  if (window.AndroidBridge) {
-    try { window.AndroidBridge.onDriverLeft(); } catch(e) {}
-  }
+  driverName = null; lastGpsPos = null;
+  if (window.AndroidBridge) { try { window.AndroidBridge.onDriverLeft(); } catch(e) {} }
 }
-
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-  stopAllServices();
-  kicked = false;
+  stopAllServices(); kicked = false;
   document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
 }
 
-// === Chat Notification ===
+// ── Chat Popup ──
 let chatPopupTimer = null;
 function showChatPopup(text) {
   const popup = document.getElementById('chat-popup');
@@ -986,88 +1107,117 @@ function showChatPopup(text) {
   const timeEl = document.getElementById('chat-popup-time');
   if (!popup || !textEl) return;
   textEl.textContent = text;
-  const now = new Date();
-  timeEl.textContent = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  timeEl.textContent = new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
   popup.classList.add('show');
-  if (document.visibilityState === 'visible') {
-    playAlarm('chat');
-  } else {
-    // الشاشة مقفولة/التطبيق في الخلفية — أجّل الصوت لحد ما ترجع تتفتح
-    _pendingAlarmOnResume = true;
-  }
+  if (document.visibilityState === 'visible') playAlarm('chat');
+  else _pendingAlarmOnResume = true;
   if (chatPopupTimer) clearTimeout(chatPopupTimer);
   chatPopupTimer = setTimeout(() => popup.classList.remove('show'), 6000);
   popup.onclick = () => { popup.classList.remove('show'); clearTimeout(chatPopupTimer); };
 }
 
 function handleKick() {
-  stopAllServices();
-  kicked = false;
+  stopAllServices(); kicked = false;
   localStorage.removeItem('fleet_driver_name');
   document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('name').value = '';
+  document.getElementById('name').style.display = '';
   const sub = document.getElementById('login-sub');
   if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
-  document.getElementById('name').style.display = '';
   showToast('❌ تم إزالتك من النظام');
 }
 
-// ===== UI UPDATE =====
-const STATE_CONFIG = {
-  Waiting: { chip: 'state-waiting', label: 'انتظار', accent: 'var(--primary)', accentGlow: 'var(--primary-glow)' },
-  Out:     { chip: 'state-out',     label: 'في الطريق', accent: 'var(--warning)', accentGlow: 'var(--warning-glow)' },
-  Break:   { chip: 'state-break',   label: 'راحة',    accent: 'var(--break-c)', accentGlow: 'var(--break-glow)' },
-};
+// ── UI Update ──
+const AVATAR_COLORS = ['c1','c2','c3','c4','c5','c6','c7'];
+function nameColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
 
-function updateUI(data) {
+function updateUI(data, queue) {
   const state = data.state;
-  const cfg = STATE_CONFIG[state] || STATE_CONFIG.Waiting;
   currentBreakEnd = data.break_end;
 
-  // state chip
+  // state pill
   const chip = document.getElementById('state-chip');
-  chip.className = `state-chip ${cfg.chip}`;
-  chip.innerText = cfg.label;
+  const stateMap = {
+    Waiting: { cls:'st-waiting', label:'انتظار' },
+    Out:     { cls:'st-out',     label:'في الطريق' },
+    Break:   { cls:'st-break',   label:'راحة' },
+  };
+  const sc = stateMap[state] || stateMap.Waiting;
+  chip.className = `state-pill ${sc.cls}`;
+  chip.innerText = sc.label;
 
-  // accent CSS vars على الـ :root
-  document.documentElement.style.setProperty('--accent', cfg.accent);
-  document.documentElement.style.setProperty('--accent-glow', cfg.accentGlow);
+  // queue card top bar color
+  const accentMap = { Waiting:'var(--blue)', Out:'var(--out-c)', Break:'var(--break-c)' };
+  document.documentElement.style.setProperty('--accent', accentMap[state] || 'var(--blue)');
 
   // views
   document.getElementById('view-waiting').style.display = state === 'Waiting' ? 'block' : 'none';
   document.getElementById('view-out').style.display     = state === 'Out'     ? 'block' : 'none';
   document.getElementById('view-break').style.display   = state === 'Break'   ? 'block' : 'none';
 
-  // stats row
+  // stats
   document.getElementById('stat-row').style.display = 'flex';
   document.getElementById('stat-orders').innerText  = data.orders  || 0;
   document.getElementById('stat-returns').innerText = data.returns || 0;
   document.getElementById('stat-misses').innerText  = data.misses  || 0;
-  document.getElementById('stat-km').innerText      = (data.shift_km || 0).toFixed(1);
 
-  // wait msg
-  document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
+  // odo
+  updateOdo(data.shift_km || 0);
 
   // action btn
   const btn = document.getElementById('btn-action');
-  if (state === 'Out') {
-    // المندوب في أوردر مبقاش عنده زرار يرجّع نفسه — الأدمن بس اللي بيقفل الأوردر
-    btn.style.display = 'none';
-  } else if (state === 'Break') {
+  if (state === 'Break') {
     btn.style.display = 'block';
     btn.className = 'btn-action-big btn-end-break';
-    btn.innerText = 'خلصت الراحة';
+    btn.innerText = 'خلصت الراحة ✓';
   } else {
     btn.style.display = 'none';
   }
 
-  // waiting number
+  // queue pos + live queue list
   if (state === 'Waiting') {
     const pos = data.queue_pos;
     document.getElementById('pos-num').innerText = `#${pos}`;
     if (pos === 1) confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
+    // render live queue if provided
+    if (queue && queue.length) renderQueueList(queue, driverName);
   }
+}
+
+function renderQueueList(queue, myName) {
+  const container = document.getElementById('queue-items');
+  const countEl   = document.getElementById('q-count');
+  if (!container) return;
+  countEl.textContent = queue.length;
+
+  const ITEM_H = 64; // px per item
+  container.style.height = Math.min(queue.length, 4) * (ITEM_H + 6) + 'px';
+
+  container.innerHTML = '';
+  queue.slice(0, 5).forEach((name, i) => {
+    const isMe = name === myName;
+    const isFirst = i === 0;
+    const div = document.createElement('div');
+    div.className = `queue-item${isFirst ? ' serving' : isMe ? ' current' : ''}`;
+    div.style.top = (i * (ITEM_H + 6)) + 'px';
+    div.style.transition = `all .6s cubic-bezier(.4,0,.2,1) ${i * 0.06}s`;
+
+    const col = isFirst ? 'me' : nameColor(name);
+    div.innerHTML = `
+      <div class="q-avatar ${col}">${name.charAt(0).toUpperCase()}</div>
+      <div class="q-info">
+        <div class="q-name">${name}${isMe ? ' (أنت)' : ''}</div>
+        <div class="q-meta">${isFirst ? '🟢 بيتخدم دلوقتي' : `رقم ${i+1} في الطابور`}</div>
+      </div>
+      <div class="q-pos">${i+1}</div>`;
+    container.appendChild(div);
+  });
 }
 
 function handleAction() {
@@ -1075,48 +1225,52 @@ function handleAction() {
     ws.send(JSON.stringify({type: 'change_state', state: 'Waiting'}));
 }
 
-// ===== GPS DISPLAY =====
+// ── GPS Display ──
 function updateGPS(meters) {
-  const pill = document.getElementById('gps-pill');
-  const txt  = document.getElementById('gps-text');
+  const pill   = document.getElementById('gps-pill');
+  const txt    = document.getElementById('gps-text');
   const distEl = document.getElementById('gps-distance');
-  const tile = document.getElementById('gps-tile');
+  const tile   = document.getElementById('gps-tile');
 
-  let distText;
+  const d = meters >= 1000 ? (meters/1000).toFixed(1)+' كم' : meters+' م';
+  distEl.innerText = d;
+
   if (meters <= 250) {
     pill.className = 'gps-pill at-branch';
-    txt.innerText = `عند الفرع · ${meters}م`;
-    tile.className = 'info-tile active-gps';
-    distText = `${meters}م`;
+    txt.innerText = `عند الفرع · ${meters} م`;
+    tile.className = 'info-tile t-active';
   } else {
     pill.className = 'gps-pill away';
-    const d = meters >= 1000 ? (meters/1000).toFixed(1)+'كم' : meters+'م';
     txt.innerText = `بعيد · ${d}`;
-    tile.className = meters > 1000 ? 'info-tile warn' : 'info-tile';
-    distText = d;
+    tile.className = meters > 1000 ? 'info-tile t-warn' : 'info-tile';
   }
-  distEl.innerText = distText;
 }
 
-// ===== BREAK TIMER =====
+function updateOdo(km) {
+  const el = document.getElementById('shift-km');
+  if (!el) return;
+  el.innerText = km >= 1 ? parseFloat(km).toFixed(1) + ' كم' : (km * 1000).toFixed(0) + ' م';
+}
+
+// ── Break Timer ──
 setInterval(() => {
   if (!currentBreakEnd) return;
   const diff = currentBreakEnd - Math.floor(Date.now()/1000);
   const el = document.getElementById('break-timer');
+  if (!el) return;
   if (diff > 0) {
     const m = String(Math.floor(diff/60)).padStart(2,'0');
     const s = String(diff%60).padStart(2,'0');
     el.innerText = `${m}:${s}`;
-    el.className = diff < 300 ? 'break-hero urgent' : 'break-hero';
+    el.className = diff < 300 ? 'break-timer urgent' : 'break-timer';
   } else {
     el.innerText = '00:00';
-    el.className = 'break-hero urgent';
+    el.className = 'break-timer urgent';
   }
 }, 1000);
 
-// ===== BATTERY =====
+// ── Battery ──
 let batteryRef = null, batteryInterval = null;
-
 function trackBattery() {
   if (!('getBattery' in navigator)) return;
   navigator.getBattery().then(b => {
@@ -1128,59 +1282,35 @@ function trackBattery() {
     };
     send();
     b.addEventListener('levelchange', send);
-    // بعت البطارية كل 30 ثانية حتى لو مش اتغيرت (مهم للخلفية)
     clearInterval(batteryInterval);
     batteryInterval = setInterval(send, 30000);
   });
 }
-
 function updateBatteryDisplay(level) {
   const pct = Math.round(level * 100);
-  const el = document.getElementById('bat-percent');
-  const icon = document.getElementById('bat-icon');
+  document.getElementById('bat-percent').innerText = `${pct}%`;
+  document.getElementById('bat-icon').innerText = pct >= 20 ? '🔋' : '🪫';
   const tile = document.getElementById('bat-tile');
-  el.innerText = `${pct}%`;
-
-  // Battery icon based on level
-  if (pct >= 80) icon.innerText = '🔋';
-  else if (pct >= 50) icon.innerText = '🔋';
-  else if (pct >= 20) icon.innerText = '🪫';
-  else icon.innerText = '🪫';
-
-  // Tile color based on level
-  if (pct >= 50) tile.className = 'info-tile active-bat';
-  else if (pct >= 20) tile.className = 'info-tile warn';
-  else tile.className = 'info-tile danger';
+  if (pct >= 50) tile.className = 'info-tile t-active';
+  else if (pct >= 20) tile.className = 'info-tile t-warn';
+  else tile.className = 'info-tile t-danger';
 }
-
-// لما يتفتح التاب تاني → بعت البطارية فوراً
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && batteryRef && ws && ws.readyState === WebSocket.OPEN) {
+  if (document.visibilityState === 'visible' && batteryRef && ws && ws.readyState === WebSocket.OPEN)
     ws.send(JSON.stringify({ type: 'battery', level: batteryRef.level }));
-  }
 });
 
-// ===== VISIBILITY =====
+// ── Visibility ──
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && driverName) {
-    // أعد الاتصال لو انقطع
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      connectWS();
-    } else {
-      // اطلب مزامنة فورية من السيرفر — عشان تايمر الراحة (وباقي الحالة) يبقى مظبوط
-      // فوراً بعد رجوع التطبيق من الخلفية، مش مستني broadcast عشوائي
-      ws.send(JSON.stringify({ type: 'resync' }));
-      if (lastGpsPos) sendLocation(lastGpsPos);
-    }
-    // أعد تشغيل GPS لو الـ watch مات في الخلفية
-    if (gpsWatchId === null) {
-      startGPS();
-    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) connectWS();
+    else if (lastGpsPos) sendLocation(lastGpsPos);
+    if (gpsWatchId === null) startGPS();
     requestWakeLock();
   }
 });
 
-// ===== SPLASH =====
+// ── Splash ──
 setTimeout(() => {
   const s = document.getElementById('splash');
   s.style.opacity = '0';
@@ -1191,16 +1321,15 @@ setTimeout(() => {
       document.getElementById('name').value = saved;
       join();
     } else {
-      document.getElementById('login-screen').style.display = 'block';
+      document.getElementById('login-screen').style.display = 'flex';
     }
-  }, 1000);
+  }, 600);
 }, 1600);
 
-// ===== PWA INSTALL PROMPT =====
+// ── PWA Install ──
 let _installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _installPrompt = e;
+  e.preventDefault(); _installPrompt = e;
   document.getElementById('btn-install').style.display = 'block';
 });
 window.addEventListener('appinstalled', () => {
@@ -1213,53 +1342,23 @@ function installPWA() {
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
 
-// ===== SERVICE WORKER + AUTO-UPDATE =====
+// ── Service Worker ──
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(reg => {
-    // فحص دوري للتحديثات كل 60 ثانية
     setInterval(() => reg.update(), 60000);
-
     reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // في نسخة جديدة جاهزة — طبّقها فوراً بدون إزعاج السواق
-          newWorker.postMessage({ type: 'SKIP_WAITING' });
-        }
+      const nw = reg.installing;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller)
+          nw.postMessage({ type: 'SKIP_WAITING' });
       });
     });
   }).catch(() => {});
-
-  // لما الـ SW الجديد يأخد control → reload الصفحة تلقائياً (بيحصل مرة واحدة بس)
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      // لو السواق كان logged in، بيرجع تلقائياً بعد الـ reload بسبب localStorage
-      window.location.reload();
-    }
+    if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }
 </script>
-<!-- Chat Notification Popup -->
-<div id="chat-popup" style="position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-140px);width:calc(100% - 32px);max-width:400px;background:linear-gradient(135deg,#1e1b4b,#1a1a2e);border:1px solid rgba(124,106,247,0.4);border-radius:18px;padding:16px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.6);z-index:9999;transition:transform 0.45s cubic-bezier(.34,1.56,.64,1),opacity 0.3s;opacity:0;pointer-events:none;backdrop-filter:blur(20px);">
-  <div style="font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:6px;">📢 رسالة من الإدارة</div>
-  <div id="chat-popup-text" style="font-size:15px;font-weight:700;color:#fff;line-height:1.5;"></div>
-  <div id="chat-popup-time" style="font-size:10px;color:#4b5563;margin-top:8px;"></div>
-</div>
-
-<!-- End Shift Overlay -->
-<div id="end-shift-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9998;backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-  <div style="background:#12121e;border:1px solid rgba(239,68,68,0.3);border-radius:24px;padding:32px 28px;text-align:center;max-width:300px;width:88%;box-shadow:0 20px 60px rgba(0,0,0,0.8);">
-    <div style="font-size:44px;margin-bottom:12px;">⏹</div>
-    <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:8px;font-family:'Cairo',sans-serif;">إنهاء الشيفت؟</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:24px;line-height:1.6;font-family:'Cairo',sans-serif;">هتتسجل خروج من النظام</div>
-    <div style="display:flex;gap:12px;">
-      <button onclick="cancelEndShift()" style="flex:1;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#9ca3af;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">إلغاء</button>
-      <button onclick="endShift()" style="flex:1;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">إنهاء ✓</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
