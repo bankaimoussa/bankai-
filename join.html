@@ -534,6 +534,10 @@
         <div class="stat-val" id="stat-misses">0</div>
         <div class="stat-lbl">فائت</div>
       </div>
+      <div class="stat-item">
+        <div class="stat-val" id="stat-km">0.0</div>
+        <div class="stat-lbl">كم</div>
+      </div>
     </div>
 
     <!-- Wait message -->
@@ -719,7 +723,13 @@ function connectWS() {
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
     if (d.type === 'sync') updateUI(d.me);
-    else if (d.type === 'distance') updateGPS(d.meters);
+    else if (d.type === 'distance') {
+      updateGPS(d.meters);
+      if (d.shift_km !== undefined) {
+        const el = document.getElementById('stat-km');
+        if (el) el.innerText = d.shift_km.toFixed(1);
+      }
+    }
     else if (d.type === 'kicked') handleKick();
     else if (d.type === 'join_rejected') {
       // السيرفر رفض الـ join — نرجع لشاشة اللوجين
@@ -948,6 +958,7 @@ function updateUI(data) {
   document.getElementById('stat-orders').innerText  = data.orders  || 0;
   document.getElementById('stat-returns').innerText = data.returns || 0;
   document.getElementById('stat-misses').innerText  = data.misses  || 0;
+  document.getElementById('stat-km').innerText      = (data.shift_km || 0).toFixed(1);
 
   // wait msg
   document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
@@ -955,9 +966,8 @@ function updateUI(data) {
   // action btn
   const btn = document.getElementById('btn-action');
   if (state === 'Out') {
-    btn.style.display = 'block';
-    btn.className = 'btn-action-big btn-return-queue';
-    btn.innerText = '✅ رجعت — ادخل الطابور';
+    // المندوب في أوردر مبقاش عنده زرار يرجّع نفسه — الأدمن بس اللي بيقفل الأوردر
+    btn.style.display = 'none';
   } else if (state === 'Break') {
     btn.style.display = 'block';
     btn.className = 'btn-action-big btn-end-break';
@@ -1070,8 +1080,11 @@ document.addEventListener('visibilitychange', () => {
     // أعد الاتصال لو انقطع
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connectWS();
-    } else if (lastGpsPos) {
-      sendLocation(lastGpsPos);
+    } else {
+      // اطلب مزامنة فورية من السيرفر — عشان تايمر الراحة (وباقي الحالة) يبقى مظبوط
+      // فوراً بعد رجوع التطبيق من الخلفية، مش مستني broadcast عشوائي
+      ws.send(JSON.stringify({ type: 'resync' }));
+      if (lastGpsPos) sendLocation(lastGpsPos);
     }
     // أعد تشغيل GPS لو الـ watch مات في الخلفية
     if (gpsWatchId === null) {
