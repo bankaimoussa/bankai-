@@ -783,7 +783,7 @@ function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
-  }, 25000);
+  }, 15000); // كل 15 ثانية — يضمن إن السيرفر يكتشف انقطاع النت بسرعة (watchdog بيفحص كل اتصال سكت أكتر من 60 ثانية)
 }
 
 function connectWS() {
