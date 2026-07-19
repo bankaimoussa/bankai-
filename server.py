@@ -170,7 +170,7 @@ async def clear_all():
 
 @app.post("/api/force_update")
 async def force_update():
-    # 1) WebSocket — للمناديب اللي connected دلوقتي
+    # WebSocket بس — للمناديب اللي connected دلوقتي (من غير أي إشعار FCM يوصل للمندوب)
     ws_msg = json.dumps({"type": "force_refresh"})
     dead = []
     for d_name, d_ws in driver_connections.items():
@@ -179,30 +179,9 @@ async def force_update():
     for d in dead:
         if d in driver_connections: del driver_connections[d]
 
-    # 2) FCM — للمناديب اللي الـ app عندهم في الخلفية أو الـ WS انقطع
-    sent_fcm = []
-    if _FCM_SA_JSON:
-        try:
-            access_token = _get_fcm_access_token()
-            all_tokens = await redis_client.hgetall("fleet:fcm_tokens")
-            async with httpx.AsyncClient() as client:
-                for name, token in all_tokens.items():
-                    r = await client.post(
-                        f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
-                        json={"message": {
-                            "token": token,
-                            "data": {"type": "force_refresh"},
-                            "android": {"priority": "high"}
-                        }},
-                        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
-                        timeout=10
-                    )
-                    if r.status_code == 200: sent_fcm.append(name)
-        except: pass
-
-    # 3) broadcast فوري بأحدث داتا من Redis للأدمن
+    # broadcast فوري بأحدث داتا من Redis للأدمن
     await broadcast_state("update")
-    return {"ok": True, "ws": len(driver_connections), "fcm": sent_fcm}
+    return {"ok": True, "ws": len(driver_connections)}
 
 class FcmTokenBody(BaseModel):
     name: str
@@ -437,7 +416,8 @@ async def driver_ws(ws: WebSocket):
                         "last_out": "-", "last_return": datetime.now().strftime("%I:%M %p"),
                         "battery": "100%", "queue_pos": 0, "distance": None, "break_end": None,
                         "lat": data.get("lat"), "lng": data.get("lng"),
-                        "speed": 0, "heading": 0, "last_seen": int(time.time())
+                        "speed": 0, "heading": 0, "last_seen": int(time.time()),
+                        "shift_km": 0.0, "_last_gps": {"lat": data.get("lat"), "lng": data.get("lng")}
                     }
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                 else:
@@ -457,21 +437,30 @@ async def driver_ws(ws: WebSocket):
                 
                 drivers = await get_drivers_from_redis()
                 if driver_name in drivers:
+                    # حساب الكيلومترات التراكمية من آخر نقطة GPS معروفة (تصفيته من نويز الـ GPS الثابت)
+                    last_gps = drivers[driver_name].get("_last_gps")
+                    shift_km = drivers[driver_name].get("shift_km", 0.0)
+                    if last_gps and last_gps.get("lat") is not None and last_gps.get("lng") is not None:
+                        step_m = haversine(last_gps["lat"], last_gps["lng"], data["lat"], data["lng"])
+                        if 5 <= step_m <= 300:  # يتجاهل قفزات GPS الوهمية والـ jitter وهو واقف
+                            shift_km = round(shift_km + step_m / 1000, 3)
                     drivers[driver_name].update({
                         "distance": dist,
                         "lat": data["lat"],
                         "lng": data["lng"],
                         "speed": data.get("speed", 0),
                         "heading": data.get("heading", 0),
-                        "last_seen": now_ts
+                        "last_seen": now_ts,
+                        "shift_km": shift_km,
+                        "_last_gps": {"lat": data["lat"], "lng": data["lng"]}
                     })
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                     
                     # إرسال التحديث الصغير للآدمنز فوراً بدون تحميل كامل الداتا
                     await broadcast_location_update(drivers[driver_name])
                     
-                    # تحديث المندوب بحالته
-                    await ws.send_text(json.dumps({"type": "distance", "meters": dist}))
+                    # تحديث المندوب بحالته + الكيلومترات لايف
+                    await ws.send_text(json.dumps({"type": "distance", "meters": dist, "shift_km": shift_km}))
 
                     # AUTO-RETURN: لو Out فأكتر من دقيقتين وراجع للفرع (≤50m) → Waiting تلقائي
                     out_since = drivers[driver_name].get("out_since", 0)
@@ -513,9 +502,19 @@ async def driver_ws(ws: WebSocket):
             elif data["type"] == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))
 
+            elif data["type"] == "resync" and driver_name:
+                # المندوب طلب مزامنة فورية (مثلاً بعد ما التطبيق رجع من الخلفية)
+                drivers = await get_drivers_from_redis()
+                if driver_name in drivers:
+                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name]}))
+
             elif data["type"] == "change_state" and driver_name:
                 if data["state"] == "Waiting":
-                    await change_driver_state(driver_name, "Waiting")
+                    drivers = await get_drivers_from_redis()
+                    current_state = drivers.get(driver_name, {}).get("state")
+                    # المندوب مسموح له يرجّع نفسه بس من Break — لو في Out لازم الأدمن يقفل الأوردر
+                    if current_state == "Break":
+                        await change_driver_state(driver_name, "Waiting")
 
             elif data["type"] == "battery" and driver_name:
                 drivers = await get_drivers_from_redis()
