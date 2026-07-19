@@ -653,6 +653,7 @@ document.addEventListener('visibilitychange', () => {
 
 // ===== GPS =====
 let gpsForceInterval = null;
+let _lastSpeedCalc = null; // {lat, lng, ts} — لحساب السرعة يدويًا كـ fallback
 
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
@@ -678,12 +679,48 @@ function startGPS() {
   }, 10000);
 }
 
+// المسافة بالمتر بين نقطتين (نفس صيغة haversine اللي في السيرفر)
+function _distMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+  const dp = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// يحسب السرعة (km/h) — بيفضّل coords.speed لو موجودة ومنطقية، وإلا يحسبها يدويًا من المسافة/الزمن
+function computeSpeedKmh(pos) {
+  const now = pos.timestamp || Date.now();
+  const lat = pos.coords.latitude, lng = pos.coords.longitude;
+
+  let manualKmh = null;
+  if (_lastSpeedCalc) {
+    const dtSec = (now - _lastSpeedCalc.ts) / 1000;
+    if (dtSec >= 1) {
+      const distM = _distMeters(_lastSpeedCalc.lat, _lastSpeedCalc.lng, lat, lng);
+      // نتجاهل الـ jitter وهو واقف (حركة أقل من 3م تتحسب صفر)
+      manualKmh = distM < 3 ? 0 : (distM / dtSec) * 3.6;
+    }
+  }
+  _lastSpeedCalc = { lat, lng, ts: now };
+
+  // coords.speed غالبًا null أو غير دقيق على شبكات ضعيفة — نستخدمه بس لو موجود ومنطقي (<250 km/h)
+  const rawKmh = pos.coords.speed != null ? pos.coords.speed * 3.6 : null;
+  if (rawKmh != null && rawKmh >= 0 && rawKmh < 250) {
+    // متوسط بسيط بين قراءة الـ GPS المباشرة والحساب اليدوي لتقليل التذبذب
+    return manualKmh != null ? (rawKmh * 0.6 + manualKmh * 0.4) : rawKmh;
+  }
+  return manualKmh != null ? manualKmh : 0;
+}
+
 function sendLocation(pos) {
   if (ws && ws.readyState === WebSocket.OPEN) {
+    const speedKmh = computeSpeedKmh(pos);
     ws.send(JSON.stringify({
       type: 'location',
       lat: pos.coords.latitude, lng: pos.coords.longitude,
-      speed: pos.coords.speed != null ? +(pos.coords.speed * 3.6).toFixed(1) : 0,
+      speed: +speedKmh.toFixed(1),
       heading: pos.coords.heading != null ? +pos.coords.heading.toFixed(1) : 0,
       accuracy: +pos.coords.accuracy.toFixed(1)
     }));
@@ -691,7 +728,7 @@ function sendLocation(pos) {
 }
 
 function updateGpsDisplay(pos) {
-  const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : 0;
+  const speed = Math.round(computeSpeedKmh(pos));
   const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
   document.getElementById('gps-speed').innerText = speed;
   document.getElementById('gps-accuracy').innerText = acc;
