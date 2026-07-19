@@ -410,6 +410,10 @@ async def admin_ws(ws: WebSocket):
             elif data["type"] == "set_auto_out":
                 await set_auto_out_enabled(bool(data.get("enabled")))
                 await broadcast_state("update")
+            elif data["type"] == "ping":
+                # رد بسيط عشان الـ watchdog في المتصفح يعرف إن الاتصال لسه حي فعليًا،
+                # حتى لو مفيش أي تغيير في البيانات نفسها
+                await ws.send_text(json.dumps({"type": "pong"}))
             elif data["type"] == "kick_driver":
                 d_name = data["driver"]
                 drivers = await get_drivers_from_redis()
