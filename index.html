@@ -671,13 +671,43 @@ const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hos
 let ws;
 let currentDrivers = [];
 let currentLang = 'en';
+let _adminPingInterval = null;
+let _adminWatchdogInterval = null;
+let _lastAdminMsgTs = Date.now();
+let _adminReconnectTimer = null;
+
+function scheduleReconnect() {
+  clearTimeout(_adminReconnectTimer);
+  _adminReconnectTimer = setTimeout(connect, 3000);
+}
 
 function connect() {
+  clearTimeout(_adminReconnectTimer);
+  if (ws) { try { ws.onclose = null; ws.onerror = null; ws.close(); } catch(e) {} }
   ws = new WebSocket(WSURL);
-  ws.onopen = () => { document.getElementById('status').className = "badge badge-live"; document.getElementById('status').innerText = "Online"; };
-  ws.onclose = () => { document.getElementById('status').className = "badge badge-offline"; document.getElementById('status').innerText = "Reconnecting..."; setTimeout(connect, 3000); };
-  
+  _lastAdminMsgTs = Date.now();
+
+  ws.onopen = () => {
+    document.getElementById('status').className = "badge badge-live";
+    document.getElementById('status').innerText = "Online";
+    _lastAdminMsgTs = Date.now();
+    clearInterval(_adminPingInterval);
+    _adminPingInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ type: 'ping' })); } catch(e) {}
+      }
+    }, 15000);
+  };
+  ws.onclose = () => {
+    document.getElementById('status').className = "badge badge-offline";
+    document.getElementById('status').innerText = "Reconnecting...";
+    clearInterval(_adminPingInterval);
+    scheduleReconnect();
+  };
+  ws.onerror = () => { try { ws.close(); } catch(e) {} };
+
   ws.onmessage = (e) => {
+    _lastAdminMsgTs = Date.now();
     const data = JSON.parse(e.data);
     
     if (data.type === 'update') {
@@ -741,6 +771,30 @@ function connect() {
     }
   };
 }
+
+// ===== Watchdog: يكتشف اتصال "زومبي" (فاتح شكليًا بس مش بيستقبل حاجة فعليًا) =====
+// ده اللي بيحصل لو التاب فضل مفتوح فترة طويلة (sleep/wake, تبديل شبكة, إلخ) والسيرفر مبعتش onclose واضح.
+// من غيره الصفحة تفضل واقفة كـ"ساعة معلقة" لحد ما المستخدم يعمل refresh يدوي.
+clearInterval(_adminWatchdogInterval);
+_adminWatchdogInterval = setInterval(() => {
+  const idleMs = Date.now() - _lastAdminMsgTs;
+  // لو معدّيناش أي رسالة (ولا حتى رد على الـ ping) لأكتر من 40 ثانية، الاتصال غالبًا ميت فعليًا
+  if (idleMs > 40000) {
+    try { ws.close(); } catch(e) {}
+    scheduleReconnect();
+  }
+}, 10000);
+
+// لو التاب كان في الخلفية وبعدين رجع، تأكد إن الاتصال لسه شغال فورًا بدل ما تستنى الـ watchdog
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+      connect();
+    } else if (Date.now() - _lastAdminMsgTs > 40000) {
+      connect();
+    }
+  }
+});
 
 // ===== Auto-Out toggle =====
 // لو مفعّل: أي مندوب Waiting بعيد عن الفرع أكتر من 200م بيتحول Out تلقائي (بيتحسب مع كل تحديث GPS)
