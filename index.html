@@ -238,6 +238,7 @@
   .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
   .badge-weak { color: var(--weak); border-color: rgba(255,169,77,0.25); background: rgba(255,169,77,0.06); }
   .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
+  .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
 
   .card-details { font-size: 9px; color: var(--muted); line-height: 1.4; font-weight: 500; }
 
@@ -513,13 +514,28 @@ function fitMap() {
   }
 }
 
-// GPS badge - بنبص على وجود location بس، مفيش offline/weak
+// GPS badge — بيتحقق فعليًا من عمر آخر تحديث، مش بس وجوده
 function getDriverStatusDetails(lastSeenTs, state) {
   const color = state === 'Out' ? "var(--out)" : state === 'Break' ? "var(--break)" : "var(--success)";
   if (!lastSeenTs) {
     return { statusClass: "badge-offline", statusText: "⚪ No GPS", color: "var(--offline)", diffSec: null };
   }
-  return { statusClass: "badge-live", statusText: "🟢 Live", color, diffSec: 0 };
+  const diffSec = Math.floor(Date.now() / 1000) - lastSeenTs;
+  // watchdog السيرفر بيقفل أي اتصال ساكت أكتر من 60 ثانية، فأي حاجة أقدم من كده = فعليًا مش لايف
+  if (diffSec > 90) {
+    return { statusClass: "badge-offline", statusText: `🔴 Offline (${formatAgo(diffSec)})`, color: "var(--offline)", diffSec };
+  }
+  if (diffSec > 40) {
+    return { statusClass: "badge-weak", statusText: `🟡 ${formatAgo(diffSec)}`, color: "var(--warning, #f5a623)", diffSec };
+  }
+  return { statusClass: "badge-live", statusText: "🟢 Live", color, diffSec };
+}
+
+function formatAgo(diffSec) {
+  if (diffSec < 60) return `${diffSec}s`;
+  const m = Math.floor(diffSec / 60);
+  if (m < 60) return `${m}m`;
+  return `${Math.floor(m / 60)}h`;
 }
 
 // ===== حركة ناعمة للماركر بدل القفزة المباشرة =====
@@ -986,18 +1002,29 @@ function toggleLang() {
   document.getElementById('lang-toggle').innerText = currentLang === 'ar' ? '🌐 English' : '🌐 العربية';
 }
 
+let _statusRefreshTick = 0;
 setInterval(() => {
-  // تحديث تايمر الـ break live بس
+  _statusRefreshTick++;
   currentDrivers.forEach(d => {
+    // تايمر الـ break — كل ثانية
     if (d.state === 'Break' && d.break_end) {
       const timerEl = document.getElementById(`btimer-${d.name}`);
       if (timerEl) timerEl.innerHTML = `⏱ ${formatBreakRemaining(d.break_end)}`;
     }
+    // تايمر الـ auto-return — كل ثانية
     if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50) {
       const artimerEl = document.getElementById(`artimer-${d.name}`);
       if (artimerEl) artimerEl.innerHTML = formatAutoReturnRemaining(d.out_since);
     }
   });
+  // تحديث حالة الاتصال (Live/Weak/Offline) كل 5 ثواني بس — مش محتاجة دقة الثانية،
+  // وده اللي بيوضح إن المندوب فعليًا واقف من فترة بدل ما يفضل شكله "Live" برقم قديم
+  if (_statusRefreshTick % 5 === 0) {
+    currentDrivers.forEach(d => {
+      const distEl = document.getElementById(`dist-${safeId(d.name)}`);
+      if (distEl) distEl.innerHTML = getDistanceBadge(d.distance, d.last_seen, d.state);
+    });
+  }
 }, 1000);
 
 window.onload = () => {
