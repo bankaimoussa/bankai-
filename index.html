@@ -96,6 +96,29 @@
   .btn-force-update .spin-icon { display: inline-block; }
   .btn-force-update.pinging .spin-icon { animation: spin 0.7s linear infinite; }
 
+  .search-box {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 100px; padding: 6px 14px;
+    backdrop-filter: blur(10px);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
+  .search-box .search-icon { font-size: 13px; opacity: 0.6; }
+  .search-box input {
+    border: none; outline: none; background: transparent;
+    color: var(--text); font-family: 'Cairo', sans-serif; font-size: 13px;
+    width: 140px; direction: rtl;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+  .search-clear {
+    border: none; background: transparent; color: var(--muted);
+    cursor: pointer; font-size: 11px; padding: 2px; line-height: 1;
+  }
+  .search-clear:hover { color: var(--danger, #f4566a); }
+  .driver-card.search-hidden { display: none !important; }
+  .driver-card.search-match { outline: 2px solid var(--primary); outline-offset: -2px; }
+
   /* Theme pill — admin */
   .theme-pill-admin {
     display: flex; align-items: center; gap: 6px;
@@ -156,7 +179,7 @@
     border: 2.5px solid rgba(255,255,255,0.9);
     box-shadow: 0 0 0 3px rgba(0,0,0,0.3), 0 0 14px currentColor;
     position: relative;
-    transition: background 0.4s, transform 0.5s cubic-bezier(.4,2,.6,1), box-shadow 0.4s;
+    transition: background 0.4s, transform 0.6s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s;
     z-index: 2;
   }
   .driver-marker-arrow {
@@ -264,6 +287,11 @@
 <header>
   <h1>🚚 Rwa7el Bankai</h1>
   <div class="header-actions">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="driver-search" placeholder="دور على مندوب..." oninput="filterDrivers(this.value)">
+      <button class="search-clear" id="search-clear" onclick="clearDriverSearch()" style="display:none">✖</button>
+    </div>
     <button class="btn-clear-data" onclick="showClearConfirm()">🗑 Clear Data</button>
     <button class="btn-force-update" id="btn-force-update" onclick="forceUpdate()">
       <span class="spin-icon">🔄</span> تحديث فوري
@@ -486,6 +514,51 @@ function getDriverStatusDetails(lastSeenTs, state) {
   return { statusClass: "badge-live", statusText: "🟢 Live", color, diffSec: 0 };
 }
 
+// ===== حركة ناعمة للماركر بدل القفزة المباشرة =====
+const _markerAnims = {}; // name -> {raf}
+
+function animateMarkerTo(marker, targetLat, targetLng) {
+  const key = marker._rwa7elKey || (marker._rwa7elKey = Math.random().toString(36).slice(2));
+  if (_markerAnims[key]) cancelAnimationFrame(_markerAnims[key]);
+
+  const start = marker.getLatLng();
+  const startLat = start.lat, startLng = start.lng;
+  const dist = _distMetersAdmin(startLat, startLng, targetLat, targetLng);
+
+  // لو المسافة كبيرة جدًا (أول ظهور، أو جامب غريب) — انقل فورًا من غير أنيميشن
+  if (dist > 400 || dist < 0.5) {
+    marker.setLatLng([targetLat, targetLng]);
+    return;
+  }
+
+  const duration = 900; // ms — نفس تقريبًا معدل تحديث الـ GPS، بيدي حركة سموث مستمرة
+  const startTime = performance.now();
+
+  function step(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    // easing سلس (easeOutCubic)
+    const eased = 1 - Math.pow(1 - t, 3);
+    const lat = startLat + (targetLat - startLat) * eased;
+    const lng = startLng + (targetLng - startLng) * eased;
+    marker.setLatLng([lat, lng]);
+    if (t < 1) {
+      _markerAnims[key] = requestAnimationFrame(step);
+    } else {
+      delete _markerAnims[key];
+    }
+  }
+  _markerAnims[key] = requestAnimationFrame(step);
+}
+
+function _distMetersAdmin(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+  const dp = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 // تحديث الخريطة
 function updateSingleMarkerAndTrail(d) {
   if (!map || !d.lat || !d.lng) return;
@@ -524,7 +597,7 @@ function updateSingleMarkerAndTrail(d) {
   `;
 
   if (driverMarkers[d.name]) {
-    driverMarkers[d.name].setLatLng([d.lat, d.lng]);
+    animateMarkerTo(driverMarkers[d.name], d.lat, d.lng);
     // getElement() على markerCluster بيرجع الـ wrapper مش الـ icon مباشرة
     const iconEl = driverMarkers[d.name]._icon;
     if (iconEl) {
@@ -757,6 +830,39 @@ function renderBoard() {
   });
 
   attachDragHandlers();
+  applyDriverSearch();
+}
+
+// ===== SEARCH =====
+let _driverSearchTerm = '';
+
+function filterDrivers(value) {
+  _driverSearchTerm = (value || '').trim().toLowerCase();
+  document.getElementById('search-clear').style.display = _driverSearchTerm ? 'block' : 'none';
+  applyDriverSearch();
+}
+
+function clearDriverSearch() {
+  document.getElementById('driver-search').value = '';
+  filterDrivers('');
+}
+
+function applyDriverSearch() {
+  const cards = document.querySelectorAll('.driver-card');
+  cards.forEach(card => {
+    const name = (card.dataset.name || '').toLowerCase();
+    if (!_driverSearchTerm) {
+      card.classList.remove('search-hidden', 'search-match');
+      return;
+    }
+    if (name.includes(_driverSearchTerm)) {
+      card.classList.remove('search-hidden');
+      card.classList.add('search-match');
+    } else {
+      card.classList.add('search-hidden');
+      card.classList.remove('search-match');
+    }
+  });
 }
 
 // ===== DRAG & DROP للترتيب (بس في عمود Waiting) =====
