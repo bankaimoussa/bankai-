@@ -783,7 +783,7 @@ function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
-  }, 5000); // كل 5 ثواني — لازم تبقى أقل بكتير من HEARTBEAT_DEAD_AFTER (15 ثانية) في السيرفر عشان منقفلش اتصالات شغالة
+  }, 10000); // كل 10 ثواني — هامش أمان كويس قبل حد الـ 35 ثانية في السيرفر (watchdog)
 }
 
 function connectWS() {
