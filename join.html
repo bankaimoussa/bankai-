@@ -635,6 +635,50 @@ function resumeAudioCtx() {
   }
 }
 
+// 3) صوت تنبيه فعلي (مسموع) — بيستخدم نفس الـ AudioContext الموجود بدل ما يفتح واحد جديد
+// ملحوظة: على iOS، لو الموبايل على وضع صامت (mute switch) أو التطبيق في الخلفية الكاملة،
+// نظام التشغيل بيمنع أي صوت يخرج فعليًا — ده قيد من المتصفح/النظام مش حاجة نقدر نتخطاها برمجيًا.
+// أقصى ما نقدر نضمنه: الصوت يشتغل فورًا أول ما التطبيق يرجع للـ foreground أو الشاشة تتفتح.
+function playAlarm(kind) {
+  try {
+    resumeAudioCtx();
+    if (!_audioCtx) {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_audioCtx.state === 'suspended') { _audioCtx.resume().catch(() => {}); }
+
+    const now = _audioCtx.currentTime;
+    // نغمتين متتاليتين — أوضح من نغمة واحدة وسط الضوضاء
+    const freqs = kind === 'urgent' ? [880, 1046] : [660, 880];
+    freqs.forEach((freq, i) => {
+      const osc = _audioCtx.createOscillator();
+      const gain = _audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = now + i * 0.18;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.35, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
+      osc.connect(gain);
+      gain.connect(_audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + 0.18);
+    });
+
+    // اهتزاز كمان لو مدعوم (بيشتغل حتى لو الصوت اتمنع)
+    if (navigator.vibrate) navigator.vibrate(kind === 'urgent' ? [200, 100, 200] : [150]);
+  } catch (e) { /* الصوت مش أساسي — متحاولش تكسر باقي الفانكشن لو فشل */ }
+}
+
+// لو التطبيق رجع من الخلفية، شغّل الصوت الأول اللي اتفوت (لو كان فيه رسالة وصلت والشاشة مقفولة)
+let _pendingAlarmOnResume = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && _pendingAlarmOnResume) {
+    _pendingAlarmOnResume = false;
+    playAlarm('chat');
+  }
+});
+
 function updateBgStatus(active) {
   const el = document.getElementById('bg-status');
   if (!el) return;
@@ -945,7 +989,12 @@ function showChatPopup(text) {
   const now = new Date();
   timeEl.textContent = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
   popup.classList.add('show');
-  playAlarm('chat');
+  if (document.visibilityState === 'visible') {
+    playAlarm('chat');
+  } else {
+    // الشاشة مقفولة/التطبيق في الخلفية — أجّل الصوت لحد ما ترجع تتفتح
+    _pendingAlarmOnResume = true;
+  }
   if (chatPopupTimer) clearTimeout(chatPopupTimer);
   chatPopupTimer = setTimeout(() => popup.classList.remove('show'), 6000);
   popup.onclick = () => { popup.classList.remove('show'); clearTimeout(chatPopupTimer); };
