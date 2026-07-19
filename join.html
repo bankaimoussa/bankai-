@@ -783,7 +783,7 @@ function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
-  }, 15000); // كل 15 ثانية — يضمن إن السيرفر يكتشف انقطاع النت بسرعة (watchdog بيفحص كل اتصال سكت أكتر من 60 ثانية)
+  }, 5000); // كل 5 ثواني — لازم تبقى أقل بكتير من HEARTBEAT_DEAD_AFTER (15 ثانية) في السيرفر عشان منقفلش اتصالات شغالة
 }
 
 function connectWS() {
@@ -844,7 +844,7 @@ function connectWS() {
     // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
     if (window.AndroidBridge && document.visibilityState === 'hidden') return;
     clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWS, 3000);
+    reconnectTimer = setTimeout(connectWS, 1000); // ثانية واحدة بس — اتصال سريع لأن الانقطاع دلوقتي بيتكشف بسرعة كمان
   };
   ws.onerror = () => { try { ws.close(); } catch(e){} };
 }
