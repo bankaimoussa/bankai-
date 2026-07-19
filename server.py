@@ -127,7 +127,7 @@ async def broadcast_state(event_type="update"):
     dead_drivers = []
     for d_name, d_ws in driver_connections.items():
         if d_name in drivers:
-            try: await d_ws.send_text(json.dumps({"type": "sync", "me": drivers[d_name]}))
+            try: await d_ws.send_text(json.dumps({"type": "sync", "me": drivers[d_name], "queue": queue}))
             except: dead_drivers.append(d_name)
     for d in dead_drivers: 
         if d in driver_connections: del driver_connections[d]
@@ -492,7 +492,8 @@ async def driver_ws(ws: WebSocket):
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                 else:
                     # reconnect - بنبعتله state الحالي فوراً عشان يعرف هو فين
-                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name]}))
+                    queue = await get_queue_from_redis()
+                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name], "queue": queue}))
 
                 if driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
                     queue.append(driver_name)
@@ -592,7 +593,8 @@ async def driver_ws(ws: WebSocket):
                 # المندوب طلب مزامنة فورية (مثلاً بعد ما التطبيق رجع من الخلفية)
                 drivers = await get_drivers_from_redis()
                 if driver_name in drivers:
-                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name]}))
+                    queue = await get_queue_from_redis()
+                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name], "queue": queue}))
 
             elif data["type"] == "change_state" and driver_name:
                 if data["state"] == "Waiting":
