@@ -44,11 +44,11 @@ admin_connections: list[WebSocket] = []
 driver_connections: Dict[str, WebSocket] = {}
 driver_last_activity: Dict[str, float] = {}  # آخر مرة استقبلنا فيها أي رسالة من كل مندوب (ping/location/battery)
 
-HEARTBEAT_CHECK_INTERVAL = 8    # كل كام ثانية نفحص الاتصالات (مضبوطة سريعة عمدًا — عايزين اكتشاف أسرع حتى لو false positives زادت)
-HEARTBEAT_DEAD_AFTER = 15       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
-# ملحوظة: أقصى وقت اكتشاف = CHECK_INTERVAL + DEAD_AFTER ≈ 23 ثانية (بدل 80 ثانية سابقًا)
-# المندوب بيبعت ping كل 5 ثواني دلوقتي، فيه هامش كافي قبل الـ 15 ثانية — على نت ضعيف جدًا برضه ممكن يحصل قفل غير ضروري أحيانًا،
-# بس الـ reconnect على الموبايل بقى سريع (ثانية واحدة) فالتأثير هيبان كـ "وميض" بدل ما يفضل عالق دقيقة كاملة
+HEARTBEAT_CHECK_INTERVAL = 10   # كل كام ثانية نفحص الاتصالات
+HEARTBEAT_DEAD_AFTER = 35       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
+# أقصى وقت اكتشاف = CHECK_INTERVAL + DEAD_AFTER ≈ 45 ثانية (بدل 80 ثانية الأصلية، وبدل 23 ثانية اللي كانت بتفصل كتير)
+# المندوب بيبعت ping كل 10 ثواني، يعني هامش أمان كويس (×3.5 تقريبًا) قبل ما نعتبره ميت — بيقلل false positives
+# على نت عادي، وبرضه أسرع بكتير من الوضع الأصلي
 
 # --- دوال المساعدة لـ Redis ---
 async def get_drivers_from_redis() -> Dict[str, dict]:
