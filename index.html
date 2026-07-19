@@ -204,6 +204,9 @@
 
   .driver-card { background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 6px; display: flex; flex-direction: column; gap: 5px; transition: all 0.2s ease; }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); }
+  .draggable-card { cursor: grab; }
+  .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
+  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; }
   .card-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
   .card-name { font-weight: 700; font-size: 12px; color: var(--text); word-break: break-word; line-height: 1.35; }
 
@@ -639,10 +642,21 @@ async function forceUpdate() {
 function locateDriver(name) {
   const d = currentDrivers.find(x => x.name === name);
   if (!d || !d.lat || !d.lng) { alert('No GPS data for this driver yet.'); return; }
-  map.setView([d.lat, d.lng], 17, { animate: true });
-  if (driverMarkers[name]) driverMarkers[name].openPopup();
-  // scroll to map
-  document.getElementById('map-container').scrollIntoView({ behavior: 'smooth' });
+
+  const container = document.getElementById('map-container');
+  const wasCollapsed = container.classList.contains('collapsed');
+  if (wasCollapsed) container.classList.remove('collapsed');
+
+  const focusMarker = () => {
+    map.invalidateSize();
+    map.setView([d.lat, d.lng], 17, { animate: true });
+    if (driverMarkers[name]) driverMarkers[name].openPopup();
+    document.getElementById('map-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // لو الخريطة كانت مقفولة، ننتظر انتهاء أنيميشن الفتح قبل ما نعمل setView عشان الأبعاد تتحسب صح
+  if (wasCollapsed) setTimeout(focusMarker, 420);
+  else focusMarker();
 }
 
 function adminAction(driverName, newState) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'admin_change_state', driver: driverName, state: newState })); }
@@ -723,10 +737,11 @@ function renderBoard() {
       breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
     }
     
+    const isDraggable = d.state === 'Waiting';
     let html = `
-      <div class="driver-card" id="${safeId(d.name)}">
+      <div class="driver-card${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
         <div class="card-top">
-          <div class="card-name">${d.queue_pos > 0 && d.state === 'Waiting' ? `<b>#${d.queue_pos}</b> ` : ''}${d.name}</div>
+          <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span> ' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<b>#${d.queue_pos}</b> ` : ''}${d.name}</div>
           <div class="indicators">
             <button class="btn-locate" onclick="locateDriver('${d.name}')">📍 Locate</button>
             <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
@@ -740,6 +755,56 @@ function renderBoard() {
       </div>`;
     list.innerHTML += html;
   });
+
+  attachDragHandlers();
+}
+
+// ===== DRAG & DROP للترتيب (بس في عمود Waiting) =====
+let _dragEl = null;
+
+function attachDragHandlers() {
+  const list = document.getElementById('list-waiting');
+  if (!list) return;
+
+  list.querySelectorAll('.draggable-card').forEach(card => {
+    card.addEventListener('dragstart', () => {
+      _dragEl = card;
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      _dragEl = null;
+      commitNewOrder();
+    });
+  });
+
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!_dragEl) return;
+    const after = getDragAfterElement(list, e.clientY);
+    if (after == null) list.appendChild(_dragEl);
+    else list.insertBefore(_dragEl, after);
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll('.draggable-card:not(.dragging)')];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: -Infinity }).element;
+}
+
+function commitNewOrder() {
+  const list = document.getElementById('list-waiting');
+  if (!list || !ws || ws.readyState !== WebSocket.OPEN) return;
+  const newOrder = [...list.querySelectorAll('.draggable-card')].map(c => c.dataset.name);
+  // الترتيب الكامل للطابور = ترتيب Waiting الجديد (المناديب الـ Out/Break بيتضافوا تلقائي لما يرجعوا)
+  ws.send(JSON.stringify({ type: 'reorder', new_queue: newOrder }));
 }
 
 function formatBreakRemaining(breakEnd) {
