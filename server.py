@@ -44,8 +44,11 @@ admin_connections: list[WebSocket] = []
 driver_connections: Dict[str, WebSocket] = {}
 driver_last_activity: Dict[str, float] = {}  # آخر مرة استقبلنا فيها أي رسالة من كل مندوب (ping/location/battery)
 
-HEARTBEAT_CHECK_INTERVAL = 20   # كل كام ثانية نفحص الاتصالات
-HEARTBEAT_DEAD_AFTER = 60       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
+HEARTBEAT_CHECK_INTERVAL = 8    # كل كام ثانية نفحص الاتصالات (مضبوطة سريعة عمدًا — عايزين اكتشاف أسرع حتى لو false positives زادت)
+HEARTBEAT_DEAD_AFTER = 15       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
+# ملحوظة: أقصى وقت اكتشاف = CHECK_INTERVAL + DEAD_AFTER ≈ 23 ثانية (بدل 80 ثانية سابقًا)
+# المندوب بيبعت ping كل 5 ثواني دلوقتي، فيه هامش كافي قبل الـ 15 ثانية — على نت ضعيف جدًا برضه ممكن يحصل قفل غير ضروري أحيانًا،
+# بس الـ reconnect على الموبايل بقى سريع (ثانية واحدة) فالتأثير هيبان كـ "وميض" بدل ما يفضل عالق دقيقة كاملة
 
 # --- دوال المساعدة لـ Redis ---
 async def get_drivers_from_redis() -> Dict[str, dict]:
@@ -218,7 +221,10 @@ async def force_update():
     for d in dead:
         if d in driver_connections: del driver_connections[d]
         driver_last_activity.pop(d, None)
-    # broadcast فوري بأحدث داتا من Redis للأدمن
+    # ننتظر شوية عشان نديله فرصة حقيقية إن الموبايلات المتصلة تبعت مواقعها الجديدة
+    # (لو المندوب بيبعت location_update عادي، ده هيوصل خلال الفترة دي ويحدث Redis)
+    await asyncio.sleep(2.5)
+    # دلوقتي نعمل broadcast بأحدث داتا في Redis (بعد ما استنينا)
     await broadcast_state("update")
     return {"ok": True, "ws": len(driver_connections)}
 
