@@ -90,6 +90,12 @@
   .btn-force-update { background: rgba(45,212,207,0.1); border: 1.5px solid rgba(45,212,207,0.3); color: var(--success); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.25s; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(10px); }
   .btn-force-update:hover { background: rgba(45,212,207,0.2); transform: scale(1.04); box-shadow: 0 4px 20px rgba(45,212,207,0.25); }
   .btn-force-update.pinging { opacity: 0.6; pointer-events: none; }
+  .btn-auto-out { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.25s; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(10px); }
+  .btn-auto-out:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+  .btn-auto-out .auto-out-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: 0.25s; }
+  .btn-auto-out.active { background: rgba(255,180,84,0.12); border-color: rgba(255,180,84,0.4); color: var(--out); }
+  .btn-auto-out.active .auto-out-dot { background: var(--out); box-shadow: 0 0 8px var(--out); animation: autoOutPulse 1.4s ease-in-out infinite; }
+  @keyframes autoOutPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   @keyframes distFlash { 0%,100%{opacity:1} 40%{opacity:0.3} }
   .dist-flash { animation: distFlash 0.4s ease; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -302,6 +308,9 @@
       <button class="search-clear" id="search-clear" onclick="clearDriverSearch()" style="display:none">✖</button>
     </div>
     <button class="btn-clear-data" onclick="showClearConfirm()">🗑 Clear Data</button>
+    <button class="btn-auto-out" id="btn-auto-out" onclick="toggleAutoOut()" title="أي مندوب Waiting بعيد عن الفرع أكتر من 200م هيتحول Out تلقائي">
+      <span class="auto-out-dot"></span> Auto
+    </button>
     <button class="btn-force-update" id="btn-force-update" onclick="forceUpdate()">
       <span class="spin-icon">🔄</span> تحديث فوري
     </button>
@@ -673,6 +682,7 @@ function connect() {
     
     if (data.type === 'update') {
       currentDrivers = data.drivers;
+      if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
       renderBoard();
       // تحديث كامل الخريطة وتجاهل المنفصلين
       const activeNames = currentDrivers.map(d => d.name);
@@ -730,6 +740,25 @@ function connect() {
       if (batEl) batEl.textContent = `🔋 ${data.battery}`;
     }
   };
+}
+
+// ===== Auto-Out toggle =====
+// لو مفعّل: أي مندوب Waiting بعيد عن الفرع أكتر من 200م بيتحول Out تلقائي (بيتحسب مع كل تحديث GPS)
+let _autoOutEnabled = false;
+
+function setAutoOutButtonState(enabled) {
+  _autoOutEnabled = enabled;
+  const btn = document.getElementById('btn-auto-out');
+  if (!btn) return;
+  btn.classList.toggle('active', enabled);
+}
+
+function toggleAutoOut() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const next = !_autoOutEnabled;
+  ws.send(JSON.stringify({ type: 'set_auto_out', enabled: next }));
+  // تحديث فوري في الواجهة (هيتأكد برضه لما يجيلنا رد السيرفر)
+  setAutoOutButtonState(next);
 }
 
 async function forceUpdate() {
