@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
+import asyncio
 import redis.asyncio as aioredis
 import json, math, time, httpx
 from typing import Dict, List
@@ -12,6 +13,10 @@ import google.oauth2.service_account
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.on_event("startup")
+async def _start_background_tasks():
+    asyncio.create_task(connection_watchdog())
 
 BRANCH_LAT = 31.2071871
 BRANCH_LNG = 29.9328765
@@ -37,6 +42,10 @@ redis_client = aioredis.from_url(
 
 admin_connections: list[WebSocket] = []
 driver_connections: Dict[str, WebSocket] = {}
+driver_last_activity: Dict[str, float] = {}  # آخر مرة استقبلنا فيها أي رسالة من كل مندوب (ping/location/battery)
+
+HEARTBEAT_CHECK_INTERVAL = 20   # كل كام ثانية نفحص الاتصالات
+HEARTBEAT_DEAD_AFTER = 60       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
 
 # --- دوال المساعدة لـ Redis ---
 async def get_drivers_from_redis() -> Dict[str, dict]:
@@ -109,6 +118,7 @@ async def broadcast_state(event_type="update"):
             except: dead_drivers.append(d_name)
     for d in dead_drivers: 
         if d in driver_connections: del driver_connections[d]
+        driver_last_activity.pop(d, None)
 
 async def broadcast_location_update(driver_data: dict):
     """ إرسال تحديثات المواقع للآدمن فقط (لتقليل الضغط) """
@@ -128,6 +138,30 @@ async def broadcast_location_update(driver_data: dict):
         except: dead_admins.append(ws)
     for ws in dead_admins: admin_connections.remove(ws)
 
+
+async def connection_watchdog():
+    """
+    فحص دوري لكل اتصالات المناديب — لو اتصال فضل من غير أي نشاط (ping/location/battery)
+    لمدة أطول من HEARTBEAT_DEAD_AFTER، نعتبره "زومبي" (السوكيت مفتوح على مستوى النظام
+    بس النت فعليًا مقطوع عند المندوب) ونقفله يدويًا. ده بيخلي المندوب يعمل reconnect
+    تلقائي بدل ما يفضل عالق (stuck) وشايف رقم مسافة/بطارية قديم من غير أي تحديث.
+    """
+    while True:
+        await asyncio.sleep(HEARTBEAT_CHECK_INTERVAL)
+        now = time.time()
+        stale = [
+            name for name, ws in list(driver_connections.items())
+            if now - driver_last_activity.get(name, now) > HEARTBEAT_DEAD_AFTER
+        ]
+        for name in stale:
+            ws = driver_connections.get(name)
+            if ws:
+                try:
+                    await ws.close(code=1000)
+                except Exception:
+                    pass
+            driver_connections.pop(name, None)
+            driver_last_activity.pop(name, None)
 
 async def change_driver_state(driver_name: str, new_state: str):
     drivers = await get_drivers_from_redis()
@@ -165,6 +199,7 @@ async def clear_all():
         try: await d_ws.send_text(msg)
         except: pass
     driver_connections.clear()
+    driver_last_activity.clear()
 
     await redis_client.delete("fleet:drivers")
     await redis_client.delete("fleet:queue")
@@ -182,7 +217,7 @@ async def force_update():
         except: dead.append(d_name)
     for d in dead:
         if d in driver_connections: del driver_connections[d]
-
+        driver_last_activity.pop(d, None)
     # broadcast فوري بأحدث داتا من Redis للأدمن
     await broadcast_state("update")
     return {"ok": True, "ws": len(driver_connections)}
@@ -215,6 +250,7 @@ async def send_chat(body: ChatBody):
             dead.append(name)
     for d in dead:
         if d in driver_connections: del driver_connections[d]
+        driver_last_activity.pop(d, None)
     sent_fcm = []
     if _FCM_SA_JSON:
         try:
@@ -367,6 +403,7 @@ async def admin_ws(ws: WebSocket):
                     try: await driver_connections[d_name].send_text(json.dumps({"type": "kicked"}))
                     except: pass
                     del driver_connections[d_name]
+                driver_last_activity.pop(d_name, None)
                 await broadcast_state("update")
     except WebSocketDisconnect:
         if ws in admin_connections: admin_connections.remove(ws)
@@ -379,7 +416,10 @@ async def driver_ws(ws: WebSocket):
         while True:
             raw = await ws.receive_text()
             data = json.loads(raw)
-            
+
+            if driver_name:
+                driver_last_activity[driver_name] = time.time()
+
             if data["type"] == "join":
                 driver_name = data["name"].strip()
                 drivers = await get_drivers_from_redis()
@@ -411,6 +451,7 @@ async def driver_ws(ws: WebSocket):
 
                 # لو في connection قديم لنفس الدرايفر (reconnect)، بنبدّله بالجديد بدون أي noise
                 driver_connections[driver_name] = ws
+                driver_last_activity[driver_name] = time.time()
                 queue = await get_queue_from_redis()
                 
                 if driver_name not in drivers:
@@ -548,3 +589,5 @@ async def driver_ws(ws: WebSocket):
         # الدرايفر يفضل موجود في Redis بنفس state وآخر location وبطارية
         if driver_name and driver_connections.get(driver_name) is ws:
             del driver_connections[driver_name]
+        if driver_name:
+            driver_last_activity.pop(driver_name, None)
