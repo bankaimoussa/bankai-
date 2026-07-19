@@ -52,6 +52,9 @@ async def save_driver_to_redis(name: str, data: dict):
 async def delete_driver_from_redis(name: str):
     await redis_client.hdel("fleet:drivers", name)
 
+async def delete_fcm_token(name: str):
+    await redis_client.hdel("fleet:fcm_tokens", name)
+
 async def get_queue_from_redis() -> List[str]:
     queue_str = await redis_client.get("fleet:queue")
     if queue_str:
@@ -165,6 +168,7 @@ async def clear_all():
 
     await redis_client.delete("fleet:drivers")
     await redis_client.delete("fleet:queue")
+    await redis_client.delete("fleet:fcm_tokens")  # امسح كل التوكنز عشان محدش ياخد إشعار وهو مش مسجل
     await broadcast_state("update")
     return {"ok": True}
 
@@ -357,6 +361,7 @@ async def admin_ws(ws: WebSocket):
                 if d_name in drivers: await delete_driver_from_redis(d_name)
                 if d_name in queue: queue.remove(d_name)
                 await save_queue_to_redis(queue)
+                await delete_fcm_token(d_name)  # امسح التوكن عشان ميوصلوش إشعارات وهو مش شغال
                 
                 if d_name in driver_connections:
                     try: await driver_connections[d_name].send_text(json.dumps({"type": "kicked"}))
@@ -417,7 +422,7 @@ async def driver_ws(ws: WebSocket):
                         "battery": "100%", "queue_pos": 0, "distance": None, "break_end": None,
                         "lat": data.get("lat"), "lng": data.get("lng"),
                         "speed": 0, "heading": 0, "last_seen": int(time.time()),
-                        "shift_km": 0.0, "_last_gps": {"lat": data.get("lat"), "lng": data.get("lng")}
+                        "shift_km": 0.0, "_last_gps": {"lat": data.get("lat"), "lng": data.get("lng"), "ts": int(time.time())}
                     }
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                 else:
@@ -442,7 +447,11 @@ async def driver_ws(ws: WebSocket):
                     shift_km = drivers[driver_name].get("shift_km", 0.0)
                     if last_gps and last_gps.get("lat") is not None and last_gps.get("lng") is not None:
                         step_m = haversine(last_gps["lat"], last_gps["lng"], data["lat"], data["lng"])
-                        if 5 <= step_m <= 300:  # يتجاهل قفزات GPS الوهمية والـ jitter وهو واقف
+                        dt = max(1, now_ts - last_gps.get("ts", now_ts))
+                        implied_kmh = (step_m / dt) * 3.6
+                        # نتجاهل: jitter وهو واقف (<5م) + قفزات GPS الوهمية (>300م لحظيًا)
+                        # + أي نقلة سرعتها المضمنة أعلى من 120 كم/س (يعني الموبايل قفل شوية وفتح في مكان تاني بره النطاق ده)
+                        if 5 <= step_m <= 300 and implied_kmh <= 120:
                             shift_km = round(shift_km + step_m / 1000, 3)
                     drivers[driver_name].update({
                         "distance": dist,
@@ -452,7 +461,7 @@ async def driver_ws(ws: WebSocket):
                         "heading": data.get("heading", 0),
                         "last_seen": now_ts,
                         "shift_km": shift_km,
-                        "_last_gps": {"lat": data["lat"], "lng": data["lng"]}
+                        "_last_gps": {"lat": data["lat"], "lng": data["lng"], "ts": now_ts}
                     })
                     await save_driver_to_redis(driver_name, drivers[driver_name])
                     
