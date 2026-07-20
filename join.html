@@ -1062,6 +1062,7 @@ const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hos
 let ws, driverName = null, kicked = false;
 let gpsWatchId = null, lastGpsPos = null;
 let pingInterval = null, reconnectTimer = null;
+let reconnectAttempts = 0; // لحساب الـ exponential backoff عند تكرار فشل الاتصال
 let currentBreakEnd = null;
 let _lastRenderedState = null;
 let currentDriverState = 'Waiting';
@@ -1239,7 +1240,16 @@ function computeSpeedKmh(pos) {
   return manualKmh != null ? manualKmh : 0;
 }
 
+// أقصى دقة GPS مقبولة (بالمتر) — أي نقطة أسوأ من كده بنتجاهلها في الإرسال
+// عشان متبوظش حساب shift_km أو تحرك الماركر على خريطة الأدمن بشكل غلط
+const GPS_MAX_ACCEPTABLE_ACCURACY = 50;
+
 function sendLocation(pos) {
+  // نتجاهل نقاط الـ GPS الرديئة (جوه مبنى / تحت سقف) — لسه بنعرض رقم الدقة للسواق
+  // في updateGpsDisplay بس مش هنبعتها للسيرفر عشان متلوثش المسافة/الكيلومترات
+  if (pos.coords.accuracy != null && pos.coords.accuracy > GPS_MAX_ACCEPTABLE_ACCURACY) {
+    return;
+  }
   if (ws && ws.readyState === WebSocket.OPEN) {
     const speedKmh = computeSpeedKmh(pos);
     ws.send(JSON.stringify({
@@ -1256,15 +1266,33 @@ function updateGpsDisplay(pos) {
   const speed = Math.round(computeSpeedKmh(pos));
   const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
   document.getElementById('gps-speed').innerText = speed;
-  document.getElementById('gps-accuracy').innerText = acc;
+  const accEl = document.getElementById('gps-accuracy');
+  accEl.innerText = acc;
+  // لو الدقة ضعيفة، النقطة دي مش هتتبعت للسيرفر (سطر sendLocation) — نوري السواق ليه
+  const isPoor = pos.coords.accuracy != null && pos.coords.accuracy > GPS_MAX_ACCEPTABLE_ACCURACY;
+  accEl.style.color = isPoor ? 'var(--out, #e74c3c)' : '';
+  accEl.title = isPoor ? 'الدقة ضعيفة — الموقع مش بيتبعت لحد ما تتحسن' : '';
 }
 
 // ===== WS =====
+let lastPongTs = Date.now();
+let pongWatchdogInterval = null;
+
 function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
   }, 10000); // كل 10 ثواني — هامش أمان كويس قبل حد الـ 35 ثانية في السيرفر (watchdog)
+
+  // watchdog من ناحية العميل: لو السيرفر بطّل يرد بـ pong، الاتصال بقى "زومبي"
+  // (السوكيت مفتوح شكليًا بس مفيش داتا فعليًا بتعدي) — نقفله يدويًا عشان الـ onclose يشغل reconnect بسرعة
+  // بدل ما نستنى الـ TCP نفسه يكتشف الانقطاع (ممكن ياخد دقايق على بعض الشبكات)
+  clearInterval(pongWatchdogInterval);
+  pongWatchdogInterval = setInterval(() => {
+    if (Date.now() - lastPongTs > 25000) {
+      try { ws.close(); } catch(e) {}
+    }
+  }, 5000);
 }
 
 function connectWS() {
@@ -1272,6 +1300,8 @@ function connectWS() {
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(WSURL);
   ws.onopen = () => {
+    reconnectAttempts = 0; // الاتصال نجح — نرجع نبدأ من أول تأخير بسيط في المرة الجاية
+    lastPongTs = Date.now();
     // بنبعت الـ lat/lng مع رسالة الـ join عشان الـ server يتأكد من المسافة
     const joinMsg = {type:'join', name: driverName};
     if (lastGpsPos) {
@@ -1284,6 +1314,7 @@ function connectWS() {
   };
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
+    if (d.type === 'pong') lastPongTs = Date.now();
     if (d.type === 'sync') {
       updateUI(d.me); // ده كمان بيحدث شارت اليوم لايف عن طريق updateTodayInWeekChart
       renderQueueList(d.queue || []);
@@ -1340,11 +1371,16 @@ function connectWS() {
   };
   ws.onclose = () => {
     clearInterval(pingInterval);
+    clearInterval(pongWatchdogInterval);
     if (kicked) return;
     // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
     if (window.AndroidBridge && document.visibilityState === 'hidden') return;
     clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWS, 1000); // ثانية واحدة بس — اتصال سريع لأن الانقطاع دلوقتي بيتكشف بسرعة كمان
+    // exponential backoff: أول محاولة سريعة (1 ثانية) وبعدين بتزيد تدريجيًا لحد 15 ثانية
+    // عشان لو النت فعلاً واقع منضربش السيرفر بمعدل عالي ومنستنزفش البطارية بلا فايدة
+    const delay = Math.min(1000 * Math.pow(1.6, reconnectAttempts), 15000);
+    reconnectAttempts++;
+    reconnectTimer = setTimeout(connectWS, delay);
   };
   ws.onerror = () => { try { ws.close(); } catch(e){} };
 }
@@ -1482,6 +1518,7 @@ function cancelEndShift() {
 // === Stop everything ===
 function stopAllServices() {
   clearInterval(pingInterval);
+  clearInterval(pongWatchdogInterval);
   clearTimeout(reconnectTimer);
   if (ws) try { ws.close(); } catch(e) {}
   if (navigator.geolocation && gpsWatchId !== null) {
