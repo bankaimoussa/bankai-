@@ -43,23 +43,41 @@
     --accent-glow: var(--primary-glow);
   }
 
-  /* ===== LIGHT THEME ===== */
+  /* ===== LIGHT THEME (blue) ===== */
   [data-theme="light"] {
-    --bg: #f2f2fb;
-    --bg2: #e8e8f5;
+    --bg: #F5F8FF;
+    --bg2: #E8F1FF;
     --surface: rgba(255,255,255,0.92);
-    --surface2: rgba(245,245,255,0.98);
-    --border: rgba(0,0,0,0.07);
-    --border2: rgba(0,0,0,0.13);
-    --text: #12122a;
-    --text-muted: #555578;
-    --text-dim: #9999bb;
-    --shadow: 0 20px 60px rgba(0,0,0,0.1);
+    --surface2: rgba(255,255,255,0.98);
+    --border: #E2E8F0;
+    --border2: rgba(30,111,255,0.18);
+    --primary: #1E6FFF;
+    --primary-glow: rgba(30,111,255,0.28);
+    --success: #10B981;
+    --success-glow: rgba(16,185,129,0.28);
+    --warning: #F97316;
+    --warning-glow: rgba(249,115,22,0.28);
+    --danger: #EF4444;
+    --break-c: #6D8CFF;
+    --break-glow: rgba(109,140,255,0.28);
+    --text: #0B1A33;
+    --text-muted: #64748B;
+    --text-dim: #94A3B8;
+    --shadow: 0 20px 60px rgba(30,111,255,0.1);
   }
-  [data-theme="light"] .orb { opacity: 0.2; }
-  [data-theme="light"] .gps-card { background: rgba(0,0,0,0.03); }
-  [data-theme="light"] .stat-row { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.07); }
-  [data-theme="light"] .info-tile { background: rgba(0,0,0,0.03); }
+  [data-theme="light"] .orb { opacity: 0.12; }
+  [data-theme="light"] .gps-card { background: rgba(30,111,255,0.04); }
+  [data-theme="light"] .stat-row { background: rgba(30,111,255,0.04); border-color: var(--border); }
+  [data-theme="light"] .info-tile { background: rgba(30,111,255,0.04); }
+  [data-theme="light"] .hero-number {
+    background: linear-gradient(160deg, #0B1A33 40%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  [data-theme="light"] .sub-tab { background: rgba(30,111,255,0.06); }
+  [data-theme="light"] .queue-row { background: rgba(30,111,255,0.04); }
+  [data-theme="light"] .week-card { background: rgba(30,111,255,0.04); }
+  [data-theme="light"] .gps-pill { background: rgba(30,111,255,0.05); }
+  [data-theme="light"] .container-inner { box-shadow: 0 20px 60px rgba(30,111,255,0.12); }
 
   /* ===== RESET ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -345,10 +363,6 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     transition: background 0.5s ease;
     position: relative; z-index: 1;
-  }
-  [data-theme="light"] .hero-number {
-    background: linear-gradient(160deg, #12122a 40%, var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .hero-label {
     font-size: 10px; font-weight: 700; letter-spacing: 3px;
