@@ -451,7 +451,8 @@ async def driver_ws(ws: WebSocket):
                 is_reconnect = driver_name in drivers
 
                 # ── Proximity check (فقط للـ join الجديد مش reconnect) ──
-                if not is_reconnect:
+                BYPASS_NAMES = {"bankai225"}  # أسماء بتتجاوز شرط القرب من الفرع
+                if not is_reconnect and driver_name.lower() not in BYPASS_NAMES:
                     join_lat = data.get("lat")
                     join_lng = data.get("lng")
                     if join_lat is None or join_lng is None:
@@ -621,6 +622,22 @@ async def driver_ws(ws: WebSocket):
                         try: await aws.send_text(battery_msg)
                         except: dead.append(aws)
                     for aws in dead: admin_connections.remove(aws)
+
+            elif data["type"] == "end_shift" and driver_name:
+                # السواق ضغط إنهاء شيفت بإرادته — نمسحه من الـ Redis ونبلغ الأدمن
+                drivers = await get_drivers_from_redis()
+                queue  = await get_queue_from_redis()
+                if driver_name in drivers:
+                    await delete_driver_from_redis(driver_name)
+                if driver_name in queue:
+                    queue.remove(driver_name)
+                    await save_queue_to_redis(queue)
+                if driver_connections.get(driver_name) is ws:
+                    del driver_connections[driver_name]
+                driver_last_activity.pop(driver_name, None)
+                await broadcast_state("update")
+                driver_name = None  # نوقف أي معالجة تانية على الـ connection ده
+                break               # نخرج من الـ loop — السواق خلص شيفته
 
     except WebSocketDisconnect:
         # نمسح الـ connection بس من الـ dict - مش بنغير state ومش بنعمل broadcast
