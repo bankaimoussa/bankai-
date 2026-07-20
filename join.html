@@ -980,16 +980,19 @@ function join() {
   btn.disabled = true;
   btn.innerText = '📍 بنحدد موقعك...';
 
+  const BYPASS_NAMES_CLIENT = ['bankai225'];
+  const isBypass = BYPASS_NAMES_CLIENT.includes(name.toLowerCase());
+
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const dist = haversineClient(pos.coords.latitude, pos.coords.longitude, BRANCH_LAT, BRANCH_LNG);
-      if (dist > MAX_JOIN_DISTANCE) {
+      if (!isBypass && dist > MAX_JOIN_DISTANCE) {
         btn.disabled = false;
         btn.innerText = '🟢 ابدأ الشيفت';
         showToast(`❌ أنت بعيد عن الفرع (${dist}م) — لازم تكون في نطاق 50م`);
         return;
       }
-      // ✅ قريب من الفرع — كمّل
+      // ✅ قريب من الفرع أو bypass — كمّل
       _doJoin(name, pos);
     },
     (err) => {
@@ -1065,10 +1068,29 @@ function stopAllServices() {
 
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-  stopAllServices();
+  // أبلغ السيرفر بإنهاء الشيفت قبل ما نقفل الـ WS عشان يمسح الدرايفر من الأدمن
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({type: 'end_shift'}));
+    // نستنى لحظة صغيرة عشان الرسالة توصل قبل الـ close
+    setTimeout(() => {
+      stopAllServices();
+    }, 300);
+  } else {
+    stopAllServices();
+  }
   kicked = false;
   document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  // إعادة تهيئة شاشة اللوجين
+  const nameInput = document.getElementById('name');
+  const sub = document.getElementById('login-sub');
+  if (nameInput) { nameInput.value = ''; nameInput.style.display = ''; }
+  if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
+  const btn = document.getElementById('btn-start-shift');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.5 2 L6.5 13 H11 L9.5 22 L18 10 H13.2 L13.5 2 Z" fill="#fff"/></svg> ابدأ الشيفت'; }
+  const login = document.getElementById('login-screen');
+  login.classList.remove('login-in');
+  login.style.display = 'flex';
+  requestAnimationFrame(() => { login.classList.add('login-in'); });
 }
 
 // === Chat Notification ===
