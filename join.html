@@ -871,12 +871,6 @@
             🏠 وصلت الفرع — هتترجع للطابور تلقائيًا خلال <span id="auto-return-secs">--</span> ث
           </div>
         </div>
-
-        <!-- Break state -->
-        <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center">
-          <div class="break-hero" id="break-timer">60:00</div>
-          <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
-        </div>
       </div>
 
       <!-- Map + distance card -->
@@ -978,6 +972,12 @@
         <div class="shift-icon-badge" id="hero-bg">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
         </div>
+      </div>
+
+      <!-- Break timer — يظهر بس وقت الراحة -->
+      <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center; padding: 10px 0 4px;">
+        <div class="break-hero" id="break-timer">60:00</div>
+        <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
       </div>
 
       <div class="queue-hero">
@@ -1290,10 +1290,8 @@ function connectWS() {
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
     if (d.type === 'sync') {
-      updateUI(d.me);
+      updateUI(d.me); // ده كمان بيحدث شارت اليوم لايف عن طريق updateTodayInWeekChart
       renderQueueList(d.queue || []);
-      const profilePanel = document.getElementById('subtab-profile');
-      if (profilePanel && profilePanel.classList.contains('active')) loadWeeklyStats();
     }
     else if (d.type === 'distance') {
       updateGPS(d.meters);
@@ -1775,16 +1773,33 @@ function handleAvatarSelect(event) {
   reader.readAsDataURL(file);
 }
 
+let lastWeeklyStats = null;
+
 async function loadWeeklyStats() {
   if (!driverName) return;
   try {
     const res = await fetch(`/api/weekly_stats/${encodeURIComponent(driverName)}`);
     const data = await res.json();
     if (data.ok) {
+      lastWeeklyStats = data.stats;
       renderWeekChart(data.stats);
       renderWeekTotals(data.stats);
     }
   } catch (e) { /* silent fail */ }
+}
+
+// بتحدث بار اليوم بس في الشارت لايف من غير ما تعمل fetch جديد للسيرفر —
+// بتتنده كل مرة عدد الأوردرات أو الكيلومترات يتغيروا خلال الشيفت (من الـ sync)
+function updateTodayInWeekChart(liveOrders, liveKm) {
+  if (!Array.isArray(lastWeeklyStats) || !lastWeeklyStats.length) return;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayEntry = lastWeeklyStats.find(s => s.date === todayKey);
+  if (!todayEntry) return;
+  if (todayEntry.orders === liveOrders && todayEntry.km === liveKm) return; // مفيش تغيير
+  todayEntry.orders = liveOrders;
+  todayEntry.km = liveKm;
+  renderWeekChart(lastWeeklyStats);
+  renderWeekTotals(lastWeeklyStats);
 }
 
 function renderWeekTotals(stats) {
@@ -1903,6 +1918,8 @@ function updateUI(data) {
   }
 
   // ملحوظة: أرقام تاب "حسابي" بقت إجمالي الأسبوع (renderWeekTotals) مش أرقام اليوم، فمش بنحدثها هنا
+  // لكن لو الشارت الأسبوعي متحمل أصلاً، نحدث بار اليوم لايف بعدد الأوردرات الجديد
+  updateTodayInWeekChart(data.orders || 0, data.shift_km || 0);
   if (data.avatar !== undefined) applyAvatar(data.avatar);
 }
 
