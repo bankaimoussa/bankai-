@@ -599,12 +599,21 @@ async def driver_ws(ws: WebSocket):
                     # إرسال التحديث الصغير للآدمنز فوراً بدون تحميل كامل الداتا
                     await broadcast_location_update(drivers[driver_name])
                     
-                    # تحديث المندوب بحالته + الكيلومترات لايف
-                    await ws.send_text(json.dumps({"type": "distance", "meters": dist, "shift_km": shift_km}))
+                    # تحديث المندوب بحالته + الكيلومترات لايف + هل هو داخل نطاق الفرع وعداد الرجوع التلقائي شغال
+                    out_since_val = drivers[driver_name].get("out_since", 0)
+                    auto_return_secs_left = None
+                    if drivers[driver_name]["state"] == "Out" and dist <= 50 and out_since_val:
+                        auto_return_secs_left = max(0, 45 - (now_ts - out_since_val))
+                    await ws.send_text(json.dumps({
+                        "type": "distance", "meters": dist, "shift_km": shift_km,
+                        "auto_return_secs_left": auto_return_secs_left
+                    }))
 
-                    # AUTO-RETURN: لو Out فأكتر من دقيقتين وراجع للفرع (≤50m) → Waiting تلقائي
+                    # AUTO-RETURN: لو Out فأكتر من 45 ثانية وراجع للفرع (≤50m) → Waiting تلقائي
+                    # (كانت دقيقتين قبل كده — قللناها عشان الحالة ماتفضلش حاسة إنها "متأخرة" من وجهة نظر المندوب،
+                    #  مع الاحتفاظ بحد أدنى يمنع الـ flapping لو المندوب مر بالصدفة جنب الفرع أثناء التوصيل)
                     out_since = drivers[driver_name].get("out_since", 0)
-                    two_mins_passed = (now_ts - out_since) >= 120
+                    two_mins_passed = (now_ts - out_since) >= 45
                     if drivers[driver_name]["state"] == "Out" and dist <= 50 and two_mins_passed:
                         await change_driver_state(driver_name, "Waiting")
                         # بلّغ السواق إنه رجع في الطابور
