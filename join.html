@@ -858,21 +858,6 @@
         </div>
       </div>
 
-      <!-- Hero states (out / break) — functional views. Waiting state has nothing to show here (queue lives in "الدور" tab) -->
-      <div class="hero-block" id="hero-block">
-        <!-- Waiting state: intentionally empty — no queue-related content in معلوماتي -->
-        <div id="view-waiting" class="hero-view-visible" style="display:none;"></div>
-
-        <!-- Out state -->
-        <div id="view-out" class="hero-view-hidden" style="display:none; text-align:center">
-          <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
-          <div class="hero-label">في الطريق</div>
-          <div class="auto-return-hint" id="auto-return-hint" style="display:none;">
-            🏠 وصلت الفرع — هتترجع للطابور تلقائيًا خلال <span id="auto-return-secs">--</span> ث
-          </div>
-        </div>
-      </div>
-
       <!-- Map + distance card -->
       <div class="map-card">
         <div class="map-visual">
@@ -940,16 +925,6 @@
         </div>
       </div>
 
-      <!-- Wait message -->
-      <div class="wait-msg" id="wait-msg">
-        استنى! <span>دورك جاي قريب.</span>
-      </div>
-
-      <!-- Action button -->
-      <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
-        ارجع للطابور
-      </button>
-
       <!-- Bottom action row (visual, matches mockup) -->
       <div class="bottom-action-row">
         <button class="btn-admin-msg" type="button" style="width:100%">📢 رسالة من الإدارة</button>
@@ -974,10 +949,25 @@
         </div>
       </div>
 
-      <!-- Break timer — يظهر بس وقت الراحة -->
-      <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center; padding: 10px 0 4px;">
-        <div class="break-hero" id="break-timer">60:00</div>
-        <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
+      <!-- Hero states (out / break) — كل حاجة متعلقة بحالة الشيفت دلوقتي هنا بس -->
+      <div class="hero-block" id="hero-block">
+        <div id="view-waiting" class="hero-view-visible" style="display:none;"></div>
+
+        <div id="view-out" class="hero-view-hidden" style="display:none; text-align:center">
+          <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
+          <div class="hero-label">في الطريق</div>
+          <div class="auto-return-hint" id="auto-return-hint" style="display:none;">
+            🏠 وصلت الفرع — هتترجع للطابور تلقائيًا خلال <span id="auto-return-secs">--</span> ث
+          </div>
+        </div>
+
+        <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center">
+          <div class="break-hero" id="break-timer">60:00</div>
+          <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
+          <button class="btn-action-big btn-end-break" id="btn-action" onclick="handleAction()" style="display:none">
+            خلصت الراحة
+          </button>
+        </div>
       </div>
 
       <div class="queue-hero">
@@ -986,6 +976,11 @@
       </div>
       <div class="queue-list" id="queue-list">
         <!-- rows injected by JS -->
+      </div>
+
+      <!-- Wait message — queue-related, shown only while Waiting -->
+      <div class="wait-msg" id="wait-msg" style="display:none">
+        استنى! <span>دورك جاي قريب.</span>
       </div>
     </div>
 
@@ -1896,8 +1891,9 @@ function updateUI(data) {
   animateStatValue(document.getElementById('stat-misses'), data.misses || 0);
   animateStatValue(document.getElementById('stat-km'), data.shift_km || 0, { decimals: 1 });
 
-  // wait msg
-  document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
+  // "استنى دورك جاي" — جوه تاب الدور بس
+  const waitMsg = document.getElementById('wait-msg');
+  if (waitMsg) waitMsg.style.display = state === 'Waiting' ? 'block' : 'none';
 
   // action btn
   const btn = document.getElementById('btn-action');
