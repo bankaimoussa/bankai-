@@ -1180,20 +1180,32 @@ document.addEventListener('visibilitychange', () => {
 // ===== GPS =====
 let gpsForceInterval = null;
 let _lastSpeedCalc = null; // {lat, lng, ts} — لحساب السرعة يدويًا كـ fallback
+let _gpsRetryTimer = null; // عشان مانعملش أكتر من محاولة إعادة تشغيل في نفس الوقت
 
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
+  clearTimeout(_gpsRetryTimer);
   gpsWatchId = navigator.geolocation.watchPosition(
     pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
     () => {
-      document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
+      // watchPosition بيوقف تمامًا لو حصل error واحد (timeout / إشارة ضعيفة / إلخ)
+      // من غير retry تلقائي هيفضل واقف كده للأبد لحد ما حد يقفل ويفتح التطبيق يدويًا.
+      // فبنعمل retry تلقائي بعد ثانيتين طول ما الصفحة لسه شغالة.
+      document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك — بيحاول تاني...';
       gpsWatchId = null;
+      clearTimeout(_gpsRetryTimer);
+      _gpsRetryTimer = setTimeout(() => {
+        if (gpsWatchId === null && driverName) startGPS();
+      }, 2000);
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
   // force-send آخر موقع معروف كل 10 ثانية (مهم للخلفية)
   clearInterval(gpsForceInterval);
   gpsForceInterval = setInterval(() => {
+    // لو watchPosition واقف (مات بسبب error ولسه في retry مجدول)، نحاول نشغّله تاني هنا كمان
+    // بدل ما نستنى الـ retry timer بس — طبقة أمان إضافية تمنع الـ GPS يفضل ميت بصمت
+    if (gpsWatchId === null && driverName) startGPS();
     if (lastGpsPos) sendLocation(lastGpsPos);
     else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -1520,6 +1532,8 @@ function stopAllServices() {
   clearInterval(pingInterval);
   clearInterval(pongWatchdogInterval);
   clearTimeout(reconnectTimer);
+  clearTimeout(_gpsRetryTimer);
+  clearInterval(gpsForceInterval);
   if (ws) try { ws.close(); } catch(e) {}
   if (navigator.geolocation && gpsWatchId !== null) {
     navigator.geolocation.clearWatch(gpsWatchId);
