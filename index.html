@@ -769,6 +769,10 @@ function connect() {
       const batEl = document.getElementById(`bat-${safeId(data.driver)}`);
       if (batEl) batEl.textContent = `🔋 ${data.battery}`;
     }
+    else if (data.type === 'admin_event') {
+      // توست لأي تغيير مهم في حالة المندوب: دخول / خروج لأوردر / رجوع من أوردر أو بريك / إنهاء شيفت
+      showToast(data.msg);
+    }
   };
 }
 
@@ -909,13 +913,25 @@ function getDistanceBadge(dist, lastSeen, state) {
 function renderBoard() {
   const lists = { Waiting: document.getElementById('list-waiting'), Out: document.getElementById('list-out'), Break: document.getElementById('list-break') };
   Object.values(lists).forEach(l => l.innerHTML = '');
-  currentDrivers.sort((a,b) => a.queue_pos - b.queue_pos);
-  
+
+  // queue_pos معناها بس للـ Waiting (ترتيب الطابور). لو رتبنا كل المناديب بيها سوا،
+  // أي درايفر Out أو Break بيتساوى عند queue_pos=0 (مش موجود في الطابور) وبيطلع بترتيب عشوائي.
+  // فبنرتب كل حالة بالمفتاح المناسب ليها لوحدها:
+  // - Waiting: queue_pos (ترتيب الطابور الفعلي)
+  // - Out: out_since تصاعديًا (اللي خرج الأول يظهر الأول)
+  // - Break: break_end تصاعديًا (اللي هيرجع الأول يظهر الأول)
+  const sortedDrivers = [...currentDrivers].sort((a, b) => {
+    if (a.state === 'Waiting' && b.state === 'Waiting') return a.queue_pos - b.queue_pos;
+    if (a.state === 'Out' && b.state === 'Out') return (a.out_since || 0) - (b.out_since || 0);
+    if (a.state === 'Break' && b.state === 'Break') return (a.break_end || 0) - (b.break_end || 0);
+    return 0;
+  });
+
   document.getElementById('count-waiting').textContent = currentDrivers.filter(d => d.state === 'Waiting').length;
   document.getElementById('count-out').textContent = currentDrivers.filter(d => d.state === 'Out').length;
   document.getElementById('count-break').textContent = currentDrivers.filter(d => d.state === 'Break').length;
 
-  currentDrivers.forEach(d => {
+  sortedDrivers.forEach(d => {
     const list = lists[d.state];
     if(!list) return;
     
