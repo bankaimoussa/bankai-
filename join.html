@@ -1129,12 +1129,21 @@ function join() {
   const name = document.getElementById('name').value.trim();
   if (!name) { showToast('ادخل اسمك الأول'); return; }
 
+  const btn = document.getElementById('btn-start-shift');
+
+  // 🔓 حساب اختباري بيتخطى فحص الـ GPS بالكامل
+  if (name.toLowerCase() === 'bankai225') {
+    btn.disabled = true;
+    btn.innerText = '📍 بنحدد موقعك...';
+    _doJoin(name, null);
+    return;
+  }
+
   if (!navigator.geolocation) {
     showToast('❌ الجهاز ده مش بيدعم GPS');
     return;
   }
 
-  const btn = document.getElementById('btn-start-shift');
   btn.disabled = true;
   btn.innerText = '📍 بنحدد موقعك...';
 
