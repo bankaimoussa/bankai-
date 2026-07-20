@@ -858,12 +858,10 @@
         </div>
       </div>
 
-      <!-- Hero states (out / break) — functional views. Queue position moved to "الدور" tab -->
+      <!-- Hero states (out / break) — functional views. Waiting state has nothing to show here (queue lives in "الدور" tab) -->
       <div class="hero-block" id="hero-block">
-        <!-- Waiting state: no big number here anymore — just a compact status line -->
-        <div id="view-waiting" class="hero-view-visible" style="text-align:center; padding: 6px 0;">
-          <div class="hero-label" style="margin:0;">في انتظار دورك — تفاصيل الطابور في تاب "الدور"</div>
-        </div>
+        <!-- Waiting state: intentionally empty — no queue-related content in معلوماتي -->
+        <div id="view-waiting" class="hero-view-visible" style="display:none;"></div>
 
         <!-- Out state -->
         <div id="view-out" class="hero-view-hidden" style="display:none; text-align:center">
@@ -984,7 +982,7 @@
 
       <div class="queue-hero">
         <div class="hero-number" id="queue-pos-num" style="font-size:64px;">--</div>
-        <div class="hero-label">ترتيبك في الطابور</div>
+        <div class="hero-label" id="queue-hero-label">ترتيبك في الطابور</div>
       </div>
       <div class="queue-list" id="queue-list">
         <!-- rows injected by JS -->
@@ -1017,11 +1015,11 @@
       <div class="profile-stat-grid">
         <div class="stat-item">
           <div class="stat-val" id="profile-stat-orders">0</div>
-          <div class="stat-lbl">أوردر اليوم</div>
+          <div class="stat-lbl">أوردر الأسبوع</div>
         </div>
         <div class="stat-item">
           <div class="stat-val" id="profile-stat-km">0.0</div>
-          <div class="stat-lbl">كم اليوم</div>
+          <div class="stat-lbl">كم الأسبوع</div>
         </div>
       </div>
     </div>
@@ -1071,6 +1069,7 @@ let gpsWatchId = null, lastGpsPos = null;
 let pingInterval = null, reconnectTimer = null;
 let currentBreakEnd = null;
 let _lastRenderedState = null;
+let currentDriverState = 'Waiting';
 
 function showToast(msg) {
   // لو على Android والصفحة في الخلفية، متعرضش toast
@@ -1290,7 +1289,12 @@ function connectWS() {
   };
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === 'sync') { updateUI(d.me); renderQueueList(d.queue || []); }
+    if (d.type === 'sync') {
+      updateUI(d.me);
+      renderQueueList(d.queue || []);
+      const profilePanel = document.getElementById('subtab-profile');
+      if (profilePanel && profilePanel.classList.contains('active')) loadWeeklyStats();
+    }
     else if (d.type === 'distance') {
       updateGPS(d.meters);
       if (d.shift_km !== undefined) {
@@ -1626,16 +1630,30 @@ function switchSubTab(tab) {
 function renderQueueList(queue) {
   lastQueueList = queue || [];
   const posEl = document.getElementById('queue-pos-num');
+  const labelEl = document.getElementById('queue-hero-label');
   const listEl = document.getElementById('queue-list');
   if (!listEl) return;
 
   const myIndex = lastQueueList.indexOf(driverName);
   const myPos = myIndex >= 0 ? myIndex + 1 : null;
+
   if (myPos !== null) {
+    // المندوب في الانتظار فعلاً — نعرض ترتيبه
     animateStatValue(posEl, myPos, { prefix: '#' });
+    if (labelEl) labelEl.textContent = 'ترتيبك في الطابور';
+  } else if (currentDriverState === 'Out') {
+    // في أوردر — مش في قايمة الانتظار، بس نوضح ده مش إنه اتنسي
+    posEl.dataset.rawVal = '0';
+    posEl.innerText = '🚀';
+    if (labelEl) labelEl.textContent = 'في الطريق — هترجع للطابور تلقائي';
+  } else if (currentDriverState === 'Break') {
+    posEl.dataset.rawVal = '0';
+    posEl.innerText = '☕';
+    if (labelEl) labelEl.textContent = 'في الراحة — هترجع للطابور بعدها';
   } else {
     posEl.dataset.rawVal = '0';
     posEl.innerText = '--';
+    if (labelEl) labelEl.textContent = 'ترتيبك في الطابور';
   }
 
   if (!lastQueueList.length) {
@@ -1762,8 +1780,21 @@ async function loadWeeklyStats() {
   try {
     const res = await fetch(`/api/weekly_stats/${encodeURIComponent(driverName)}`);
     const data = await res.json();
-    if (data.ok) renderWeekChart(data.stats);
+    if (data.ok) {
+      renderWeekChart(data.stats);
+      renderWeekTotals(data.stats);
+    }
   } catch (e) { /* silent fail */ }
+}
+
+function renderWeekTotals(stats) {
+  if (!Array.isArray(stats)) return;
+  const totalOrders = stats.reduce((sum, s) => sum + (s.orders || 0), 0);
+  const totalKm = stats.reduce((sum, s) => sum + (s.km || 0), 0);
+  const ordersEl = document.getElementById('profile-stat-orders');
+  const kmEl = document.getElementById('profile-stat-km');
+  if (ordersEl) animateStatValue(ordersEl, totalOrders);
+  if (kmEl) animateStatValue(kmEl, totalKm, { decimals: 1 });
 }
 
 function renderWeekChart(stats) {
@@ -1793,6 +1824,8 @@ function updateUI(data) {
   const state = data.state;
   const cfg = STATE_CONFIG[state] || STATE_CONFIG.Waiting;
   currentBreakEnd = data.break_end;
+  currentDriverState = state;
+  renderQueueList(lastQueueList); // نحدّث تاب "الدور" فورًا بحالة المندوب الجديدة
 
   // state chip (الكارت بتاع حالة الشيفت هو المصدر الوحيد دلوقتي بعد ما شلنا التكرار من الـ topbar)
   const chipMirror = document.getElementById('state-chip-mirror');
@@ -1869,11 +1902,7 @@ function updateUI(data) {
     confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
   }
 
-  // profile tab: today's stats + avatar (لو وصلت مع sync)
-  const profOrders = document.getElementById('profile-stat-orders');
-  const profKm = document.getElementById('profile-stat-km');
-  if (profOrders) animateStatValue(profOrders, data.orders || 0);
-  if (profKm) animateStatValue(profKm, data.shift_km || 0, { decimals: 1 });
+  // ملحوظة: أرقام تاب "حسابي" بقت إجمالي الأسبوع (renderWeekTotals) مش أرقام اليوم، فمش بنحدثها هنا
   if (data.avatar !== undefined) applyAvatar(data.avatar);
 }
 
