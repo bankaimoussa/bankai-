@@ -716,26 +716,6 @@
   /* hidden file input for avatar */
   #avatar-file-input { display: none; }
 
-  /* ===== BOTTOM NAV — زي الموك أب بالظبط ===== */
-  .bottom-nav {
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 12px 8px; border-top: 1px solid var(--border);
-  }
-  .nav-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    background: none; border: none; cursor: pointer; padding: 6px 16px;
-    color: var(--text-muted); font-family: var(--font); transition: all 0.25s ease;
-    position: relative;
-  }
-  .nav-btn .nav-ic { font-size: 20px; line-height: 1; transition: transform 0.25s ease; }
-  .nav-btn .nav-lbl { font-size: 10px; font-weight: 800; }
-  .nav-btn.active { color: var(--primary); }
-  .nav-btn.active .nav-ic { transform: translateY(-2px); }
-  .nav-btn.active::before {
-    content:''; position:absolute; top:-12px; left:50%; transform: translateX(-50%);
-    width: 28px; height:3px; border-radius: 4px; background: var(--primary);
-  }
-
   /* Chat popup */
   #chat-popup.show { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:auto; }
 </style>
@@ -997,19 +977,6 @@
           <div class="stat-lbl">كم اليوم</div>
         </div>
       </div>
-    </div>
-
-    <!-- Bottom nav -->
-    <div class="bottom-nav">
-      <button class="nav-btn active" id="nav-btn-info" onclick="switchSubTab('info')">
-        <span class="nav-ic">🏠</span><span class="nav-lbl">معلوماتي</span>
-      </button>
-      <button class="nav-btn" id="nav-btn-queue" onclick="switchSubTab('queue')">
-        <span class="nav-ic">📋</span><span class="nav-lbl">الدور</span>
-      </button>
-      <button class="nav-btn" id="nav-btn-profile" onclick="switchSubTab('profile')">
-        <span class="nav-ic">👤</span><span class="nav-lbl">حسابي</span>
-      </button>
     </div>
 
   </div>
@@ -1458,11 +1425,23 @@ function stopAllServices() {
 
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-  stopAllServices();
-  kicked = false;
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  switchSubTab('info');
+
+  // لازم نبلّغ السيرفر إنه يمسحنا من Redis/الطابور قبل ما نقفل السوكيت،
+  // وإلا هنفضل ظاهرين عند الأدمن كـ "ghost" لحد ما هو يمسحنا يدوي
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try { ws.send(JSON.stringify({ type: 'end_shift' })); } catch(e) {}
+  }
+
+  const finish = () => {
+    stopAllServices();
+    kicked = false;
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    switchSubTab('info');
+  };
+
+  // نديله فرصة صغيرة إن الرسالة توصل فعليًا قبل ما نقفل الاتصال
+  setTimeout(finish, 300);
 }
 
 // === Chat Notification ===
@@ -1507,7 +1486,6 @@ function switchSubTab(tab) {
   ['info','queue','profile'].forEach(t => {
     document.getElementById('subtab-' + t).classList.toggle('active', t === tab);
     document.getElementById('subtab-btn-' + t).classList.toggle('active', t === tab);
-    document.getElementById('nav-btn-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'queue') renderQueueList(lastQueueList);
   if (tab === 'profile') loadWeeklyStats();
@@ -1651,8 +1629,15 @@ function updateUI(data) {
   document.getElementById('view-out').style.display     = state === 'Out'     ? 'block' : 'none';
   document.getElementById('view-break').style.display   = state === 'Break'   ? 'block' : 'none';
 
+  // وضع "تركيز" وقت البريك: نخفي الخريطة والكروت التانية ويفضل بس تايمر الراحة ظاهر
+  const isBreak = state === 'Break';
+  const mapCard = document.querySelector('.map-card');
+  const infoGrid = document.querySelector('.info-grid');
+  if (mapCard) mapCard.style.display = isBreak ? 'none' : '';
+  if (infoGrid) infoGrid.style.display = isBreak ? 'none' : '';
+
   // stats row
-  document.getElementById('stat-row').style.display = 'flex';
+  document.getElementById('stat-row').style.display = isBreak ? 'none' : 'flex';
   document.getElementById('stat-orders').innerText  = data.orders  || 0;
   document.getElementById('stat-returns').innerText = data.returns || 0;
   document.getElementById('stat-misses').innerText  = data.misses  || 0;
