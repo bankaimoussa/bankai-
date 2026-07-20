@@ -576,6 +576,7 @@ async def driver_ws(ws: WebSocket):
                     # حساب الكيلومترات التراكمية من آخر نقطة GPS معروفة (تصفيته من نويز الـ GPS الثابت)
                     last_gps = drivers[driver_name].get("_last_gps")
                     shift_km = drivers[driver_name].get("shift_km", 0.0)
+                    implied_kmh = None
                     if last_gps and last_gps.get("lat") is not None and last_gps.get("lng") is not None:
                         step_m = haversine(last_gps["lat"], last_gps["lng"], data["lat"], data["lng"])
                         dt = max(1, now_ts - last_gps.get("ts", now_ts))
@@ -592,7 +593,15 @@ async def driver_ws(ws: WebSocket):
                     # المسافة الخام (dist) لسه بتتحسب زي ما هي وبتُستخدم في auto-out/auto-return
                     # تحت عشان القرارات دي حساسة للوقت ومحتاجة القيمة الفعلية مش المنعّمة.
                     prev_display_dist = drivers[driver_name].get("distance")
-                    if prev_display_dist is not None:
+                    # implied_kmh فوق ده — لو >120 كم/س، النقطة دي على الأغلب انعكاس/قفزة GPS شاذة
+                    # مش حركة حقيقية، فمنسمحش لها تسحب المسافة المعروضة معاها (اللي كانت بتسبب 1m ثم رقم صح ثم 1m)
+                    point_is_outlier = implied_kmh is not None and implied_kmh > 120
+
+                    if point_is_outlier and prev_display_dist is not None:
+                        # نتجاهل القفزة الشاذة بالكامل: نفضل على آخر رقم معروض صحيح
+                        # (lat/lng الفعلية لسه بتتسجل تحت عشان الماركر ميجمدش، بس المسافة المعروضة مبتتأثرش)
+                        display_dist = prev_display_dist
+                    elif prev_display_dist is not None:
                         # لو الفرق كبير (>15م) نعتبرها حركة فعلية ونتبعها بسرعة أكبر (alpha أعلى)
                         # لو الفرق صغير (jitter) نمهّد أكتر (alpha أقل) عشان الرقم يفضل مستقر
                         jump = abs(dist - prev_display_dist)
