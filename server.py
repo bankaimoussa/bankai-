@@ -167,6 +167,15 @@ async def broadcast_state(event_type="update"):
         if d in driver_connections: del driver_connections[d]
         driver_last_activity.pop(d, None)
 
+async def broadcast_admin_event(event: str, driver: str, msg: str):
+    """ توست بسيط للأدمن بس (join / out / return) — منفصل عن broadcast_state الكامل """
+    payload = json.dumps({"type": "admin_event", "event": event, "driver": driver, "msg": msg})
+    dead_admins = []
+    for ws in admin_connections:
+        try: await ws.send_text(payload)
+        except: dead_admins.append(ws)
+    for ws in dead_admins: admin_connections.remove(ws)
+
 async def broadcast_location_update(driver_data: dict):
     """ إرسال تحديثات المواقع للآدمن فقط (لتقليل الضغط) """
     msg = json.dumps({
@@ -239,6 +248,15 @@ async def change_driver_state(driver_name: str, new_state: str):
     await save_driver_to_redis(driver_name, drivers[driver_name])
     await save_queue_to_redis(queue)
     await broadcast_state("update")
+
+    # توست للأدمن بالتغيير اللي حصل — منفصل عن broadcast_state عشان يبقى event واضح
+    # نستخدم prev_state عشان نميّز "رجع من أوردر" عن "رجع من بريك"
+    if new_state == "Out":
+        await broadcast_admin_event("out", driver_name, f"🚀 {driver_name} خرج لأوردر")
+    elif new_state == "Waiting" and prev_state == "Out":
+        await broadcast_admin_event("returned", driver_name, f"✅ {driver_name} رجع من الأوردر")
+    elif new_state == "Waiting" and prev_state == "Break":
+        await broadcast_admin_event("returned_break", driver_name, f"☕ {driver_name} رجع من البريك")
 
 @app.post("/api/clear_all")
 async def clear_all():
@@ -566,6 +584,10 @@ async def driver_ws(ws: WebSocket):
 
                 # broadcast عشان الادمن يشوف إن الدرايفر اتوصل تاني
                 await broadcast_state("update")
+
+                # توست للأدمن بس لو دخول جديد فعلي (مش reconnect) — عشان الريلود ماتعملش توست كل مرة
+                if not is_reconnect:
+                    await broadcast_admin_event("joined", driver_name, f"🟢 {driver_name} سجّل ودخل الطابور")
             
             elif data["type"] == "location" and driver_name:
                 dist = haversine(data["lat"], data["lng"], BRANCH_LAT, BRANCH_LNG)
@@ -711,6 +733,7 @@ async def driver_ws(ws: WebSocket):
             elif data["type"] == "end_shift" and driver_name:
                 # المندوب دوس "إنهاء الشيفت" — لازم نمسحه فعليًا من Redis والطابور
                 # مش بس نقفل الـ WebSocket، عشان الأدمن يشوفه اتشال فورًا
+                ended_name = driver_name
                 drivers = await get_drivers_from_redis()
                 queue = await get_queue_from_redis()
                 if driver_name in drivers:
@@ -723,6 +746,7 @@ async def driver_ws(ws: WebSocket):
                     del driver_connections[driver_name]
                 driver_last_activity.pop(driver_name, None)
                 await broadcast_state("update")
+                await broadcast_admin_event("ended_shift", ended_name, f"⚪ {ended_name} أنهى الشيفت")
                 driver_name = None  # عشان الـ WebSocketDisconnect بعد كده متعملش حاجة تاني عليه
 
             elif data["type"] == "battery" and driver_name:
