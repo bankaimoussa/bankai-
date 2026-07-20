@@ -672,6 +672,23 @@ async def driver_ws(ws: WebSocket):
                     if current_state == "Break":
                         await change_driver_state(driver_name, "Waiting")
 
+            elif data["type"] == "end_shift" and driver_name:
+                # المندوب دوس "إنهاء الشيفت" — لازم نمسحه فعليًا من Redis والطابور
+                # مش بس نقفل الـ WebSocket، عشان الأدمن يشوفه اتشال فورًا
+                drivers = await get_drivers_from_redis()
+                queue = await get_queue_from_redis()
+                if driver_name in drivers:
+                    await delete_driver_from_redis(driver_name)
+                if driver_name in queue:
+                    queue.remove(driver_name)
+                    await save_queue_to_redis(queue)
+                await delete_fcm_token(driver_name)
+                if driver_connections.get(driver_name) is ws:
+                    del driver_connections[driver_name]
+                driver_last_activity.pop(driver_name, None)
+                await broadcast_state("update")
+                driver_name = None  # عشان الـ WebSocketDisconnect بعد كده متعملش حاجة تاني عليه
+
             elif data["type"] == "battery" and driver_name:
                 drivers = await get_drivers_from_redis()
                 if driver_name in drivers:
