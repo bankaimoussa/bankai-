@@ -167,15 +167,6 @@ async def broadcast_state(event_type="update"):
         if d in driver_connections: del driver_connections[d]
         driver_last_activity.pop(d, None)
 
-async def broadcast_admin_event(event: str, driver: str, msg: str):
-    """ توست بسيط للأدمن بس (join / out / return) — منفصل عن broadcast_state الكامل """
-    payload = json.dumps({"type": "admin_event", "event": event, "driver": driver, "msg": msg})
-    dead_admins = []
-    for ws in admin_connections:
-        try: await ws.send_text(payload)
-        except: dead_admins.append(ws)
-    for ws in dead_admins: admin_connections.remove(ws)
-
 async def broadcast_location_update(driver_data: dict):
     """ إرسال تحديثات المواقع للآدمن فقط (لتقليل الضغط) """
     msg = json.dumps({
@@ -248,15 +239,6 @@ async def change_driver_state(driver_name: str, new_state: str):
     await save_driver_to_redis(driver_name, drivers[driver_name])
     await save_queue_to_redis(queue)
     await broadcast_state("update")
-
-    # توست للأدمن بالتغيير اللي حصل — منفصل عن broadcast_state عشان يبقى event واضح
-    # نستخدم prev_state عشان نميّز "رجع من أوردر" عن "رجع من بريك"
-    if new_state == "Out":
-        await broadcast_admin_event("out", driver_name, f"🚀 {driver_name} خرج لأوردر")
-    elif new_state == "Waiting" and prev_state == "Out":
-        await broadcast_admin_event("returned", driver_name, f"✅ {driver_name} رجع من الأوردر")
-    elif new_state == "Waiting" and prev_state == "Break":
-        await broadcast_admin_event("returned_break", driver_name, f"☕ {driver_name} رجع من البريك")
 
 @app.post("/api/clear_all")
 async def clear_all():
@@ -584,10 +566,6 @@ async def driver_ws(ws: WebSocket):
 
                 # broadcast عشان الادمن يشوف إن الدرايفر اتوصل تاني
                 await broadcast_state("update")
-
-                # توست للأدمن بس لو دخول جديد فعلي (مش reconnect) — عشان الريلود ماتعملش توست كل مرة
-                if not is_reconnect:
-                    await broadcast_admin_event("joined", driver_name, f"🟢 {driver_name} سجّل ودخل الطابور")
             
             elif data["type"] == "location" and driver_name:
                 dist = haversine(data["lat"], data["lng"], BRANCH_LAT, BRANCH_LNG)
@@ -598,43 +576,16 @@ async def driver_ws(ws: WebSocket):
                     # حساب الكيلومترات التراكمية من آخر نقطة GPS معروفة (تصفيته من نويز الـ GPS الثابت)
                     last_gps = drivers[driver_name].get("_last_gps")
                     shift_km = drivers[driver_name].get("shift_km", 0.0)
-                    implied_kmh = None
                     if last_gps and last_gps.get("lat") is not None and last_gps.get("lng") is not None:
                         step_m = haversine(last_gps["lat"], last_gps["lng"], data["lat"], data["lng"])
                         dt = max(1, now_ts - last_gps.get("ts", now_ts))
                         implied_kmh = (step_m / dt) * 3.6
                         # نتجاهل: jitter وهو واقف (<5م) + قفزات GPS الوهمية (>300م لحظيًا)
                         # + أي نقلة سرعتها المضمنة أعلى من 120 كم/س (يعني الموبايل قفل شوية وفتح في مكان تاني بره النطاق ده)
-                        # + أي فجوة زمنية كبيرة (>30 ثانية) بين آخر نقطة والنقطة دي — دي علامة على reconnect/انقطاع نت
-                        #   مش سير فعلي، فلو حسبناها هتضيف كيلومترات وهمية بسبب GPS drift وقت الانقطاع
-                        if dt <= 30 and 5 <= step_m <= 300 and implied_kmh <= 120:
+                        if 5 <= step_m <= 300 and implied_kmh <= 120:
                             shift_km = round(shift_km + step_m / 1000, 3)
-
-                    # تنعيم (EMA) للمسافة المعروضة بس — عشان الرقم اللي بيشوفه الأدمن مايرقصش
-                    # كل تحديث بسبب jitter الـ GPS الطبيعي وهو واقف مكانه ثابت.
-                    # المسافة الخام (dist) لسه بتتحسب زي ما هي وبتُستخدم في auto-out/auto-return
-                    # تحت عشان القرارات دي حساسة للوقت ومحتاجة القيمة الفعلية مش المنعّمة.
-                    prev_display_dist = drivers[driver_name].get("distance")
-                    # implied_kmh فوق ده — لو >120 كم/س، النقطة دي على الأغلب انعكاس/قفزة GPS شاذة
-                    # مش حركة حقيقية، فمنسمحش لها تسحب المسافة المعروضة معاها (اللي كانت بتسبب 1m ثم رقم صح ثم 1m)
-                    point_is_outlier = implied_kmh is not None and implied_kmh > 120
-
-                    if point_is_outlier and prev_display_dist is not None:
-                        # نتجاهل القفزة الشاذة بالكامل: نفضل على آخر رقم معروض صحيح
-                        # (lat/lng الفعلية لسه بتتسجل تحت عشان الماركر ميجمدش، بس المسافة المعروضة مبتتأثرش)
-                        display_dist = prev_display_dist
-                    elif prev_display_dist is not None:
-                        # لو الفرق كبير (>15م) نعتبرها حركة فعلية ونتبعها بسرعة أكبر (alpha أعلى)
-                        # لو الفرق صغير (jitter) نمهّد أكتر (alpha أقل) عشان الرقم يفضل مستقر
-                        jump = abs(dist - prev_display_dist)
-                        alpha = 0.6 if jump > 15 else 0.25
-                        display_dist = round(prev_display_dist + alpha * (dist - prev_display_dist))
-                    else:
-                        display_dist = dist
-
                     drivers[driver_name].update({
-                        "distance": display_dist,
-                        "raw_distance": dist,
+                        "distance": dist,
                         "lat": data["lat"],
                         "lng": data["lng"],
                         "speed": data.get("speed", 0),
@@ -648,21 +599,12 @@ async def driver_ws(ws: WebSocket):
                     # إرسال التحديث الصغير للآدمنز فوراً بدون تحميل كامل الداتا
                     await broadcast_location_update(drivers[driver_name])
                     
-                    # تحديث المندوب بحالته + الكيلومترات لايف + هل هو داخل نطاق الفرع وعداد الرجوع التلقائي شغال
-                    out_since_val = drivers[driver_name].get("out_since", 0)
-                    auto_return_secs_left = None
-                    if drivers[driver_name]["state"] == "Out" and dist <= 50 and out_since_val:
-                        auto_return_secs_left = max(0, 45 - (now_ts - out_since_val))
-                    await ws.send_text(json.dumps({
-                        "type": "distance", "meters": dist, "shift_km": shift_km,
-                        "auto_return_secs_left": auto_return_secs_left
-                    }))
+                    # تحديث المندوب بحالته + الكيلومترات لايف
+                    await ws.send_text(json.dumps({"type": "distance", "meters": dist, "shift_km": shift_km}))
 
-                    # AUTO-RETURN: لو Out فأكتر من 45 ثانية وراجع للفرع (≤50m) → Waiting تلقائي
-                    # (كانت دقيقتين قبل كده — قللناها عشان الحالة ماتفضلش حاسة إنها "متأخرة" من وجهة نظر المندوب،
-                    #  مع الاحتفاظ بحد أدنى يمنع الـ flapping لو المندوب مر بالصدفة جنب الفرع أثناء التوصيل)
+                    # AUTO-RETURN: لو Out فأكتر من دقيقتين وراجع للفرع (≤50m) → Waiting تلقائي
                     out_since = drivers[driver_name].get("out_since", 0)
-                    two_mins_passed = (now_ts - out_since) >= 45
+                    two_mins_passed = (now_ts - out_since) >= 120
                     if drivers[driver_name]["state"] == "Out" and dist <= 50 and two_mins_passed:
                         await change_driver_state(driver_name, "Waiting")
                         # بلّغ السواق إنه رجع في الطابور
@@ -729,25 +671,6 @@ async def driver_ws(ws: WebSocket):
                     # المندوب مسموح له يرجّع نفسه بس من Break — لو في Out لازم الأدمن يقفل الأوردر
                     if current_state == "Break":
                         await change_driver_state(driver_name, "Waiting")
-
-            elif data["type"] == "end_shift" and driver_name:
-                # المندوب دوس "إنهاء الشيفت" — لازم نمسحه فعليًا من Redis والطابور
-                # مش بس نقفل الـ WebSocket، عشان الأدمن يشوفه اتشال فورًا
-                ended_name = driver_name
-                drivers = await get_drivers_from_redis()
-                queue = await get_queue_from_redis()
-                if driver_name in drivers:
-                    await delete_driver_from_redis(driver_name)
-                if driver_name in queue:
-                    queue.remove(driver_name)
-                    await save_queue_to_redis(queue)
-                await delete_fcm_token(driver_name)
-                if driver_connections.get(driver_name) is ws:
-                    del driver_connections[driver_name]
-                driver_last_activity.pop(driver_name, None)
-                await broadcast_state("update")
-                await broadcast_admin_event("ended_shift", ended_name, f"⚪ {ended_name} أنهى الشيفت")
-                driver_name = None  # عشان الـ WebSocketDisconnect بعد كده متعملش حاجة تاني عليه
 
             elif data["type"] == "battery" and driver_name:
                 drivers = await get_drivers_from_redis()
