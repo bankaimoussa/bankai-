@@ -582,7 +582,9 @@ async def driver_ws(ws: WebSocket):
                         implied_kmh = (step_m / dt) * 3.6
                         # نتجاهل: jitter وهو واقف (<5م) + قفزات GPS الوهمية (>300م لحظيًا)
                         # + أي نقلة سرعتها المضمنة أعلى من 120 كم/س (يعني الموبايل قفل شوية وفتح في مكان تاني بره النطاق ده)
-                        if 5 <= step_m <= 300 and implied_kmh <= 120:
+                        # + أي فجوة زمنية كبيرة (>30 ثانية) بين آخر نقطة والنقطة دي — دي علامة على reconnect/انقطاع نت
+                        #   مش سير فعلي، فلو حسبناها هتضيف كيلومترات وهمية بسبب GPS drift وقت الانقطاع
+                        if dt <= 30 and 5 <= step_m <= 300 and implied_kmh <= 120:
                             shift_km = round(shift_km + step_m / 1000, 3)
                     drivers[driver_name].update({
                         "distance": dist,
