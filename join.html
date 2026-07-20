@@ -492,10 +492,13 @@
     display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
     box-shadow: 0 10px 24px var(--primary-glow);
-    animation: mapFloat 3s ease-in-out infinite;
+    animation: arrowBob 3s ease-in-out infinite;
+    position: relative; z-index: 2;
   }
+  @keyframes arrowBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
   .map-progress {
     height: 6px; background: var(--border); margin: 0 16px 16px; border-radius: 999px; overflow: hidden;
+    position: relative; z-index: 5;
   }
   .map-progress > div {
     height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark));
@@ -917,17 +920,12 @@
         </div>
       </div>
 
-      <!-- Battery tile (visible, functional) -->
-      <div class="info-grid">
+      <!-- (Battery card removed per request) -->
+      <div class="info-grid" style="display:none">
         <div class="info-tile" id="gps-tile" style="display:none">
           <div class="info-icon">📍</div>
           <div class="info-value small">--</div>
           <div class="info-label">المسافة</div>
-        </div>
-        <div class="info-tile" id="bat-tile" style="grid-column: 1 / -1;">
-          <div class="info-icon" id="bat-icon">🔋</div>
-          <div class="info-value" id="bat-percent">--%</div>
-          <div class="info-label">البطارية</div>
         </div>
       </div>
 
@@ -982,11 +980,11 @@
     <!-- ===== TAB: حسابي ===== -->
     <div class="sub-tab-panel" id="subtab-profile">
       <div class="profile-header">
-        <div class="avatar-wrap" onclick="document.getElementById('avatar-file-input').click()">
+        <label class="avatar-wrap" for="avatar-file-input">
           <img id="profile-avatar-img" style="display:none" />
           <div class="avatar-fallback" id="profile-avatar-fallback">م</div>
           <div class="avatar-edit-badge">📷</div>
-        </div>
+        </label>
         <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarSelect(event)">
         <div class="profile-name" id="profile-name">مندوب</div>
         <div class="profile-role">مندوب توصيل · رواحل</div>
@@ -1494,16 +1492,40 @@ function endShift() {
   }
 
   const finish = () => {
+    const savedName = driverName; // نحتفظ بالاسم عشان "ابدأ شيفت" يشتغل من غير تسجيل تاني
     stopAllServices();
     kicked = false;
     document.getElementById('app-screen').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
+
+    const login = document.getElementById('login-screen');
+    login.style.display = 'flex';
+    login.classList.remove('login-in');
+    // نجبر الـ reflow عشان الـ animation يشتغل من الأول (مش يفضل opacity:0)
+    void login.offsetWidth;
+    requestAnimationFrame(() => { login.classList.add('login-in'); });
+
     setFloatingPillsVisible(true);
     switchSubTab('info');
+    showShiftEndedScreen(savedName);
   };
 
   // نديله فرصة صغيرة إن الرسالة توصل فعليًا قبل ما نقفل الاتصال
   setTimeout(finish, 300);
+}
+
+// شاشة "خلص الشيفت" — زرار ابدأ شيفت من غير ما يحتاج يكتب اسمه أو يسجل تاني
+function showShiftEndedScreen(name) {
+  const nameInput = document.getElementById('name');
+  const sub = document.getElementById('login-sub');
+  const btn = document.getElementById('btn-start-shift');
+  if (name) {
+    localStorage.setItem('fleet_driver_name', name); // تأكيد إنه محفوظ
+    if (nameInput) { nameInput.value = name; nameInput.style.display = 'none'; }
+    if (sub) sub.textContent = `تم إنهاء الشيفت ✅ — يلا يا ${name}، جاهز تبدأ تاني؟`;
+  } else if (sub) {
+    sub.textContent = 'تم إنهاء الشيفت ✅';
+  }
+  if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
 }
 
 // === Chat Notification ===
@@ -1533,7 +1555,11 @@ function handleKick() {
   kicked = false;
   localStorage.removeItem('fleet_driver_name');
   document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  const login = document.getElementById('login-screen');
+  login.style.display = 'flex';
+  login.classList.remove('login-in');
+  void login.offsetWidth;
+  requestAnimationFrame(() => { login.classList.add('login-in'); });
   setFloatingPillsVisible(true);
   document.getElementById('name').value = '';
   const sub = document.getElementById('login-sub');
