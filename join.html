@@ -970,7 +970,7 @@
         </div>
       </div>
 
-      <div class="queue-hero">
+      <div class="queue-hero" id="queue-hero">
         <div class="hero-number" id="queue-pos-num" style="font-size:64px;">--</div>
         <div class="hero-label" id="queue-hero-label">ترتيبك في الطابور</div>
       </div>
@@ -1622,6 +1622,7 @@ function switchSubTab(tab) {
 // ===== QUEUE TAB =====
 function renderQueueList(queue) {
   lastQueueList = queue || [];
+  const heroEl = document.getElementById('queue-hero');
   const posEl = document.getElementById('queue-pos-num');
   const labelEl = document.getElementById('queue-hero-label');
   const listEl = document.getElementById('queue-list');
@@ -1632,21 +1633,13 @@ function renderQueueList(queue) {
 
   if (myPos !== null) {
     // المندوب في الانتظار فعلاً — نعرض ترتيبه
+    if (heroEl) heroEl.style.display = '';
     animateStatValue(posEl, myPos, { prefix: '#' });
     if (labelEl) labelEl.textContent = 'ترتيبك في الطابور';
-  } else if (currentDriverState === 'Out') {
-    // في أوردر — مش في قايمة الانتظار، بس نوضح ده مش إنه اتنسي
-    posEl.dataset.rawVal = '0';
-    posEl.innerText = '🚀';
-    if (labelEl) labelEl.textContent = 'في الطريق — هترجع للطابور تلقائي';
-  } else if (currentDriverState === 'Break') {
-    posEl.dataset.rawVal = '0';
-    posEl.innerText = '☕';
-    if (labelEl) labelEl.textContent = 'في الراحة — هترجع للطابور بعدها';
   } else {
-    posEl.dataset.rawVal = '0';
-    posEl.innerText = '--';
-    if (labelEl) labelEl.textContent = 'ترتيبك في الطابور';
+    // مش في قايمة الانتظار (في أوردر أو راحة) — حالته دلوقتي ظاهرة فوق في hero-block،
+    // فمنعرضش رقم/أيقونة تانية هنا عشان منكررش نفس المعلومة
+    if (heroEl) heroEl.style.display = 'none';
   }
 
   if (!lastQueueList.length) {
@@ -1873,19 +1866,9 @@ function updateUI(data) {
     _lastRenderedState = state;
   }
 
-  // وضع "تركيز" وقت البريك: نخفي الخريطة والكروت التانية بفيد سلس ويفضل بس تايمر الراحة ظاهر
-  const isBreak = state === 'Break';
-  const mapCard = document.querySelector('.map-card');
-  const infoGrid = document.querySelector('.info-grid');
-  if (mapCard) mapCard.classList.toggle('focus-hidden', isBreak);
-  if (infoGrid) infoGrid.classList.toggle('focus-hidden', isBreak);
-
   // stats row
   const statRow = document.getElementById('stat-row');
-  if (statRow) {
-    statRow.style.display = 'flex';
-    statRow.classList.toggle('focus-hidden', isBreak);
-  }
+  if (statRow) statRow.style.display = 'flex';
   animateStatValue(document.getElementById('stat-orders'), data.orders || 0);
   animateStatValue(document.getElementById('stat-returns'), data.returns || 0);
   animateStatValue(document.getElementById('stat-misses'), data.misses || 0);
