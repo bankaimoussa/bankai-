@@ -222,6 +222,7 @@
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 16px; align-items: start; height: 100%; }
   .column { background: var(--surface); border-radius: var(--radius); padding: 10px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
+  #list-waiting, #list-out, #list-break { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; align-items: start; }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
   .column::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
@@ -232,9 +233,9 @@
   .col-break { border-top: 3px solid var(--break); }
 
   .driver-card {
-    background: var(--surface-2); padding: 8px 9px; border-radius: var(--radius-sm);
+    background: var(--surface-2); padding: 5px 7px; border-radius: var(--radius-sm);
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
-    margin-bottom: 6px; display: flex; flex-direction: column; gap: 5px;
+    margin-bottom: 0; display: flex; flex-direction: column; gap: 3px;
     transition: all 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
@@ -246,23 +247,23 @@
   .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 14px; }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
-  .card-name { font-weight: 700; font-size: 14px; color: var(--text); word-break: break-word; line-height: 1.35; display: flex; align-items: center; gap: 4px; }
+  .card-name { font-weight: 700; font-size: 12px; color: var(--text); word-break: break-word; line-height: 1.25; display: flex; align-items: center; gap: 4px; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 19px; height: 19px; padding: 0 4px; border-radius: 6px;
-    background: rgba(124,106,247,0.15); color: var(--primary); font-size: 11px; font-weight: 800;
+    min-width: 16px; height: 16px; padding: 0 3px; border-radius: 5px;
+    background: rgba(124,106,247,0.15); color: var(--primary); font-size: 10px; font-weight: 800;
   }
   .btn-kick {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+    width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0;
     background: rgba(255,92,124,0.08); color: var(--danger); border: 1px solid rgba(255,92,124,0.18);
-    font-size: 11px; cursor: pointer; transition: all 0.2s; padding: 0;
+    font-size: 10px; cursor: pointer; transition: all 0.2s; padding: 0;
   }
   .btn-kick:hover { background: rgba(255,92,124,0.18); transform: scale(1.08); }
 
   /* صف الحالة: GPS + مسافة + بطارية — كل عنصر واضح بشكل ودور منفصل */
-  .indicators { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-  .badge { display: inline-flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.04); padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
+  .indicators { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
   .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
   .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
   .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
@@ -270,24 +271,24 @@
   .badge-battery.low { color: var(--danger); border-color: rgba(255,92,124,0.25); background: rgba(255,92,124,0.06); }
 
   .btn-locate {
-    display: inline-flex; align-items: center; gap: 3px;
+    display: inline-flex; align-items: center; gap: 2px;
     background: rgba(124, 106, 247, 0.1); color: var(--primary); border: 1px solid rgba(124,106,247,0.22);
-    padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;
+    padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; white-space: nowrap;
   }
   .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
 
   .card-details {
-    font-size: 11px; color: var(--muted); line-height: 1.4; font-weight: 500;
-    display: flex; gap: 10px; flex-wrap: wrap;
+    font-size: 9.5px; color: var(--muted); line-height: 1.3; font-weight: 500;
+    display: flex; gap: 7px; flex-wrap: wrap;
   }
-  .card-details span { display: inline-flex; align-items: center; gap: 3px; }
+  .card-details span { display: inline-flex; align-items: center; gap: 2px; }
   .card-details b { color: var(--text-2); font-weight: 700; }
 
-  .card-actions { display: flex; gap: 4px; }
+  .card-actions { display: flex; gap: 3px; }
   .action-btn {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-    padding: 5px 6px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+    padding: 3px 5px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; border: 1px solid transparent;
   }
   .action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
