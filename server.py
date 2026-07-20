@@ -586,8 +586,24 @@ async def driver_ws(ws: WebSocket):
                         #   مش سير فعلي، فلو حسبناها هتضيف كيلومترات وهمية بسبب GPS drift وقت الانقطاع
                         if dt <= 30 and 5 <= step_m <= 300 and implied_kmh <= 120:
                             shift_km = round(shift_km + step_m / 1000, 3)
+
+                    # تنعيم (EMA) للمسافة المعروضة بس — عشان الرقم اللي بيشوفه الأدمن مايرقصش
+                    # كل تحديث بسبب jitter الـ GPS الطبيعي وهو واقف مكانه ثابت.
+                    # المسافة الخام (dist) لسه بتتحسب زي ما هي وبتُستخدم في auto-out/auto-return
+                    # تحت عشان القرارات دي حساسة للوقت ومحتاجة القيمة الفعلية مش المنعّمة.
+                    prev_display_dist = drivers[driver_name].get("distance")
+                    if prev_display_dist is not None:
+                        # لو الفرق كبير (>15م) نعتبرها حركة فعلية ونتبعها بسرعة أكبر (alpha أعلى)
+                        # لو الفرق صغير (jitter) نمهّد أكتر (alpha أقل) عشان الرقم يفضل مستقر
+                        jump = abs(dist - prev_display_dist)
+                        alpha = 0.6 if jump > 15 else 0.25
+                        display_dist = round(prev_display_dist + alpha * (dist - prev_display_dist))
+                    else:
+                        display_dist = dist
+
                     drivers[driver_name].update({
-                        "distance": dist,
+                        "distance": display_dist,
+                        "raw_distance": dist,
                         "lat": data["lat"],
                         "lng": data["lng"],
                         "speed": data.get("speed", 0),
