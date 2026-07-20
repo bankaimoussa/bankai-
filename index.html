@@ -222,7 +222,6 @@
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 16px; align-items: start; height: 100%; }
   .column { background: var(--surface); border-radius: var(--radius); padding: 10px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
-  #list-waiting, #list-out, #list-break { display: flex; flex-direction: column; gap: 4px; }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
   .column::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
@@ -232,56 +231,41 @@
   .col-out { border-top: 3px solid var(--out); }
   .col-break { border-top: 3px solid var(--break); }
 
-  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
-  .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
-  .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
-  .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
-
-  /* ===== DRIVER CARD — minimal flat ===== */
-  .driver-card {
-    background: var(--surface-2); padding: 9px 12px; border-radius: 8px;
-    border: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-    transition: background 0.15s ease, border-color 0.15s ease;
-  }
-  .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
-  .driver-card.state-waiting .status-dot { background: var(--primary); }
-  .driver-card.state-out .status-dot { background: var(--out); }
-  .driver-card.state-break .status-dot { background: var(--break); }
+  .driver-card { background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 6px; display: flex; flex-direction: column; gap: 5px; transition: all 0.2s ease; }
+  .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); }
   .draggable-card { cursor: grab; }
   .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
-  .drag-handle { color: var(--muted); cursor: grab; font-size: 13px; flex-shrink: 0; }
+  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+  .card-name { font-weight: 700; font-size: 12px; color: var(--text); word-break: break-word; line-height: 1.35; }
 
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .indicators { display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; }
+  .badge { background: rgba(255,255,255,0.04); padding: 2px 7px; border-radius: 6px; font-size: 9px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
+  .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
+  .badge-weak { color: var(--weak); border-color: rgba(255,169,77,0.25); background: rgba(255,169,77,0.06); }
+  .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
+  .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
 
-  .card-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
-  .card-name { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .queue-num { font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+  .card-details { font-size: 9px; color: var(--muted); line-height: 1.4; font-weight: 500; }
 
-  .card-meta { font-size: 11px; color: var(--muted); font-weight: 500; flex-shrink: 0; white-space: nowrap; }
-  .card-meta.low { color: var(--danger); }
-
-  .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
-  .action-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; border-radius: 7px; font-size: 13px; cursor: pointer;
-    transition: background 0.15s ease; border: none; background: transparent; color: var(--muted);
+  .card-actions { display: flex; gap: 4px; }
+  .action-btn { flex: 1; padding: 5px 6px; border: none; border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .action-btn:hover { transform: scale(1.03); filter: brightness(1.15); }
+  .btn-out { background: rgba(255,180,84,0.12); color: var(--out); }
+  .btn-break { background: rgba(184,170,255,0.12); color: var(--break); }
+  .btn-notify { background: rgba(255,180,84,0.12); color: var(--out); min-width: 36px; padding: 0 8px; font-size: 16px; }
+  .btn-done { background: rgba(45,210,207,0.12); color: var(--success); }
+  .btn-locate { background: rgba(124, 106, 247, 0.1); color: var(--primary); border: 1px solid rgba(124,106,247,0.2); padding: 2px 7px; border-radius: 6px; font-size: 9px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
+  .break-timer { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+  .auto-return-timer { font-size: 10px; }
+  .auto-return-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 100px;
+    background: rgba(45,212,207,0.12); color: var(--success, #0fd4c8);
+    font-weight: 700; font-size: 10px; border: 1px solid rgba(45,212,207,0.25);
   }
-  .action-btn:hover { background: var(--border-strong); color: var(--text); }
-  .btn-out:hover { color: var(--out); }
-  .btn-break:hover { color: var(--break); }
-  .btn-notify:hover { color: var(--out); }
-  .btn-done { width: auto; padding: 0 10px; font-size: 11px; font-weight: 700; color: var(--success); }
-  .btn-done:hover { background: rgba(45,210,207,0.12); }
-  .btn-kick { color: var(--muted); }
-  .btn-kick:hover { background: rgba(255,92,124,0.12); color: var(--danger); }
-  .btn-locate { color: var(--muted); }
-  .btn-locate:hover { background: rgba(124,106,247,0.12); color: var(--primary); }
-
-  .break-timer { font-size: 11px; font-weight: 700; color: var(--break); flex-shrink: 0; }
-  .auto-return-timer { font-size: 10.5px; color: var(--muted); flex-shrink: 0; }
-  .auto-return-badge { color: var(--muted); font-weight: 600; }
-  .auto-return-badge.ready { color: var(--success); }
+  .auto-return-badge.ready { background: rgba(34,197,94,0.18); color: #22c55e; animation: arPulse 1s ease-in-out infinite; }
+  @keyframes arPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
   /* ===== TABS ===== */
   .tab-bar {
@@ -748,7 +732,7 @@ function connect() {
         updateSingleMarkerAndTrail(currentDrivers[dIndex]);
         const distEl = document.getElementById(`dist-${safeId(data.driver)}`);
         if (distEl) {
-          distEl.textContent = getDistanceText(data.distance);
+          distEl.innerHTML = getDistanceBadge(data.distance, data.last_seen, currentDrivers[dIndex].state);
           // visual flash عشان يبان إن التحديث وصل
           distEl.classList.remove('dist-flash');
           void distEl.offsetWidth; // force reflow
@@ -760,11 +744,12 @@ function connect() {
           let arEl = document.getElementById(`artimer-${safeId(d.name)}`);
           const shouldShow = d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50;
           if (shouldShow && !arEl && card) {
-            const span = document.createElement('span');
-            span.className = 'auto-return-timer';
-            span.id = `artimer-${safeId(d.name)}`;
-            span.innerHTML = formatAutoReturnRemaining(d.out_since);
-            distEl.insertAdjacentElement('afterend', span);
+            const div = document.createElement('div');
+            div.className = 'auto-return-timer';
+            div.id = `artimer-${safeId(d.name)}`;
+            div.innerHTML = formatAutoReturnRemaining(d.out_since);
+            const details = card.querySelector('.card-details');
+            if (details) details.insertAdjacentElement('afterend', div);
           } else if (!shouldShow && arEl) {
             arEl.remove();
           }
@@ -780,17 +765,9 @@ function connect() {
     else if (data.type === 'battery_update') {
       const dIndex = currentDrivers.findIndex(x => x.name === data.driver);
       if (dIndex > -1) currentDrivers[dIndex].battery = data.battery;
-      // تحديث الـ badge مباشرة بدون ريندر الـ board كله — بنفس منطق التلوين لما البطارية واطية
+      // تحديث الـ badge مباشرة بدون ريندر الـ board كله
       const batEl = document.getElementById(`bat-${safeId(data.driver)}`);
-      if (batEl) {
-        const batLevel = parseInt(data.battery) || 100;
-        batEl.className = 'badge ' + (batLevel <= 20 ? 'badge-battery low' : 'badge-battery');
-        batEl.textContent = `${batLevel <= 20 ? '🪫' : '🔋'} ${data.battery}`;
-      }
-    }
-    else if (data.type === 'admin_event') {
-      // توست لأي تغيير مهم في حالة المندوب: دخول / خروج لأوردر / رجوع من أوردر أو بريك / إنهاء شيفت
-      showToast(data.msg);
+      if (batEl) batEl.textContent = `🔋 ${data.battery}`;
     }
   };
 }
@@ -925,80 +902,59 @@ function safeId(name) { return name.replace(/\s+/g, '_').replace(/[^\w-]/g, '');
 
 function getDistanceBadge(dist, lastSeen, state) {
   const { statusClass, statusText } = getDriverStatusDetails(lastSeen, state);
-  let distText = dist != null ? (dist < 1000 ? `${dist}m` : `${(dist/1000).toFixed(1)}km`) : '--';
+  let distText = dist ? (dist < 1000 ? `${dist}m` : `${(dist/1000).toFixed(1)}km`) : '--';
   return `<span class="badge ${statusClass}" title="${statusText}">📍 ${distText}</span>`;
-}
-
-function getDistanceText(dist) {
-  return dist != null ? (dist < 1000 ? `${dist}m` : `${(dist/1000).toFixed(1)}km`) : '--';
 }
 
 function renderBoard() {
   const lists = { Waiting: document.getElementById('list-waiting'), Out: document.getElementById('list-out'), Break: document.getElementById('list-break') };
   Object.values(lists).forEach(l => l.innerHTML = '');
-
-  // queue_pos معناها بس للـ Waiting (ترتيب الطابور). لو رتبنا كل المناديب بيها سوا،
-  // أي درايفر Out أو Break بيتساوى عند queue_pos=0 (مش موجود في الطابور) وبيطلع بترتيب عشوائي.
-  // فبنرتب كل حالة بالمفتاح المناسب ليها لوحدها:
-  // - Waiting: queue_pos (ترتيب الطابور الفعلي)
-  // - Out: out_since تصاعديًا (اللي خرج الأول يظهر الأول)
-  // - Break: break_end تصاعديًا (اللي هيرجع الأول يظهر الأول)
-  const sortedDrivers = [...currentDrivers].sort((a, b) => {
-    if (a.state === 'Waiting' && b.state === 'Waiting') return a.queue_pos - b.queue_pos;
-    if (a.state === 'Out' && b.state === 'Out') return (a.out_since || 0) - (b.out_since || 0);
-    if (a.state === 'Break' && b.state === 'Break') return (a.break_end || 0) - (b.break_end || 0);
-    return 0;
-  });
-
+  currentDrivers.sort((a,b) => a.queue_pos - b.queue_pos);
+  
   document.getElementById('count-waiting').textContent = currentDrivers.filter(d => d.state === 'Waiting').length;
   document.getElementById('count-out').textContent = currentDrivers.filter(d => d.state === 'Out').length;
   document.getElementById('count-break').textContent = currentDrivers.filter(d => d.state === 'Break').length;
 
-  sortedDrivers.forEach(d => {
+  currentDrivers.forEach(d => {
     const list = lists[d.state];
     if(!list) return;
     
     let actionButtons = '';
     if (d.state === 'Waiting') {
-      actionButtons = `<div class="card-actions">
-        <button class="action-btn btn-out" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر">🚀</button>
-        <button class="action-btn btn-break" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك">☕</button>
-        <button class="action-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">🔔</button>
-        <button class="action-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">📍</button>
-        <button class="action-btn btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">✖</button>
-      </div>`;
-    } else {
-      actionButtons = `<div class="card-actions">
-        <button class="action-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">📍</button>
-        <button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور">رجع</button>
-      </div>`;
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-out" onclick="adminAction('${d.name}', 'Out')">🚀 Send</button><button class="action-btn btn-break" onclick="adminAction('${d.name}', 'Break')">☕ Break</button><button class="action-btn btn-notify" onclick="notifyDriver('${d.name}')" title="إشعار دور السواق">🔔</button></div>`;
+    } else if (d.state === 'Out') {
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')">✅ Done</button></div>`;
+    } else if (d.state === 'Break') {
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')">✅ Done</button></div>`;
     }
 
-    // معلومة وحيدة في النص، حسب الحالة: مسافة، تايمر بريك، أو عداد رجوع تلقائي
-    let midInfo = '';
+    // Break timer display
+    let breakLine = '';
     if (d.state === 'Break' && d.break_end) {
-      midInfo = `<span class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</span>`;
-    } else if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50) {
-      midInfo = `<span class="auto-return-timer" id="artimer-${safeId(d.name)}">${formatAutoReturnRemaining(d.out_since)}</span>`;
-    } else {
-      midInfo = `<span class="card-meta" id="dist-${safeId(d.name)}">${getDistanceText(d.distance)}</span>`;
+      breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
     }
 
-    const batLevel = parseInt(d.battery) || 100;
-    const batClass = batLevel <= 20 ? 'card-meta low' : 'card-meta';
-
-    const stateClass = d.state === 'Waiting' ? 'state-waiting' : d.state === 'Out' ? 'state-out' : 'state-break';
+    // Auto-return countdown — لو المندوب Out ورجع في نطاق الفرع (50م)، بيتحول Waiting تلقائي بعد دقيقتين
+    let autoReturnLine = '';
+    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50) {
+      autoReturnLine = `<div class="auto-return-timer" id="artimer-${safeId(d.name)}">${formatAutoReturnRemaining(d.out_since)}</div>`;
+    }
+    
     const isDraggable = d.state === 'Waiting';
     let html = `
-      <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
-        ${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}
-        <span class="status-dot"></span>
-        <div class="card-main">
-          ${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}
-          <span class="card-name" title="${d.name}">${d.name}</span>
+      <div class="driver-card${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
+        <div class="card-top">
+          <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span> ' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<b>#${d.queue_pos}</b> ` : ''}${d.name}</div>
+          <div class="indicators">
+            <button class="btn-locate" onclick="locateDriver('${d.name}')">📍 Locate</button>
+            <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
+            <span class="badge" id="bat-${safeId(d.name)}">🔋 ${d.battery || '100%'}</span>
+            <button class="badge badge-offline" onclick="kickDriver('${d.name}')" style="cursor:pointer; border:none;">✖</button>
+          </div>
         </div>
-        ${midInfo}
-        <span class="${batClass}" id="bat-${safeId(d.name)}" title="البطارية">🔋${d.battery || '100%'}</span>
+        <div class="card-details">Out: ${d.last_out} | Ret: ${d.last_return}</div>
+        ${breakLine}
+        ${autoReturnLine}
         ${actionButtons}
       </div>`;
     list.innerHTML += html;
@@ -1150,7 +1106,7 @@ setInterval(() => {
   if (_statusRefreshTick % 5 === 0) {
     currentDrivers.forEach(d => {
       const distEl = document.getElementById(`dist-${safeId(d.name)}`);
-      if (distEl) distEl.textContent = getDistanceText(d.distance);
+      if (distEl) distEl.innerHTML = getDistanceBadge(d.distance, d.last_seen, d.state);
     });
   }
 }, 1000);
