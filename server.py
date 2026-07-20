@@ -651,7 +651,7 @@ async def driver_ws(ws: WebSocket):
                     # تحديث المندوب بحالته + الكيلومترات لايف + هل هو داخل نطاق الفرع وعداد الرجوع التلقائي شغال
                     out_since_val = drivers[driver_name].get("out_since", 0)
                     auto_return_secs_left = None
-                    if drivers[driver_name]["state"] == "Out" and dist <= 50 and out_since_val:
+                    if drivers[driver_name]["state"] == "Out" and dist <= 100 and out_since_val:
                         auto_return_secs_left = max(0, 45 - (now_ts - out_since_val))
                     await ws.send_text(json.dumps({
                         "type": "distance", "meters": dist, "shift_km": shift_km,
@@ -663,7 +663,7 @@ async def driver_ws(ws: WebSocket):
                     #  مع الاحتفاظ بحد أدنى يمنع الـ flapping لو المندوب مر بالصدفة جنب الفرع أثناء التوصيل)
                     out_since = drivers[driver_name].get("out_since", 0)
                     two_mins_passed = (now_ts - out_since) >= 45
-                    if drivers[driver_name]["state"] == "Out" and dist <= 50 and two_mins_passed:
+                    if drivers[driver_name]["state"] == "Out" and dist <= 100 and two_mins_passed:
                         await change_driver_state(driver_name, "Waiting")
                         # بلّغ السواق إنه رجع في الطابور
                         try:
