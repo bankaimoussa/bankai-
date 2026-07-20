@@ -222,7 +222,7 @@
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 16px; align-items: start; height: 100%; }
   .column { background: var(--surface); border-radius: var(--radius); padding: 10px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
-  #list-waiting, #list-out, #list-break { display: flex; flex-direction: column; gap: 6px; }
+  #list-waiting, #list-out, #list-break { display: flex; flex-direction: column; gap: 4px; }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
   .column::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
@@ -233,9 +233,9 @@
   .col-break { border-top: 3px solid var(--break); }
 
   .driver-card {
-    background: var(--surface-2); padding: 8px 10px; border-radius: 10px;
+    background: var(--surface-2); padding: 5px 10px; border-radius: 10px;
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
-    display: flex; flex-direction: column; gap: 6px;
+    display: flex; flex-direction: column; gap: 4px;
     transition: all 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
