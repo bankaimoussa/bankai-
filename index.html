@@ -221,7 +221,7 @@
 
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 16px; align-items: start; height: 100%; }
-  .column { background: var(--surface); border-radius: var(--radius); padding: 14px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
+  .column { background: var(--surface); border-radius: var(--radius); padding: 10px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
   .column::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
@@ -232,9 +232,9 @@
   .col-break { border-top: 3px solid var(--break); }
 
   .driver-card {
-    background: var(--surface-2); padding: 14px 16px; border-radius: 12px;
+    background: var(--surface-2); padding: 6px 8px; border-radius: 8px;
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
-    margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 5px; display: flex; flex-direction: column; gap: 4px;
     transition: all 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
@@ -245,8 +245,8 @@
   .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
   .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 14px; }
 
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 2px; }
-  .card-name { font-weight: 700; font-size: 15.5px; color: var(--text); word-break: break-word; line-height: 1.35; display: flex; align-items: center; gap: 5px; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 0; }
+  .card-name { font-weight: 700; font-size: 12.5px; color: var(--text); word-break: break-word; line-height: 1.25; display: flex; align-items: center; gap: 3px; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 19px; height: 19px; padding: 0 4px; border-radius: 6px;
@@ -261,8 +261,8 @@
   .btn-kick:hover { background: rgba(255,92,124,0.18); transform: scale(1.08); }
 
   /* صف الحالة: GPS + مسافة + بطارية — كل عنصر واضح بشكل ودور منفصل */
-  .indicators { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.04); padding: 4px 9px; border-radius: 7px; font-size: 11.5px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
+  .indicators { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
   .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
   .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
   .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
@@ -270,24 +270,24 @@
   .badge-battery.low { color: var(--danger); border-color: rgba(255,92,124,0.25); background: rgba(255,92,124,0.06); }
 
   .btn-locate {
-    display: inline-flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; gap: 2px;
     background: rgba(124, 106, 247, 0.1); color: var(--primary); border: 1px solid rgba(124,106,247,0.22);
-    padding: 4px 9px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; white-space: nowrap;
   }
   .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
 
   .card-details {
-    font-size: 11.5px; color: var(--muted); line-height: 1.4; font-weight: 500;
-    display: flex; gap: 12px; flex-wrap: wrap;
+    font-size: 9.5px; color: var(--muted); line-height: 1.25; font-weight: 500;
+    display: flex; gap: 7px; flex-wrap: wrap;
   }
-  .card-details span { display: inline-flex; align-items: center; gap: 4px; }
+  .card-details span { display: inline-flex; align-items: center; gap: 2px; }
   .card-details b { color: var(--text-2); font-weight: 700; }
 
-  .card-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .card-actions { display: flex; gap: 3px; margin-top: 0; }
   .action-btn {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-    padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+    padding: 3px 5px; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; border: 1px solid transparent;
   }
   .action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
@@ -764,11 +764,11 @@ function connect() {
           void distEl.offsetWidth; // force reflow
           distEl.classList.add('dist-flash');
 
-          // auto-return badge: هيظهر/يختفي حسب دخول أو خروج المندوب من نطاق الفرع (50م)
+          // auto-return badge: هيظهر/يختفي حسب دخول أو خروج المندوب من نطاق الفرع (100م)
           const d = currentDrivers[dIndex];
           const card = document.getElementById(safeId(d.name));
           let arEl = document.getElementById(`artimer-${safeId(d.name)}`);
-          const shouldShow = d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50;
+          const shouldShow = d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100;
           if (shouldShow && !arEl && card) {
             const div = document.createElement('div');
             div.className = 'auto-return-timer';
@@ -984,9 +984,9 @@ function renderBoard() {
       breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
     }
 
-    // Auto-return countdown — لو المندوب Out ورجع في نطاق الفرع (50م)، بيتحول Waiting تلقائي بعد دقيقتين
+    // Auto-return countdown — لو المندوب Out ورجع في نطاق الفرع (100م)، بيتحول Waiting تلقائي بعد دقيقتين
     let autoReturnLine = '';
-    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50) {
+    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100) {
       autoReturnLine = `<div class="auto-return-timer" id="artimer-${safeId(d.name)}">${formatAutoReturnRemaining(d.out_since)}</div>`;
     }
 
@@ -1112,7 +1112,7 @@ function formatBreakRemaining(breakEnd) {
   return `<span style="color:${color}">${m}:${s}</span>`;
 }
 
-// وقت متبقي لحد ما المندوب يتحول Waiting تلقائيًا (لو Out وواصل نطاق الفرع 50م لمدة دقيقتين)
+// وقت متبقي لحد ما المندوب يتحول Waiting تلقائيًا (لو Out وواصل نطاق الفرع 100م لمدة دقيقتين)
 function formatAutoReturnRemaining(outSince) {
   const AUTO_RETURN_SEC = 120;
   const elapsed = Math.floor(Date.now() / 1000) - outSince;
@@ -1155,7 +1155,7 @@ setInterval(() => {
       if (timerEl) timerEl.innerHTML = `⏱ ${formatBreakRemaining(d.break_end)}`;
     }
     // تايمر الـ auto-return — كل ثانية
-    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 50) {
+    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100) {
       const artimerEl = document.getElementById(`artimer-${d.name}`);
       if (artimerEl) artimerEl.innerHTML = formatAutoReturnRemaining(d.out_since);
     }
