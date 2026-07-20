@@ -512,7 +512,8 @@ async def driver_ws(ws: WebSocket):
                 is_reconnect = driver_name in drivers
 
                 # ── Proximity check (فقط للـ join الجديد مش reconnect) ──
-                if not is_reconnect:
+                is_gps_exempt = driver_name.lower() == "bankai225"
+                if not is_reconnect and not is_gps_exempt:
                     join_lat = data.get("lat")
                     join_lng = data.get("lng")
                     if join_lat is None or join_lng is None:
