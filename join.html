@@ -725,8 +725,8 @@
 
   /* ===== PROFILE TAB ===== */
   .profile-header { text-align: center; padding: 26px 18px 8px; position: relative; z-index: 1; }
-  .avatar-wrap { position: relative; width: 88px; height: 88px; margin: 0 auto 12px; cursor: pointer; }
-  .avatar-wrap img, .avatar-wrap .avatar-fallback {
+  .avatar-circle { position: relative; width: 88px; height: 88px; margin: 0 auto 14px; }
+  .avatar-circle img, .avatar-circle .avatar-fallback {
     width: 88px; height: 88px; border-radius: 50%; object-fit: cover;
     border: 3px solid var(--primary); box-shadow: 0 10px 26px var(--primary-glow);
   }
@@ -735,12 +735,19 @@
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: #fff; font-size: 32px; font-weight: 900;
   }
-  .avatar-edit-badge {
-    position: absolute; bottom: 0; left: 0; width: 28px; height: 28px; border-radius: 50%;
-    background: var(--card); border: 2px solid var(--bg); display: flex; align-items: center;
-    justify-content: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  .btn-upload-photo {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin: 0 auto 4px; padding: 10px 20px; border-radius: 100px;
+    background: var(--primary-light); border: 1.5px solid var(--border2);
+    color: var(--primary); font-family: var(--font); font-size: 13px; font-weight: 800;
+    cursor: pointer; transition: all 0.2s ease;
   }
-  .profile-name { font-size: 18px; font-weight: 800; color: var(--text); }
+  .btn-upload-photo:active { transform: scale(0.96); }
+  .btn-upload-photo.uploading { opacity: 0.65; pointer-events: none; }
+  .upload-status { font-size: 11px; font-weight: 700; margin-top: 8px; min-height: 15px; transition: color 0.2s ease; }
+  .upload-status.ok { color: var(--success); }
+  .upload-status.err { color: var(--danger); }
+  .profile-name { font-size: 18px; font-weight: 800; color: var(--text); margin-top: 4px; }
   .profile-role { font-size: 12px; color: var(--text-muted); font-weight: 700; margin-top: 4px; }
 
   .week-card { margin: 16px 18px; padding: 18px; border-radius: var(--radius-sm); background: var(--primary-light); border: 1px solid var(--border); position: relative; z-index: 1; }
@@ -754,7 +761,7 @@
 
   .profile-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px 18px; position: relative; z-index: 1; }
 
-  /* hidden file input for avatar */
+  /* hidden file input for avatar — triggered only by btn-upload-photo via JS click() */
   #avatar-file-input { display: none; }
 
   /* Chat popup */
@@ -848,21 +855,6 @@
         <div class="welcome-avatar-wrap">
           <img id="welcome-avatar-img" style="display:none" />
           <div class="welcome-avatar-fallback" id="welcome-avatar-fallback">م</div>
-        </div>
-      </div>
-
-      <!-- Shift status card -->
-      <div class="shift-card">
-        <div class="shift-left">
-          <div class="shift-label-sm">حالة الشيفت</div>
-          <div class="shift-value-row">
-            <span id="shift-status-text">في الطريق</span>
-            <span class="state-chip state-waiting" id="state-chip-mirror">انتظار</span>
-          </div>
-          <div class="shift-start-time">وقت البدء: <span id="shift-start-display">--:--</span></div>
-        </div>
-        <div class="shift-icon-badge" id="hero-bg">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
         </div>
       </div>
 
@@ -975,6 +967,21 @@
 
     <!-- ===== TAB: الدور ===== -->
     <div class="sub-tab-panel" id="subtab-queue">
+      <!-- Shift status card -->
+      <div class="shift-card">
+        <div class="shift-left">
+          <div class="shift-label-sm">حالة الشيفت</div>
+          <div class="shift-value-row">
+            <span id="shift-status-text">في الطريق</span>
+            <span class="state-chip state-waiting" id="state-chip-mirror">انتظار</span>
+          </div>
+          <div class="shift-start-time">وقت البدء: <span id="shift-start-display">--:--</span></div>
+        </div>
+        <div class="shift-icon-badge" id="hero-bg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
+        </div>
+      </div>
+
       <div class="queue-hero">
         <div class="hero-number" id="queue-pos-num" style="font-size:64px;">--</div>
         <div class="hero-label">ترتيبك في الطابور</div>
@@ -987,12 +994,15 @@
     <!-- ===== TAB: حسابي ===== -->
     <div class="sub-tab-panel" id="subtab-profile">
       <div class="profile-header">
-        <label class="avatar-wrap" for="avatar-file-input">
+        <div class="avatar-circle">
           <img id="profile-avatar-img" style="display:none" />
           <div class="avatar-fallback" id="profile-avatar-fallback">م</div>
-          <div class="avatar-edit-badge">📷</div>
-        </label>
+        </div>
+        <button type="button" class="btn-upload-photo" id="btn-upload-photo" onclick="triggerAvatarUpload()">
+          <span>📷</span><span id="upload-btn-text">رفع صورة</span>
+        </button>
         <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarSelect(event)">
+        <div class="upload-status" id="upload-status"></div>
         <div class="profile-name" id="profile-name">مندوب</div>
         <div class="profile-role">مندوب توصيل · رواحل</div>
       </div>
@@ -1677,23 +1687,72 @@ function applyAvatar(avatarDataUrl) {
   }
 }
 
+// ===== رفع صورة البروفايل — من الأول بمنطق واضح =====
+// 1) المستخدم بيدوس على الزرار → triggerAvatarUpload بتفتح الـ file picker
+// 2) لما يختار صورة → handleAvatarSelect بتتحقق منها وتبعتها للسيرفر
+// 3) كل خطوة بتوضح حالتها في نص تحت الزرار (بيرفع.../اتحفظت/فشل)
+function triggerAvatarUpload() {
+  if (!driverName) { setUploadStatus('لازم تسجل دخول الأول', 'err'); return; }
+  const input = document.getElementById('avatar-file-input');
+  if (!input) return;
+  input.value = ''; // نصفّرها عشان لو المستخدم يختار نفس الصورة تاني تتسجل onchange
+  input.click();
+}
+
+function setUploadStatus(text, kind) {
+  const el = document.getElementById('upload-status');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'upload-status' + (kind ? ' ' + kind : '');
+}
+
+function setUploadButtonState(uploading) {
+  const btn = document.getElementById('btn-upload-photo');
+  const txt = document.getElementById('upload-btn-text');
+  if (!btn || !txt) return;
+  btn.classList.toggle('uploading', !!uploading);
+  txt.textContent = uploading ? 'بيرفع...' : 'رفع صورة';
+}
+
 function handleAvatarSelect(event) {
   const file = event.target.files && event.target.files[0];
-  if (!file) { return; } // المستخدم قفل نافذة اختيار الصورة من غير ما يختار
-  if (!driverName) { showToast('❌ لازم تكون مسجل دخول الأول'); return; }
-  if (file.size > 4 * 1024 * 1024) { showToast('❌ الصورة كبيرة أوي، اختار صورة أصغر'); return; }
+  if (!file) return; // المستخدم فتح نافذة الاختيار وقفلها من غير ما يختار حاجة
+
+  if (!driverName) { setUploadStatus('لازم تسجل دخول الأول', 'err'); return; }
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    setUploadStatus('الملف ده مش صورة', 'err');
+    return;
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    setUploadStatus('الصورة كبيرة أوي (أقصى حجم 4MB)', 'err');
+    return;
+  }
+
+  setUploadButtonState(true);
+  setUploadStatus('بيرفع الصورة...', '');
+
   const reader = new FileReader();
-  reader.onerror = () => showToast('❌ متقدرش يقرأ الصورة دي، جرّب صورة تانية');
+  reader.onerror = () => {
+    setUploadButtonState(false);
+    setUploadStatus('متقدرش يقرأ الصورة دي، جرّب صورة تانية', 'err');
+  };
   reader.onload = async () => {
     const dataUrl = reader.result;
-    applyAvatar(dataUrl); // نعرضها فوراً
     try {
-      await fetch('/api/avatar', {
+      const res = await fetch('/api/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: driverName, avatar: dataUrl })
       });
-    } catch (e) { showToast('❌ الصورة متحفظتش، حاول تاني'); }
+      if (!res.ok) throw new Error('bad status ' + res.status);
+      applyAvatar(dataUrl); // نعرضها بس بعد ما نتأكد إنها اتحفظت فعلاً على السيرفر
+      setUploadStatus('✅ اتحفظت الصورة', 'ok');
+    } catch (e) {
+      setUploadStatus('❌ الصورة متحفظتش، حاول تاني', 'err');
+    } finally {
+      setUploadButtonState(false);
+    }
   };
   reader.readAsDataURL(file);
 }
