@@ -366,7 +366,7 @@
 
   /* Hero block — الرقم الكبير زي الموك أب */
   .hero-block {
-    position: relative; padding: 34px 20px 20px;
+    position: relative; padding: 10px 20px 6px;
     display: flex; flex-direction: column; align-items: center;
     overflow: hidden;
   }
@@ -377,8 +377,8 @@
   }
 
   .hero-number {
-    font-size: 88px; font-weight: 900; line-height: 1;
-    letter-spacing: -4px;
+    font-size: 64px; font-weight: 900; line-height: 1;
+    letter-spacing: -3px;
     color: var(--accent);
     text-shadow: 0 10px 30px var(--accent-glow);
     transition: color 0.5s ease;
@@ -387,9 +387,127 @@
   .hero-label {
     font-size: 12px; font-weight: 800; letter-spacing: 1px;
     color: var(--text-muted);
-    margin-top: 8px; margin-bottom: 20px;
+    margin-top: 8px; margin-bottom: 14px;
     position: relative; z-index: 1;
   }
+
+  /* ===== WELCOME CARD ===== */
+  .welcome-card {
+    margin: 14px 18px 0; padding: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+  .welcome-hi { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+  .welcome-name { font-size: 17px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding: 4px 12px; border-radius: 100px;
+    background: var(--primary-light); color: var(--primary);
+    font-size: 11px; font-weight: 800;
+  }
+  .role-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+  .welcome-avatar-wrap {
+    width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+    padding: 2px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  }
+  .welcome-avatar-wrap img, .welcome-avatar-fallback {
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card); color: var(--primary); font-weight: 900; font-size: 20px;
+    border: 2px solid var(--card);
+  }
+
+  /* ===== SHIFT STATUS CARD ===== */
+  .shift-card {
+    margin: 12px 18px 0; padding: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+  .shift-label-sm { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+  .shift-value-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 19px; font-weight: 800; color: var(--text); }
+  .shift-start-time { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 6px; }
+  .shift-icon-badge {
+    width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-light); color: var(--primary);
+    animation: shiftPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes shiftPulse { 0%,100% { box-shadow: 0 0 0 0 var(--primary-glow); } 70% { box-shadow: 0 0 0 14px rgba(0,0,0,0); } }
+
+  /* ===== MAP CARD ===== */
+  .map-card {
+    margin: 12px 18px 0; overflow: hidden;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    position: relative; z-index: 1;
+  }
+  .map-visual {
+    position: relative; height: 128px;
+    background:
+      linear-gradient(135deg, var(--primary-glow), transparent),
+      repeating-linear-gradient(0deg, transparent 0 24px, var(--border2) 24px 25px),
+      repeating-linear-gradient(90deg, transparent 0 24px, var(--border2) 24px 25px);
+  }
+  .map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .map-you-float { animation: mapFloat 3s ease-in-out infinite; }
+  @keyframes mapFloat { 0%,100% { transform: translate(40px,100px); } 50% { transform: translate(40px,94px); } }
+  .map-status-chip, .gps-pill.map-status-chip {
+    position: absolute; top: 10px; right: 10px;
+  }
+  .map-info-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px;
+  }
+  .map-info-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+  .map-info-value { font-size: 26px; font-weight: 900; color: var(--text); margin-top: 4px; }
+  .map-unit { font-size: 13px; color: var(--text-muted); font-weight: 700; }
+  .map-info-sub { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 6px; }
+  .map-arrow-icon {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
+    box-shadow: 0 10px 24px var(--primary-glow);
+    animation: mapFloat 3s ease-in-out infinite;
+  }
+  .map-progress {
+    height: 6px; background: var(--border); margin: 0 16px 16px; border-radius: 999px; overflow: hidden;
+  }
+  .map-progress > div {
+    height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    border-radius: 999px; transition: width 1s ease;
+  }
+
+  /* GPS pill positioned inside map visual */
+  .map-visual .gps-pill {
+    position: absolute; top: 10px; right: 10px;
+    margin: 0; width: auto; background: var(--card); border-color: var(--border2);
+  }
+
+  /* ===== BOTTOM ACTION ROW (مطابق للموك أب) ===== */
+  .bottom-action-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    padding: 16px 18px 4px;
+    position: relative; z-index: 1;
+  }
+  .btn-admin-msg {
+    padding: 14px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text);
+    font-family: var(--font); font-size: 13px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-admin-msg:active { transform: scale(0.97); }
+  .btn-end-shift-wide {
+    padding: 14px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
+    font-family: var(--font); font-size: 13px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    box-shadow: 0 10px 24px var(--primary-glow);
+  }
+  .btn-end-shift-wide:active { transform: scale(0.97); }
 
   /* ===== GPS + BATTERY CARDS (rounded, like mockup) ===== */
   .info-grid {
@@ -398,6 +516,7 @@
     position: relative; z-index: 1;
   }
   .info-tile {
+
     background: var(--primary-light); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 18px 12px;
     display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -693,10 +812,39 @@
     <!-- ===== TAB: معلوماتي ===== -->
     <div class="sub-tab-panel active" id="subtab-info">
 
-      <!-- Hero -->
-      <div class="hero-block" id="hero-block">
-        <div class="hero-bg-ring" id="hero-bg"></div>
+      <!-- Welcome card -->
+      <div class="welcome-card">
+        <div class="welcome-left">
+          <div class="welcome-hi">👋 أهلاً بعودتك</div>
+          <div class="welcome-name" id="welcome-name-display">مندوب</div>
+          <div class="role-badge">
+            <span class="role-dot"></span>
+            مندوب توصيل
+          </div>
+        </div>
+        <div class="welcome-avatar-wrap">
+          <img id="welcome-avatar-img" style="display:none" />
+          <div class="welcome-avatar-fallback" id="welcome-avatar-fallback">م</div>
+        </div>
+      </div>
 
+      <!-- Shift status card -->
+      <div class="shift-card">
+        <div class="shift-left">
+          <div class="shift-label-sm">حالة الشيفت</div>
+          <div class="shift-value-row">
+            <span id="shift-status-text">في الطريق</span>
+            <span class="state-chip state-waiting" id="state-chip-mirror">انتظار</span>
+          </div>
+          <div class="shift-start-time">وقت البدء: <span id="shift-start-display">--:--</span></div>
+        </div>
+        <div class="shift-icon-badge" id="hero-bg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
+        </div>
+      </div>
+
+      <!-- Hero states (queue position / out / break) — functional views -->
+      <div class="hero-block" id="hero-block">
         <!-- Waiting state -->
         <div id="view-waiting">
           <div style="text-align:center">
@@ -718,29 +866,56 @@
         </div>
       </div>
 
-      <!-- GPS + Battery info tiles -->
+      <!-- Map + distance card -->
+      <div class="map-card">
+        <div class="map-visual">
+          <svg class="map-svg" viewBox="0 0 400 128" preserveAspectRatio="none">
+            <path d="M 40 100 Q 120 30, 200 60 T 360 40" stroke="var(--primary)" stroke-width="3" fill="none" stroke-dasharray="6 6" stroke-linecap="round" opacity="0.75">
+              <animate attributeName="stroke-dashoffset" from="200" to="0" dur="4s" repeatCount="indefinite"/>
+            </path>
+            <g transform="translate(355,40)">
+              <circle r="12" fill="var(--primary)" opacity="0.2">
+                <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle r="7" fill="var(--primary)"/>
+              <text x="0" y="3" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">ف</text>
+            </g>
+            <g transform="translate(40,100)" class="map-you-float">
+              <circle r="9" fill="var(--card)" stroke="var(--primary)" stroke-width="3"/>
+              <circle r="3.5" fill="var(--primary)"/>
+            </g>
+          </svg>
+          <div class="gps-pill" id="gps-pill">
+            <span>📍</span><span id="gps-text">تحديد الموقع نشط</span>
+          </div>
+        </div>
+        <div class="map-info-row">
+          <div class="map-info-left">
+            <div class="map-info-label">المسافة من الفرع</div>
+            <div class="map-info-value"><span id="gps-distance">--</span> <span class="map-unit">كم</span></div>
+            <div class="map-info-sub">⚡ <span id="gps-speed">0</span> كم/س · 🎯 <span id="gps-accuracy">--</span> م</div>
+          </div>
+          <div class="map-arrow-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="map-progress">
+          <div id="map-progress-bar" style="width: 40%"></div>
+        </div>
+      </div>
+
+      <!-- Battery tile (visible, functional) -->
       <div class="info-grid">
-        <div class="info-tile" id="gps-tile">
+        <div class="info-tile" id="gps-tile" style="display:none">
           <div class="info-icon">📍</div>
-          <div class="info-value small" id="gps-distance">--</div>
+          <div class="info-value small">--</div>
           <div class="info-label">المسافة</div>
         </div>
-        <div class="info-tile" id="bat-tile">
+        <div class="info-tile" id="bat-tile" style="grid-column: 1 / -1;">
           <div class="info-icon" id="bat-icon">🔋</div>
           <div class="info-value" id="bat-percent">--%</div>
           <div class="info-label">البطارية</div>
         </div>
-      </div>
-
-      <!-- GPS detail (speed + accuracy) -->
-      <div class="gps-detail">
-        <div class="gps-detail-item">⚡ <strong id="gps-speed">0</strong> كم/س</div>
-        <div class="gps-detail-item">🎯 <strong id="gps-accuracy">--</strong> م</div>
-      </div>
-
-      <!-- GPS status pill -->
-      <div class="gps-pill" id="gps-pill">
-        <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
       </div>
 
       <!-- Stats -->
@@ -772,7 +947,14 @@
       <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
         ارجع للطابور
       </button>
+
+      <!-- Bottom action row (visual, matches mockup) -->
+      <div class="bottom-action-row">
+        <button class="btn-admin-msg" type="button">📢 رسالة من الإدارة</button>
+        <button class="btn-end-shift-wide" onclick="confirmEndShift()" type="button">⏹ إنهاء الشيفت</button>
+      </div>
     </div>
+
 
     <!-- ===== TAB: الدور ===== -->
     <div class="sub-tab-panel" id="subtab-queue">
@@ -1205,6 +1387,7 @@ function _doJoin(name, pos) {
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
+  setShiftStartDisplay();
   lastGpsPos = pos;
   startGPS(); trackBattery(); connectWS();
   requestWakeLock();
@@ -1213,6 +1396,17 @@ function _doJoin(name, pos) {
   if (window.AndroidBridge) {
     try { window.AndroidBridge.onDriverJoined(name); } catch(e) {}
   }
+}
+
+// وقت بدء الشيفت — بيتسجل محلياً وقت الدخول الفعلي
+function setShiftStartDisplay() {
+  const el = document.getElementById('shift-start-display');
+  if (!el) return;
+  const saved = sessionStorage.getItem('shift_start_display');
+  if (saved) { el.innerText = saved; return; }
+  const txt = new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  el.innerText = txt;
+  sessionStorage.setItem('shift_start_display', txt);
 }
 
 // لما الـ Android يعيد تحميل الصفحة، بيستدعي الدالة دي عشان يعيد الـ join تلقائياً
@@ -1229,6 +1423,7 @@ window.androidAutoJoin = function(name) {
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
+  setShiftStartDisplay();
   startGPS(); trackBattery(); connectWS();
   requestWakeLock();
   startSilentAudio();
@@ -1352,19 +1547,28 @@ function renderProfileHeader() {
   const fallback = document.getElementById('profile-avatar-fallback');
   if (nameEl) nameEl.innerText = driverName || 'مندوب';
   if (fallback) fallback.innerText = (driverName || 'م').trim().charAt(0);
+  // مرآة للـ welcome card في تاب معلوماتي
+  const wName = document.getElementById('welcome-name-display');
+  const wFallback = document.getElementById('welcome-avatar-fallback');
+  if (wName) wName.innerText = driverName || 'مندوب';
+  if (wFallback) wFallback.innerText = (driverName || 'م').trim().charAt(0);
 }
 
 function applyAvatar(avatarDataUrl) {
   const img = document.getElementById('profile-avatar-img');
   const fallback = document.getElementById('profile-avatar-fallback');
-  if (!img) return;
+  const wImg = document.getElementById('welcome-avatar-img');
+  const wFallback = document.getElementById('welcome-avatar-fallback');
   if (avatarDataUrl) {
-    img.src = avatarDataUrl;
-    img.style.display = 'block';
+    if (img) { img.src = avatarDataUrl; img.style.display = 'block'; }
     if (fallback) fallback.style.display = 'none';
+    if (wImg) { wImg.src = avatarDataUrl; wImg.style.display = 'block'; }
+    if (wFallback) wFallback.style.display = 'none';
   } else {
-    img.style.display = 'none';
+    if (img) img.style.display = 'none';
     if (fallback) fallback.style.display = 'flex';
+    if (wImg) wImg.style.display = 'none';
+    if (wFallback) wFallback.style.display = 'flex';
   }
 }
 
@@ -1428,6 +1632,15 @@ function updateUI(data) {
   const chip = document.getElementById('state-chip');
   chip.className = `state-chip ${cfg.chip}`;
   chip.innerText = cfg.label;
+  const chipMirror = document.getElementById('state-chip-mirror');
+  if (chipMirror) { chipMirror.className = `state-chip ${cfg.chip}`; chipMirror.innerText = cfg.label; }
+
+  // مرآة نص حالة الشيفت في الكارت الجديد
+  const shiftTxt = document.getElementById('shift-status-text');
+  if (shiftTxt) {
+    const SHIFT_TEXT = { Waiting: 'في الانتظار', Out: 'في الطريق', Break: 'في الراحة' };
+    shiftTxt.innerText = SHIFT_TEXT[state] || 'في الانتظار';
+  }
 
   // accent CSS vars على الـ :root
   document.documentElement.style.setProperty('--accent', cfg.accent);
@@ -1502,6 +1715,13 @@ function updateGPS(meters) {
     distText = d;
   }
   distEl.innerText = distText;
+
+  // شريط التقدم البصري في كارت الماب — كل ما تقرب من الفرع كل ما يمتلئ
+  const bar = document.getElementById('map-progress-bar');
+  if (bar) {
+    const pct = Math.max(4, Math.min(100, Math.round((1 - Math.min(meters, 5000) / 5000) * 100)));
+    bar.style.width = pct + '%';
+  }
 }
 
 // ===== BREAK TIMER =====
