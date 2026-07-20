@@ -108,7 +108,7 @@
 
   /* ===== THEME TOGGLE (pill) ===== */
   .theme-pill {
-    position: fixed; top: 16px; right: 16px; z-index: 10000;
+    position: fixed; top: 14px; left: 16px; z-index: 9500;
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px 7px 10px;
     background: var(--card); border: 1px solid var(--border2);
@@ -376,6 +376,20 @@
     transition: background 0.6s ease;
   }
 
+  /* حالات الهيرو (انتظار/طريق/راحة) — كروس فيد بدل القطع المفاجئ */
+  #view-waiting, #view-out, #view-break {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .hero-view-hidden { opacity: 0; transform: translateY(6px) scale(0.98); pointer-events: none; position: absolute; inset: 0; }
+  .hero-view-visible { opacity: 1; transform: translateY(0) scale(1); position: relative; }
+
+  /* عناصر بتظهر/تختفي وقت البريك (الخريطة/الإحصائيات) — فيد+سحب بسيط بدل القطع */
+  .map-card, .info-grid, #stat-row {
+    transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.35s ease;
+    overflow: hidden;
+  }
+  .focus-hidden { opacity: 0; transform: translateY(-8px); max-height: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+
   .hero-number {
     font-size: 64px; font-weight: 900; line-height: 1;
     letter-spacing: -3px;
@@ -389,6 +403,13 @@
     color: var(--text-muted);
     margin-top: 8px; margin-bottom: 14px;
     position: relative; z-index: 1;
+  }
+  .auto-return-hint {
+    font-size: 11px; font-weight: 700; color: var(--success);
+    background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 100px; padding: 8px 14px; margin: -6px auto 14px;
+    display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 1;
+    animation: dotPulse 1.6s ease-in-out infinite;
   }
 
   /* ===== WELCOME CARD ===== */
@@ -622,13 +643,13 @@
 
   /* Background status indicator */
   .bg-status {
-    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-    z-index: 10000; display: flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: 100px;
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 9400; display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 100px;
     background: var(--card); border: 1px solid var(--border2);
-    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    font-size: 9px; font-weight: 700; color: var(--text-muted);
     backdrop-filter: blur(16px); box-shadow: var(--shadow);
-    letter-spacing: 0.5px;
+    letter-spacing: 0.5px; pointer-events: none; opacity: 0.85;
   }
   .bg-status.active { color: var(--success); border-color: rgba(16,185,129,0.3); }
   .bg-status .bg-dot {
@@ -643,11 +664,18 @@
     font-family: 'Cairo', sans-serif; transition: 0.2s;
   }
   .btn-end-shift {
-    width: 36px; height: 36px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35);
-    background: rgba(239,68,68,0.1); color: #ef4444; font-size: 14px; cursor: pointer;
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    padding: 9px 16px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35);
+    background: rgba(239,68,68,0.1); color: #ef4444; font-size: 12px; font-weight: 800; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: 'Cairo', sans-serif; white-space: nowrap;
   }
-  .btn-end-shift:active { background: rgba(239,68,68,0.25); transform: scale(0.92); }
+  .btn-end-shift:active { background: rgba(239,68,68,0.25); transform: scale(0.96); }
+  .btn-topbar-theme {
+    width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--border2);
+    background: var(--card); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .btn-topbar-theme:active { transform: scale(0.92); }
 
   /* ===== QUEUE TAB — cards زي الموك أب بالظبط ===== */
   .queue-hero {
@@ -777,8 +805,10 @@
         <span id="driver-name">مندوب</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <div class="state-chip state-waiting" id="state-chip">انتظار</div>
-        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹</button>
+        <button class="btn-topbar-theme" id="topbar-theme-btn" onclick="toggleTheme()" title="تبديل المظهر">
+          <span id="topbar-theme-icon">☀️</span>
+        </button>
+        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹ إنهاء الشيفت</button>
       </div>
     </div>
 
@@ -826,7 +856,7 @@
       <!-- Hero states (queue position / out / break) — functional views -->
       <div class="hero-block" id="hero-block">
         <!-- Waiting state -->
-        <div id="view-waiting">
+        <div id="view-waiting" class="hero-view-visible">
           <div style="text-align:center">
             <div class="hero-number" id="pos-num">--</div>
             <div class="hero-label">ترتيبك في الطابور</div>
@@ -834,13 +864,16 @@
         </div>
 
         <!-- Out state -->
-        <div id="view-out" style="display:none; text-align:center">
+        <div id="view-out" class="hero-view-hidden" style="display:none; text-align:center">
           <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
           <div class="hero-label">في الطريق</div>
+          <div class="auto-return-hint" id="auto-return-hint" style="display:none;">
+            🏠 وصلت الفرع — هتترجع للطابور تلقائيًا خلال <span id="auto-return-secs">--</span> ث
+          </div>
         </div>
 
         <!-- Break state -->
-        <div id="view-break" style="display:none; text-align:center">
+        <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center">
           <div class="break-hero" id="break-timer">60:00</div>
           <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
         </div>
@@ -930,8 +963,7 @@
 
       <!-- Bottom action row (visual, matches mockup) -->
       <div class="bottom-action-row">
-        <button class="btn-admin-msg" type="button">📢 رسالة من الإدارة</button>
-        <button class="btn-end-shift-wide" onclick="confirmEndShift()" type="button">⏹ إنهاء الشيفت</button>
+        <button class="btn-admin-msg" type="button" style="width:100%">📢 رسالة من الإدارة</button>
       </div>
     </div>
 
@@ -994,9 +1026,19 @@
 function updateThemeUI(theme) {
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
-  if (!icon) return;
-  if (theme === 'dark') { icon.textContent = '☀️'; label.textContent = 'فاتح'; }
-  else                  { icon.textContent = '🌙'; label.textContent = 'داكن'; }
+  const topbarIcon = document.getElementById('topbar-theme-icon');
+  const isDark = theme === 'dark';
+  if (icon)  icon.textContent  = isDark ? '☀️' : '🌙';
+  if (label) label.textContent = isDark ? 'فاتح' : 'داكن';
+  if (topbarIcon) topbarIcon.textContent = isDark ? '☀️' : '🌙';
+}
+
+function setFloatingPillsVisible(visible) {
+  // البيلز العايمة (المظهر) بتتخبى جوه شاشة التطبيق عشان متتصادمش مع الـ topbar بتاعها
+  // وبتظهر تاني بس في شاشة تسجيل الدخول. bg-status (خلفية نشطة) مالهاش لازمة تتخبى —
+  // هي تحت في نص الشاشة وpointer-events:none فمش بتصطدم مع حاجة.
+  const pill = document.getElementById('theme-toggle');
+  if (pill) pill.style.display = visible ? 'flex' : 'none';
 }
 
 function toggleTheme() {
@@ -1013,6 +1055,7 @@ let ws, driverName = null, kicked = false;
 let gpsWatchId = null, lastGpsPos = null;
 let pingInterval = null, reconnectTimer = null;
 let currentBreakEnd = null;
+let _lastRenderedState = null;
 
 function showToast(msg) {
   // لو على Android والصفحة في الخلفية، متعرضش toast
@@ -1239,6 +1282,21 @@ function connectWS() {
         const el = document.getElementById('stat-km');
         if (el) el.innerText = d.shift_km.toFixed(1);
       }
+      const hint = document.getElementById('auto-return-hint');
+      const secsEl = document.getElementById('auto-return-secs');
+      if (hint) {
+        if (d.auto_return_secs_left !== null && d.auto_return_secs_left !== undefined) {
+          hint.style.display = 'inline-flex';
+          if (secsEl) secsEl.innerText = d.auto_return_secs_left;
+        } else {
+          hint.style.display = 'none';
+        }
+      }
+    }
+    else if (d.type === 'auto_returned') {
+      showToast(d.msg || '🏠 رجعت للفرع — اتضفت في الطابور تلقائياً');
+      const hint = document.getElementById('auto-return-hint');
+      if (hint) hint.style.display = 'none';
     }
     else if (d.type === 'kicked') handleKick();
     else if (d.type === 'join_rejected') {
@@ -1248,6 +1306,7 @@ function connectWS() {
       driverName = null;
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('app-screen').style.display = 'none';
+      setFloatingPillsVisible(true);
       const btn = document.getElementById('btn-start-shift');
       if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
     }
@@ -1352,6 +1411,7 @@ function _doJoin(name, pos) {
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
+  setFloatingPillsVisible(false);
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
   setShiftStartDisplay();
@@ -1388,6 +1448,7 @@ window.androidAutoJoin = function(name) {
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
+  setFloatingPillsVisible(false);
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
   setShiftStartDisplay();
@@ -1437,6 +1498,7 @@ function endShift() {
     kicked = false;
     document.getElementById('app-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
+    setFloatingPillsVisible(true);
     switchSubTab('info');
   };
 
@@ -1472,6 +1534,7 @@ function handleKick() {
   localStorage.removeItem('fleet_driver_name');
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+  setFloatingPillsVisible(true);
   document.getElementById('name').value = '';
   const sub = document.getElementById('login-sub');
   if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
@@ -1606,10 +1669,7 @@ function updateUI(data) {
   const cfg = STATE_CONFIG[state] || STATE_CONFIG.Waiting;
   currentBreakEnd = data.break_end;
 
-  // state chip
-  const chip = document.getElementById('state-chip');
-  chip.className = `state-chip ${cfg.chip}`;
-  chip.innerText = cfg.label;
+  // state chip (الكارت بتاع حالة الشيفت هو المصدر الوحيد دلوقتي بعد ما شلنا التكرار من الـ topbar)
   const chipMirror = document.getElementById('state-chip-mirror');
   if (chipMirror) { chipMirror.className = `state-chip ${cfg.chip}`; chipMirror.innerText = cfg.label; }
 
@@ -1624,20 +1684,40 @@ function updateUI(data) {
   document.documentElement.style.setProperty('--accent', cfg.accent);
   document.documentElement.style.setProperty('--accent-glow', cfg.accentGlow);
 
-  // views
-  document.getElementById('view-waiting').style.display = state === 'Waiting' ? 'block' : 'none';
-  document.getElementById('view-out').style.display     = state === 'Out'     ? 'block' : 'none';
-  document.getElementById('view-break').style.display   = state === 'Break'   ? 'block' : 'none';
+  // views — كروس فيد سلس بدل القطع المفاجئ، وما بيعيدش الأنيميشن إلا لما الحالة فعلاً تتغير
+  const viewIds = { Waiting: 'view-waiting', Out: 'view-out', Break: 'view-break' };
+  if (state !== _lastRenderedState) {
+    Object.entries(viewIds).forEach(([s, id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (s === state) {
+        el.style.display = 'block';
+        // نضمن reflow قبل ما نشيل الكلاس المخفي عشان الترانزيشن يشتغل فعليًا
+        requestAnimationFrame(() => {
+          el.classList.remove('hero-view-hidden');
+          el.classList.add('hero-view-visible');
+        });
+      } else {
+        el.classList.remove('hero-view-visible');
+        el.classList.add('hero-view-hidden');
+      }
+    });
+    _lastRenderedState = state;
+  }
 
-  // وضع "تركيز" وقت البريك: نخفي الخريطة والكروت التانية ويفضل بس تايمر الراحة ظاهر
+  // وضع "تركيز" وقت البريك: نخفي الخريطة والكروت التانية بفيد سلس ويفضل بس تايمر الراحة ظاهر
   const isBreak = state === 'Break';
   const mapCard = document.querySelector('.map-card');
   const infoGrid = document.querySelector('.info-grid');
-  if (mapCard) mapCard.style.display = isBreak ? 'none' : '';
-  if (infoGrid) infoGrid.style.display = isBreak ? 'none' : '';
+  if (mapCard) mapCard.classList.toggle('focus-hidden', isBreak);
+  if (infoGrid) infoGrid.classList.toggle('focus-hidden', isBreak);
 
   // stats row
-  document.getElementById('stat-row').style.display = isBreak ? 'none' : 'flex';
+  const statRow = document.getElementById('stat-row');
+  if (statRow) {
+    statRow.style.display = 'flex';
+    statRow.classList.toggle('focus-hidden', isBreak);
+  }
   document.getElementById('stat-orders').innerText  = data.orders  || 0;
   document.getElementById('stat-returns').innerText = data.returns || 0;
   document.getElementById('stat-misses').innerText  = data.misses  || 0;
