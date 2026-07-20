@@ -902,7 +902,7 @@ function safeId(name) { return name.replace(/\s+/g, '_').replace(/[^\w-]/g, '');
 
 function getDistanceBadge(dist, lastSeen, state) {
   const { statusClass, statusText } = getDriverStatusDetails(lastSeen, state);
-  let distText = dist ? (dist < 1000 ? `${dist}m` : `${(dist/1000).toFixed(1)}km`) : '--';
+  let distText = dist != null ? (dist < 1000 ? `${dist}m` : `${(dist/1000).toFixed(1)}km`) : '--';
   return `<span class="badge ${statusClass}" title="${statusText}">📍 ${distText}</span>`;
 }
 
