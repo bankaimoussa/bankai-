@@ -578,7 +578,15 @@ async def driver_ws(ws: WebSocket):
                     me["avatar"] = avatar
                     await ws.send_text(json.dumps({"type": "sync", "me": me, "queue": queue}))
 
-                if driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
+                if not is_reconnect:
+                    # دخول جديد خالص بس — نضيفه آخر الطابور
+                    if driver_name not in queue:
+                        queue.append(driver_name)
+                        await save_queue_to_redis(queue)
+                elif driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
+                    # حالة استثنائية: مندوب موجود أصلاً وحالته Waiting بس مش موجود في الطابور
+                    # (يعني حصل خلل ما وسبب فقدانه من الـ queue list) — نرجّعه تاني كمعالجة أمان،
+                    # لكن ده مش المفروض يحصل في الـ reconnect العادي
                     queue.append(driver_name)
                     await save_queue_to_redis(queue)
 
