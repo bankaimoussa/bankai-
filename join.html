@@ -498,6 +498,97 @@
   .btn-install:hover { background: rgba(15,212,200,0.15); }
   .btn-end-shift { width:34px; height:34px; border-radius:10px; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); color:#ef4444; font-size:14px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
   .btn-end-shift:active { background:rgba(239,68,68,0.25); transform:scale(0.92); }
+
+  /* ===== SUB TABS (معلوماتي / الدور / حسابي) ===== */
+  .sub-tabs {
+    display: flex; gap: 6px; padding: 14px 18px 0;
+    position: relative; z-index: 1;
+  }
+  .sub-tab {
+    flex: 1; padding: 10px 6px; border-radius: 12px; border: none; cursor: pointer;
+    background: rgba(255,255,255,0.04); color: var(--text-muted);
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    transition: all 0.25s ease;
+  }
+  .sub-tab.active { background: var(--accent); color: #fff; box-shadow: 0 6px 18px var(--accent-glow); }
+  .sub-tab-panel { display: none; animation: fadeIn 0.35s ease; }
+  .sub-tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+
+  /* ===== QUEUE TAB ===== */
+  .queue-hero { text-align: center; padding: 28px 18px 8px; position: relative; z-index: 1; }
+  .queue-list { padding: 8px 18px 18px; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+  .queue-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    transition: all 0.3s ease; animation: fadeIn 0.4s ease both;
+  }
+  .queue-row.me {
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black));
+    border-color: transparent; box-shadow: 0 8px 22px var(--accent-glow);
+  }
+  .queue-num {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.08); font-weight: 800; font-size: 14px; color: var(--text);
+  }
+  .queue-row.me .queue-num { background: rgba(255,255,255,0.25); color: #fff; }
+  .queue-row-name { flex: 1; font-weight: 700; font-size: 13px; color: var(--text); }
+  .queue-row.me .queue-row-name { color: #fff; }
+  .queue-row-sub { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+  .queue-row.me .queue-row-sub { color: rgba(255,255,255,0.75); }
+  .queue-empty { text-align: center; padding: 30px 18px; color: var(--text-muted); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
+
+  /* ===== PROFILE TAB ===== */
+  .profile-header { text-align: center; padding: 24px 18px 8px; position: relative; z-index: 1; }
+  .avatar-wrap { position: relative; width: 84px; height: 84px; margin: 0 auto 10px; cursor: pointer; }
+  .avatar-wrap img, .avatar-wrap .avatar-fallback {
+    width: 84px; height: 84px; border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--accent); box-shadow: 0 8px 24px var(--accent-glow);
+  }
+  .avatar-fallback {
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, black));
+    color: #fff; font-size: 30px; font-weight: 900;
+  }
+  .avatar-edit-badge {
+    position: absolute; bottom: 0; left: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--surface2); border: 2px solid var(--bg); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .profile-name { font-size: 17px; font-weight: 800; color: var(--text); }
+  .profile-role { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+  .week-card { margin: 16px 18px; padding: 16px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.03); border: 1px solid var(--border); position: relative; z-index: 1; }
+  .week-title { font-size: 12px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .week-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 90px; gap: 6px; }
+  .week-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .week-bar { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 50%, transparent)); min-height: 3px; transition: height 0.6s cubic-bezier(.2,.8,.2,1); }
+  .week-bar-col.today .week-bar { background: linear-gradient(180deg, var(--success), color-mix(in srgb, var(--success) 50%, transparent)); box-shadow: 0 4px 14px var(--success-glow); }
+  .week-day-lbl { font-size: 9px; font-weight: 700; color: var(--text-dim); }
+  .week-bar-col.today .week-day-lbl { color: var(--success); }
+
+  .profile-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px 18px; position: relative; z-index: 1; }
+
+  /* hidden file input for avatar */
+  #avatar-file-input { display: none; }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 10px 8px; border-top: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; padding: 6px 14px;
+    color: var(--text-muted); font-family: var(--font); transition: all 0.25s ease;
+  }
+  .nav-btn .nav-ic { font-size: 18px; line-height: 1; transition: transform 0.25s ease; }
+  .nav-btn .nav-lbl { font-size: 9px; font-weight: 700; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn.active .nav-ic { transform: translateY(-2px); }
   #chat-popup.show { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:auto; }
 </style>
 </head>
@@ -563,85 +654,152 @@
       </div>
     </div>
 
-    <!-- Hero -->
-    <div class="hero-block" id="hero-block">
-      <div class="hero-bg-ring" id="hero-bg"></div>
+    <!-- Sub tabs -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="subtab-btn-info" onclick="switchSubTab('info')">معلوماتي</button>
+      <button class="sub-tab" id="subtab-btn-queue" onclick="switchSubTab('queue')">الدور</button>
+      <button class="sub-tab" id="subtab-btn-profile" onclick="switchSubTab('profile')">حسابي</button>
+    </div>
 
-      <!-- Waiting state -->
-      <div id="view-waiting">
-        <div style="text-align:center">
-          <div class="hero-number" id="pos-num">--</div>
-          <div class="hero-label">ترتيبك في الطابور</div>
+    <!-- ===== TAB: معلوماتي ===== -->
+    <div class="sub-tab-panel active" id="subtab-info">
+
+      <!-- Hero -->
+      <div class="hero-block" id="hero-block">
+        <div class="hero-bg-ring" id="hero-bg"></div>
+
+        <!-- Waiting state -->
+        <div id="view-waiting">
+          <div style="text-align:center">
+            <div class="hero-number" id="pos-num">--</div>
+            <div class="hero-label">ترتيبك في الطابور</div>
+          </div>
+        </div>
+
+        <!-- Out state -->
+        <div id="view-out" style="display:none; text-align:center">
+          <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
+          <div class="hero-label">في الطريق</div>
+        </div>
+
+        <!-- Break state -->
+        <div id="view-break" style="display:none; text-align:center">
+          <div class="break-hero" id="break-timer">60:00</div>
+          <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
         </div>
       </div>
 
-      <!-- Out state -->
-      <div id="view-out" style="display:none; text-align:center">
-        <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
-        <div class="hero-label">في الطريق</div>
+      <!-- GPS + Battery info tiles -->
+      <div class="info-grid">
+        <div class="info-tile" id="gps-tile">
+          <div class="info-icon">📍</div>
+          <div class="info-value small" id="gps-distance">--</div>
+          <div class="info-label">المسافة</div>
+        </div>
+        <div class="info-tile" id="bat-tile">
+          <div class="info-icon" id="bat-icon">🔋</div>
+          <div class="info-value" id="bat-percent">--%</div>
+          <div class="info-label">البطارية</div>
+        </div>
       </div>
 
-      <!-- Break state -->
-      <div id="view-break" style="display:none; text-align:center">
-        <div class="break-hero" id="break-timer">60:00</div>
-        <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
+      <!-- GPS detail (speed + accuracy) -->
+      <div class="gps-detail">
+        <div class="gps-detail-item">⚡ <strong id="gps-speed">0</strong> كم/س</div>
+        <div class="gps-detail-item">🎯 <strong id="gps-accuracy">--</strong> م</div>
+      </div>
+
+      <!-- GPS status pill -->
+      <div class="gps-pill" id="gps-pill">
+        <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-row" id="stat-row" style="display:none">
+        <div class="stat-item">
+          <div class="stat-val" id="stat-orders">0</div>
+          <div class="stat-lbl">أوردر</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-returns">0</div>
+          <div class="stat-lbl">راجع</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-misses">0</div>
+          <div class="stat-lbl">فائت</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="stat-km">0.0</div>
+          <div class="stat-lbl">كم</div>
+        </div>
+      </div>
+
+      <!-- Wait message -->
+      <div class="wait-msg" id="wait-msg">
+        استنى! <span>دورك جاي قريب.</span>
+      </div>
+
+      <!-- Action button -->
+      <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
+        ارجع للطابور
+      </button>
+    </div>
+
+    <!-- ===== TAB: الدور ===== -->
+    <div class="sub-tab-panel" id="subtab-queue">
+      <div class="queue-hero">
+        <div class="hero-number" id="queue-pos-num" style="font-size:64px;">--</div>
+        <div class="hero-label">ترتيبك في الطابور</div>
+      </div>
+      <div class="queue-list" id="queue-list">
+        <!-- rows injected by JS -->
       </div>
     </div>
 
-    <!-- GPS + Battery info tiles -->
-    <div class="info-grid">
-      <div class="info-tile" id="gps-tile">
-        <div class="info-icon">📍</div>
-        <div class="info-value small" id="gps-distance">--</div>
-        <div class="info-label">المسافة</div>
+    <!-- ===== TAB: حسابي ===== -->
+    <div class="sub-tab-panel" id="subtab-profile">
+      <div class="profile-header">
+        <div class="avatar-wrap" onclick="document.getElementById('avatar-file-input').click()">
+          <img id="profile-avatar-img" style="display:none" />
+          <div class="avatar-fallback" id="profile-avatar-fallback">م</div>
+          <div class="avatar-edit-badge">📷</div>
+        </div>
+        <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarSelect(event)">
+        <div class="profile-name" id="profile-name">مندوب</div>
+        <div class="profile-role">مندوب توصيل · رواحل</div>
       </div>
-      <div class="info-tile" id="bat-tile">
-        <div class="info-icon" id="bat-icon">🔋</div>
-        <div class="info-value" id="bat-percent">--%</div>
-        <div class="info-label">البطارية</div>
+
+      <div class="week-card">
+        <div class="week-title">إحصائيات الأسبوع</div>
+        <div class="week-chart" id="week-chart">
+          <!-- bars injected by JS -->
+        </div>
+      </div>
+
+      <div class="profile-stat-grid">
+        <div class="stat-item">
+          <div class="stat-val" id="profile-stat-orders">0</div>
+          <div class="stat-lbl">أوردر اليوم</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" id="profile-stat-km">0.0</div>
+          <div class="stat-lbl">كم اليوم</div>
+        </div>
       </div>
     </div>
 
-    <!-- GPS detail (speed + accuracy) -->
-    <div class="gps-detail">
-      <div class="gps-detail-item">⚡ <strong id="gps-speed">0</strong> كم/س</div>
-      <div class="gps-detail-item">🎯 <strong id="gps-accuracy">--</strong> م</div>
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <button class="nav-btn active" id="nav-btn-info" onclick="switchSubTab('info')">
+        <span class="nav-ic">🏠</span><span class="nav-lbl">معلوماتي</span>
+      </button>
+      <button class="nav-btn" id="nav-btn-queue" onclick="switchSubTab('queue')">
+        <span class="nav-ic">📋</span><span class="nav-lbl">الدور</span>
+      </button>
+      <button class="nav-btn" id="nav-btn-profile" onclick="switchSubTab('profile')">
+        <span class="nav-ic">👤</span><span class="nav-lbl">حسابي</span>
+      </button>
     </div>
-
-    <!-- GPS status pill -->
-    <div class="gps-pill" id="gps-pill">
-      <span>📡</span><span id="gps-text">بيحدد الموقع...</span>
-    </div>
-
-    <!-- Stats -->
-    <div class="stat-row" id="stat-row" style="display:none">
-      <div class="stat-item">
-        <div class="stat-val" id="stat-orders">0</div>
-        <div class="stat-lbl">أوردر</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" id="stat-returns">0</div>
-        <div class="stat-lbl">راجع</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" id="stat-misses">0</div>
-        <div class="stat-lbl">فائت</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" id="stat-km">0.0</div>
-        <div class="stat-lbl">كم</div>
-      </div>
-    </div>
-
-    <!-- Wait message -->
-    <div class="wait-msg" id="wait-msg">
-      استنى! <span>دورك جاي قريب.</span>
-    </div>
-
-    <!-- Action button -->
-    <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
-      ارجع للطابور
-    </button>
 
   </div>
 </div>
@@ -896,7 +1054,7 @@ function connectWS() {
   };
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === 'sync') updateUI(d.me);
+    if (d.type === 'sync') { updateUI(d.me); renderQueueList(d.queue || []); }
     else if (d.type === 'distance') {
       updateGPS(d.meters);
       if (d.shift_km !== undefined) {
@@ -980,19 +1138,16 @@ function join() {
   btn.disabled = true;
   btn.innerText = '📍 بنحدد موقعك...';
 
-  const BYPASS_NAMES_CLIENT = ['bankai225'];
-  const isBypass = BYPASS_NAMES_CLIENT.includes(name.toLowerCase());
-
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const dist = haversineClient(pos.coords.latitude, pos.coords.longitude, BRANCH_LAT, BRANCH_LNG);
-      if (!isBypass && dist > MAX_JOIN_DISTANCE) {
+      if (dist > MAX_JOIN_DISTANCE) {
         btn.disabled = false;
         btn.innerText = '🟢 ابدأ الشيفت';
         showToast(`❌ أنت بعيد عن الفرع (${dist}م) — لازم تكون في نطاق 50م`);
         return;
       }
-      // ✅ قريب من الفرع أو bypass — كمّل
+      // ✅ قريب من الفرع — كمّل
       _doJoin(name, pos);
     },
     (err) => {
@@ -1011,6 +1166,7 @@ function _doJoin(name, pos) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
+  renderProfileHeader();
   lastGpsPos = pos;
   startGPS(); trackBattery(); connectWS();
   requestWakeLock();
@@ -1034,6 +1190,7 @@ window.androidAutoJoin = function(name) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('driver-name').innerText = name;
+  renderProfileHeader();
   startGPS(); trackBattery(); connectWS();
   requestWakeLock();
   startSilentAudio();
@@ -1068,29 +1225,11 @@ function stopAllServices() {
 
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-  // أبلغ السيرفر بإنهاء الشيفت قبل ما نقفل الـ WS عشان يمسح الدرايفر من الأدمن
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({type: 'end_shift'}));
-    // نستنى لحظة صغيرة عشان الرسالة توصل قبل الـ close
-    setTimeout(() => {
-      stopAllServices();
-    }, 300);
-  } else {
-    stopAllServices();
-  }
+  stopAllServices();
   kicked = false;
   document.getElementById('app-screen').style.display = 'none';
-  // إعادة تهيئة شاشة اللوجين
-  const nameInput = document.getElementById('name');
-  const sub = document.getElementById('login-sub');
-  if (nameInput) { nameInput.value = ''; nameInput.style.display = ''; }
-  if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
-  const btn = document.getElementById('btn-start-shift');
-  if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.5 2 L6.5 13 H11 L9.5 22 L18 10 H13.2 L13.5 2 Z" fill="#fff"/></svg> ابدأ الشيفت'; }
-  const login = document.getElementById('login-screen');
-  login.classList.remove('login-in');
-  login.style.display = 'flex';
-  requestAnimationFrame(() => { login.classList.add('login-in'); });
+  document.getElementById('login-screen').style.display = 'flex';
+  switchSubTab('info');
 }
 
 // === Chat Notification ===
@@ -1125,7 +1264,114 @@ function handleKick() {
   const sub = document.getElementById('login-sub');
   if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
   document.getElementById('name').style.display = '';
+  switchSubTab('info');
   showToast('❌ تم إزالتك من النظام');
+}
+
+// ===== SUB TABS (معلوماتي / الدور / حسابي) =====
+let lastQueueList = [];
+function switchSubTab(tab) {
+  ['info','queue','profile'].forEach(t => {
+    document.getElementById('subtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('subtab-btn-' + t).classList.toggle('active', t === tab);
+    document.getElementById('nav-btn-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'queue') renderQueueList(lastQueueList);
+  if (tab === 'profile') loadWeeklyStats();
+}
+
+// ===== QUEUE TAB =====
+function renderQueueList(queue) {
+  lastQueueList = queue || [];
+  const posEl = document.getElementById('queue-pos-num');
+  const listEl = document.getElementById('queue-list');
+  if (!listEl) return;
+
+  const myIndex = lastQueueList.indexOf(driverName);
+  posEl.innerText = myIndex >= 0 ? `#${myIndex + 1}` : '--';
+
+  if (!lastQueueList.length) {
+    listEl.innerHTML = '<div class="queue-empty">مفيش حد في الطابور دلوقتي</div>';
+    return;
+  }
+
+  listEl.innerHTML = lastQueueList.map((n, i) => {
+    const isMe = n === driverName;
+    return `
+      <div class="queue-row ${isMe ? 'me' : ''}" style="animation-delay:${i * 0.05}s">
+        <div class="queue-num">${i + 1}</div>
+        <div style="flex:1">
+          <div class="queue-row-name">${isMe ? 'أنت - ' + n : n}</div>
+          <div class="queue-row-sub">${i === 0 ? 'دوره جاي' : 'في الانتظار'}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ===== PROFILE TAB =====
+function renderProfileHeader() {
+  const nameEl = document.getElementById('profile-name');
+  const fallback = document.getElementById('profile-avatar-fallback');
+  if (nameEl) nameEl.innerText = driverName || 'مندوب';
+  if (fallback) fallback.innerText = (driverName || 'م').trim().charAt(0);
+}
+
+function applyAvatar(avatarDataUrl) {
+  const img = document.getElementById('profile-avatar-img');
+  const fallback = document.getElementById('profile-avatar-fallback');
+  if (!img) return;
+  if (avatarDataUrl) {
+    img.src = avatarDataUrl;
+    img.style.display = 'block';
+    if (fallback) fallback.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    if (fallback) fallback.style.display = 'flex';
+  }
+}
+
+function handleAvatarSelect(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || !driverName) return;
+  if (file.size > 4 * 1024 * 1024) { showToast('❌ الصورة كبيرة أوي، اختار صورة أصغر'); return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = reader.result;
+    applyAvatar(dataUrl); // نعرضها فوراً
+    try {
+      await fetch('/api/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: driverName, avatar: dataUrl })
+      });
+    } catch (e) { showToast('❌ الصورة متحفظتش، حاول تاني'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadWeeklyStats() {
+  if (!driverName) return;
+  try {
+    const res = await fetch(`/api/weekly_stats/${encodeURIComponent(driverName)}`);
+    const data = await res.json();
+    if (data.ok) renderWeekChart(data.stats);
+  } catch (e) { /* silent fail */ }
+}
+
+function renderWeekChart(stats) {
+  const el = document.getElementById('week-chart');
+  if (!el || !stats) return;
+  const maxOrders = Math.max(1, ...stats.map(s => s.orders));
+  const todayKey = new Date().toISOString().slice(0, 10);
+  el.innerHTML = stats.map(s => {
+    const pct = Math.max(4, Math.round((s.orders / maxOrders) * 100));
+    const isToday = s.date === todayKey;
+    return `
+      <div class="week-bar-col ${isToday ? 'today' : ''}">
+        <div class="week-bar" style="height:${pct}%"></div>
+        <div class="week-day-lbl">${s.day.slice(0,4)}</div>
+      </div>`;
+  }).join('');
 }
 
 // ===== UI UPDATE =====
@@ -1183,6 +1429,13 @@ function updateUI(data) {
     document.getElementById('pos-num').innerText = `#${pos}`;
     if (pos === 1) confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
   }
+
+  // profile tab: today's stats + avatar (لو وصلت مع sync)
+  const profOrders = document.getElementById('profile-stat-orders');
+  const profKm = document.getElementById('profile-stat-km');
+  if (profOrders) profOrders.innerText = data.orders || 0;
+  if (profKm) profKm.innerText = (data.shift_km || 0).toFixed(1);
+  if (data.avatar !== undefined) applyAvatar(data.avatar);
 }
 
 function handleAction() {
