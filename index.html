@@ -232,9 +232,9 @@
   .col-break { border-top: 3px solid var(--break); }
 
   .driver-card {
-    background: var(--surface-2); padding: 12px 12px 10px; border-radius: var(--radius-sm);
+    background: var(--surface-2); padding: 8px 9px; border-radius: var(--radius-sm);
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
-    margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 6px; display: flex; flex-direction: column; gap: 5px;
     transition: all 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
@@ -243,26 +243,26 @@
   .driver-card.state-break { border-inline-start-color: var(--break); }
   .draggable-card { cursor: grab; }
   .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
-  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 13px; }
+  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 14px; }
 
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
-  .card-name { font-weight: 700; font-size: 13px; color: var(--text); word-break: break-word; line-height: 1.35; display: flex; align-items: center; gap: 4px; }
+  .card-name { font-weight: 700; font-size: 14px; color: var(--text); word-break: break-word; line-height: 1.35; display: flex; align-items: center; gap: 4px; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 18px; height: 18px; padding: 0 4px; border-radius: 6px;
-    background: rgba(124,106,247,0.15); color: var(--primary); font-size: 10px; font-weight: 800;
+    min-width: 19px; height: 19px; padding: 0 4px; border-radius: 6px;
+    background: rgba(124,106,247,0.15); color: var(--primary); font-size: 11px; font-weight: 800;
   }
   .btn-kick {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
     background: rgba(255,92,124,0.08); color: var(--danger); border: 1px solid rgba(255,92,124,0.18);
-    font-size: 12px; cursor: pointer; transition: all 0.2s; padding: 0;
+    font-size: 11px; cursor: pointer; transition: all 0.2s; padding: 0;
   }
   .btn-kick:hover { background: rgba(255,92,124,0.18); transform: scale(1.08); }
 
   /* صف الحالة: GPS + مسافة + بطارية — كل عنصر واضح بشكل ودور منفصل */
-  .indicators { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-  .badge { display: inline-flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.04); padding: 3px 8px; border-radius: 7px; font-size: 10px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
+  .indicators { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.04); padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
   .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
   .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
   .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
@@ -272,28 +272,28 @@
   .btn-locate {
     display: inline-flex; align-items: center; gap: 3px;
     background: rgba(124, 106, 247, 0.1); color: var(--primary); border: 1px solid rgba(124,106,247,0.22);
-    padding: 3px 8px; border-radius: 7px; font-size: 10px; font-weight: 700; cursor: pointer;
+    padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; white-space: nowrap;
   }
   .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
 
   .card-details {
-    font-size: 10.5px; color: var(--muted); line-height: 1.5; font-weight: 500;
-    display: flex; gap: 12px; flex-wrap: wrap;
+    font-size: 11px; color: var(--muted); line-height: 1.4; font-weight: 500;
+    display: flex; gap: 10px; flex-wrap: wrap;
   }
-  .card-details span { display: inline-flex; align-items: center; gap: 4px; }
+  .card-details span { display: inline-flex; align-items: center; gap: 3px; }
   .card-details b { color: var(--text-2); font-weight: 700; }
 
-  .card-actions { display: flex; gap: 6px; }
+  .card-actions { display: flex; gap: 4px; }
   .action-btn {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-    padding: 7px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 5px 6px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; border: 1px solid transparent;
   }
   .action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
   .btn-out { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); }
   .btn-break { background: rgba(184,170,255,0.12); color: var(--break); border-color: rgba(184,170,255,0.22); }
-  .btn-notify { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); flex: 0 0 auto; min-width: 38px; padding: 7px 10px; font-size: 15px; }
+  .btn-notify { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); flex: 0 0 auto; min-width: 34px; padding: 5px 8px; font-size: 14px; }
   .btn-done { background: rgba(45,210,207,0.12); color: var(--success); border-color: rgba(45,210,207,0.22); }
   .break-timer { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
   .auto-return-timer { font-size: 10px; }
