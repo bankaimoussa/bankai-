@@ -85,6 +85,37 @@ async def get_auto_out_enabled() -> bool:
 async def set_auto_out_enabled(enabled: bool):
     await redis_client.set("fleet:auto_out", "1" if enabled else "0")
 
+async def save_driver_avatar(name: str, avatar_b64: str):
+    await redis_client.hset("fleet:avatars", name, avatar_b64)
+
+async def get_driver_avatar(name: str):
+    return await redis_client.hget("fleet:avatars", name)
+
+async def bump_weekly_stat(name: str, orders_delta: int = 0, km_delta: float = 0.0):
+    """يسجل إحصائية يومية للمندوب عشان نعرض تشارت آخر 7 أيام في تاب حسابي"""
+    day_key = datetime.now().strftime("%Y-%m-%d")
+    field = f"{name}:{day_key}"
+    raw = await redis_client.hget("fleet:daily_stats", field)
+    cur = json.loads(raw) if raw else {"orders": 0, "km": 0.0}
+    cur["orders"] += orders_delta
+    cur["km"] = round(cur["km"] + km_delta, 2)
+    await redis_client.hset("fleet:daily_stats", field, json.dumps(cur))
+
+async def get_weekly_stats(name: str) -> List[dict]:
+    """آخر 7 أيام (من الأقدم للأحدث) — كل يوم فيه orders و km"""
+    from datetime import timedelta
+    out = []
+    today = datetime.now()
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        day_key = d.strftime("%Y-%m-%d")
+        field = f"{name}:{day_key}"
+        raw = await redis_client.hget("fleet:daily_stats", field)
+        data = json.loads(raw) if raw else {"orders": 0, "km": 0.0}
+        weekday_ar = ["الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"][d.weekday()]
+        out.append({"date": day_key, "day": weekday_ar, "orders": data["orders"], "km": data["km"]})
+    return out
+
 
 def haversine(lat1, lng1, lat2, lng2):
     R = 6371000
@@ -127,7 +158,10 @@ async def broadcast_state(event_type="update"):
     dead_drivers = []
     for d_name, d_ws in driver_connections.items():
         if d_name in drivers:
-            try: await d_ws.send_text(json.dumps({"type": "sync", "me": drivers[d_name], "queue": queue}))
+            avatar = await get_driver_avatar(d_name)
+            me = dict(drivers[d_name])
+            me["avatar"] = avatar
+            try: await d_ws.send_text(json.dumps({"type": "sync", "me": me, "queue": queue}))
             except: dead_drivers.append(d_name)
     for d in dead_drivers: 
         if d in driver_connections: del driver_connections[d]
@@ -181,19 +215,23 @@ async def change_driver_state(driver_name: str, new_state: str):
     queue = await get_queue_from_redis()
 
     if driver_name not in drivers: return
-    
+
+    prev_state = drivers[driver_name].get("state")
     drivers[driver_name]["state"] = new_state
-    
+
     if new_state == "Waiting":
         drivers[driver_name]["last_return"] = datetime.now().strftime("%I:%M %p")
         drivers[driver_name]["break_end"] = None
         if driver_name not in queue: queue.append(driver_name)
+        # الأوردر بيتحسب هنا — لما المندوب يرجع من Out (يعني خلص التوصيل)، مش لما يخرج
+        if prev_state == "Out":
+            drivers[driver_name]["orders"] += 1
+            await bump_weekly_stat(driver_name, orders_delta=1)
     else:
         if driver_name in queue: queue.remove(driver_name)
         if new_state == "Out":
             drivers[driver_name]["last_out"] = datetime.now().strftime("%I:%M %p")
             drivers[driver_name]["out_since"] = int(time.time())
-            drivers[driver_name]["orders"] += 1
             drivers[driver_name]["break_end"] = None
         elif new_state == "Break":
             drivers[driver_name]["break_end"] = int(time.time()) + 3600
@@ -237,6 +275,29 @@ async def force_update():
     # دلوقتي نعمل broadcast بأحدث داتا في Redis (بعد ما استنينا)
     await broadcast_state("update")
     return {"ok": True, "ws": len(driver_connections)}
+
+class AvatarBody(BaseModel):
+    name: str
+    avatar: str  # base64 data URL (data:image/...;base64,...)
+
+@app.post("/api/avatar")
+async def upload_avatar(body: AvatarBody):
+    if not body.name.strip() or not body.avatar.strip():
+        return {"ok": False, "reason": "missing_fields"}
+    await save_driver_avatar(body.name.strip(), body.avatar)
+    # حدث الأدمن والمندوب نفسه فوراً
+    await broadcast_state("update")
+    return {"ok": True}
+
+@app.get("/api/avatar/{name}")
+async def fetch_avatar(name: str):
+    avatar = await get_driver_avatar(name)
+    return {"ok": True, "avatar": avatar}
+
+@app.get("/api/weekly_stats/{name}")
+async def weekly_stats(name: str):
+    stats = await get_weekly_stats(name)
+    return {"ok": True, "stats": stats}
 
 class FcmTokenBody(BaseModel):
     name: str
@@ -451,8 +512,7 @@ async def driver_ws(ws: WebSocket):
                 is_reconnect = driver_name in drivers
 
                 # ── Proximity check (فقط للـ join الجديد مش reconnect) ──
-                BYPASS_NAMES = {"bankai225"}  # أسماء بتتجاوز شرط القرب من الفرع
-                if not is_reconnect and driver_name.lower() not in BYPASS_NAMES:
+                if not is_reconnect:
                     join_lat = data.get("lat")
                     join_lng = data.get("lng")
                     if join_lat is None or join_lng is None:
@@ -494,7 +554,10 @@ async def driver_ws(ws: WebSocket):
                 else:
                     # reconnect - بنبعتله state الحالي فوراً عشان يعرف هو فين
                     queue = await get_queue_from_redis()
-                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name], "queue": queue}))
+                    avatar = await get_driver_avatar(driver_name)
+                    me = dict(drivers[driver_name])
+                    me["avatar"] = avatar
+                    await ws.send_text(json.dumps({"type": "sync", "me": me, "queue": queue}))
 
                 if driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
                     queue.append(driver_name)
@@ -595,7 +658,10 @@ async def driver_ws(ws: WebSocket):
                 drivers = await get_drivers_from_redis()
                 if driver_name in drivers:
                     queue = await get_queue_from_redis()
-                    await ws.send_text(json.dumps({"type": "sync", "me": drivers[driver_name], "queue": queue}))
+                    avatar = await get_driver_avatar(driver_name)
+                    me = dict(drivers[driver_name])
+                    me["avatar"] = avatar
+                    await ws.send_text(json.dumps({"type": "sync", "me": me, "queue": queue}))
 
             elif data["type"] == "change_state" and driver_name:
                 if data["state"] == "Waiting":
@@ -622,22 +688,6 @@ async def driver_ws(ws: WebSocket):
                         try: await aws.send_text(battery_msg)
                         except: dead.append(aws)
                     for aws in dead: admin_connections.remove(aws)
-
-            elif data["type"] == "end_shift" and driver_name:
-                # السواق ضغط إنهاء شيفت بإرادته — نمسحه من الـ Redis ونبلغ الأدمن
-                drivers = await get_drivers_from_redis()
-                queue  = await get_queue_from_redis()
-                if driver_name in drivers:
-                    await delete_driver_from_redis(driver_name)
-                if driver_name in queue:
-                    queue.remove(driver_name)
-                    await save_queue_to_redis(queue)
-                if driver_connections.get(driver_name) is ws:
-                    del driver_connections[driver_name]
-                driver_last_activity.pop(driver_name, None)
-                await broadcast_state("update")
-                driver_name = None  # نوقف أي معالجة تانية على الـ connection ده
-                break               # نخرج من الـ loop — السواق خلص شيفته
 
     except WebSocketDisconnect:
         # نمسح الـ connection بس من الـ dict - مش بنغير state ومش بنعمل broadcast
