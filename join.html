@@ -366,10 +366,12 @@
 
   /* Hero block — الرقم الكبير زي الموك أب */
   .hero-block {
-    position: relative; padding: 10px 20px 6px;
+    position: relative; padding: 4px 20px 4px;
     display: flex; flex-direction: column; align-items: center;
     overflow: hidden;
+    min-height: 0;
   }
+  .hero-block:has(#view-waiting.hero-view-visible) { padding: 2px 20px; }
   .hero-bg-ring {
     position: absolute; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--accent-glow), transparent 70%);
@@ -713,6 +715,14 @@
   .queue-row.me .queue-row-sub { color: rgba(255,255,255,0.8); }
   .queue-empty { text-align: center; padding: 30px 18px; color: var(--text-muted); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
 
+  /* أنيميشن نبضة خفيفة لما رقم إحصائية يتغير */
+  .stat-pop { animation: statPop 0.5s ease; color: var(--accent) !important; }
+  @keyframes statPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
   /* ===== PROFILE TAB ===== */
   .profile-header { text-align: center; padding: 26px 18px 8px; position: relative; z-index: 1; }
   .avatar-wrap { position: relative; width: 88px; height: 88px; margin: 0 auto 12px; cursor: pointer; }
@@ -856,14 +866,11 @@
         </div>
       </div>
 
-      <!-- Hero states (queue position / out / break) — functional views -->
+      <!-- Hero states (out / break) — functional views. Queue position moved to "الدور" tab -->
       <div class="hero-block" id="hero-block">
-        <!-- Waiting state -->
-        <div id="view-waiting" class="hero-view-visible">
-          <div style="text-align:center">
-            <div class="hero-number" id="pos-num">--</div>
-            <div class="hero-label">ترتيبك في الطابور</div>
-          </div>
+        <!-- Waiting state: no big number here anymore — just a compact status line -->
+        <div id="view-waiting" class="hero-view-visible" style="text-align:center; padding: 6px 0;">
+          <div class="hero-label" style="margin:0;">في انتظار دورك — تفاصيل الطابور في تاب "الدور"</div>
         </div>
 
         <!-- Out state -->
@@ -1530,6 +1537,31 @@ function showShiftEndedScreen(name) {
 
 // === Chat Notification ===
 let chatPopupTimer = null;
+
+// ===== ANIMATED STAT NUMBERS =====
+// بيحرك أي رقم من قيمته الحالية للقيمة الجديدة بدل ما يقفز فجأة
+function animateStatValue(el, newValue, opts) {
+  if (!el) return;
+  const decimals = (opts && opts.decimals) || 0;
+  const suffix = (opts && opts.suffix) || '';
+  const prefix = (opts && opts.prefix) || '';
+  const from = parseFloat(el.dataset.rawVal || '0') || 0;
+  const to = parseFloat(newValue) || 0;
+  if (from === to) { el.dataset.rawVal = to; return; }
+  el.dataset.rawVal = to;
+  const duration = 500;
+  const start = performance.now();
+  el.classList.add('stat-pop');
+  function tick(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    const val = from + (to - from) * eased;
+    el.innerText = prefix + val.toFixed(decimals) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+    else setTimeout(() => el.classList.remove('stat-pop'), 200);
+  }
+  requestAnimationFrame(tick);
+}
 function showChatPopup(text) {
   const popup = document.getElementById('chat-popup');
   const textEl = document.getElementById('chat-popup-text');
@@ -1588,7 +1620,13 @@ function renderQueueList(queue) {
   if (!listEl) return;
 
   const myIndex = lastQueueList.indexOf(driverName);
-  posEl.innerText = myIndex >= 0 ? `#${myIndex + 1}` : '--';
+  const myPos = myIndex >= 0 ? myIndex + 1 : null;
+  if (myPos !== null) {
+    animateStatValue(posEl, myPos, { prefix: '#' });
+  } else {
+    posEl.dataset.rawVal = '0';
+    posEl.innerText = '--';
+  }
 
   if (!lastQueueList.length) {
     listEl.innerHTML = '<div class="queue-empty">مفيش حد في الطابور دلوقتي</div>';
@@ -1641,9 +1679,11 @@ function applyAvatar(avatarDataUrl) {
 
 function handleAvatarSelect(event) {
   const file = event.target.files && event.target.files[0];
-  if (!file || !driverName) return;
+  if (!file) { return; } // المستخدم قفل نافذة اختيار الصورة من غير ما يختار
+  if (!driverName) { showToast('❌ لازم تكون مسجل دخول الأول'); return; }
   if (file.size > 4 * 1024 * 1024) { showToast('❌ الصورة كبيرة أوي، اختار صورة أصغر'); return; }
   const reader = new FileReader();
+  reader.onerror = () => showToast('❌ متقدرش يقرأ الصورة دي، جرّب صورة تانية');
   reader.onload = async () => {
     const dataUrl = reader.result;
     applyAvatar(dataUrl); // نعرضها فوراً
@@ -1744,10 +1784,10 @@ function updateUI(data) {
     statRow.style.display = 'flex';
     statRow.classList.toggle('focus-hidden', isBreak);
   }
-  document.getElementById('stat-orders').innerText  = data.orders  || 0;
-  document.getElementById('stat-returns').innerText = data.returns || 0;
-  document.getElementById('stat-misses').innerText  = data.misses  || 0;
-  document.getElementById('stat-km').innerText      = (data.shift_km || 0).toFixed(1);
+  animateStatValue(document.getElementById('stat-orders'), data.orders || 0);
+  animateStatValue(document.getElementById('stat-returns'), data.returns || 0);
+  animateStatValue(document.getElementById('stat-misses'), data.misses || 0);
+  animateStatValue(document.getElementById('stat-km'), data.shift_km || 0, { decimals: 1 });
 
   // wait msg
   document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
@@ -1765,18 +1805,16 @@ function updateUI(data) {
     btn.style.display = 'none';
   }
 
-  // waiting number
-  if (state === 'Waiting') {
-    const pos = data.queue_pos;
-    document.getElementById('pos-num').innerText = `#${pos}`;
-    if (pos === 1) confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
+  // waiting number moved to "الدور" tab — nothing to update here anymore
+  if (state === 'Waiting' && data.queue_pos === 1) {
+    confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
   }
 
   // profile tab: today's stats + avatar (لو وصلت مع sync)
   const profOrders = document.getElementById('profile-stat-orders');
   const profKm = document.getElementById('profile-stat-km');
-  if (profOrders) profOrders.innerText = data.orders || 0;
-  if (profKm) profKm.innerText = (data.shift_km || 0).toFixed(1);
+  if (profOrders) animateStatValue(profOrders, data.orders || 0);
+  if (profKm) animateStatValue(profKm, data.shift_km || 0, { decimals: 1 });
   if (data.avatar !== undefined) applyAvatar(data.avatar);
 }
 
