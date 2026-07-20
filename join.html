@@ -108,7 +108,7 @@
 
   /* ===== THEME TOGGLE (pill) ===== */
   .theme-pill {
-    position: fixed; top: 14px; left: 16px; z-index: 9500;
+    position: fixed; top: 16px; right: 16px; z-index: 10000;
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px 7px 10px;
     background: var(--card); border: 1px solid var(--border2);
@@ -366,31 +366,15 @@
 
   /* Hero block — الرقم الكبير زي الموك أب */
   .hero-block {
-    position: relative; padding: 4px 20px 4px;
+    position: relative; padding: 10px 20px 6px;
     display: flex; flex-direction: column; align-items: center;
     overflow: hidden;
-    min-height: 0;
   }
-  .hero-block:has(#view-waiting.hero-view-visible) { padding: 2px 20px; }
   .hero-bg-ring {
     position: absolute; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse 70% 60% at 50% 0%, var(--accent-glow), transparent 70%);
     transition: background 0.6s ease;
   }
-
-  /* حالات الهيرو (انتظار/طريق/راحة) — كروس فيد بدل القطع المفاجئ */
-  #view-waiting, #view-out, #view-break {
-    transition: opacity 0.35s ease, transform 0.35s ease;
-  }
-  .hero-view-hidden { opacity: 0; transform: translateY(6px) scale(0.98); pointer-events: none; position: absolute; inset: 0; }
-  .hero-view-visible { opacity: 1; transform: translateY(0) scale(1); position: relative; }
-
-  /* عناصر بتظهر/تختفي وقت البريك (الخريطة/الإحصائيات) — فيد+سحب بسيط بدل القطع */
-  .map-card, .info-grid, #stat-row {
-    transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.35s ease;
-    overflow: hidden;
-  }
-  .focus-hidden { opacity: 0; transform: translateY(-8px); max-height: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
 
   .hero-number {
     font-size: 64px; font-weight: 900; line-height: 1;
@@ -405,13 +389,6 @@
     color: var(--text-muted);
     margin-top: 8px; margin-bottom: 14px;
     position: relative; z-index: 1;
-  }
-  .auto-return-hint {
-    font-size: 11px; font-weight: 700; color: var(--success);
-    background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
-    border-radius: 100px; padding: 8px 14px; margin: -6px auto 14px;
-    display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 1;
-    animation: dotPulse 1.6s ease-in-out infinite;
   }
 
   /* ===== WELCOME CARD ===== */
@@ -494,13 +471,10 @@
     display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
     box-shadow: 0 10px 24px var(--primary-glow);
-    animation: arrowBob 3s ease-in-out infinite;
-    position: relative; z-index: 2;
+    animation: mapFloat 3s ease-in-out infinite;
   }
-  @keyframes arrowBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
   .map-progress {
     height: 6px; background: var(--border); margin: 0 16px 16px; border-radius: 999px; overflow: hidden;
-    position: relative; z-index: 5;
   }
   .map-progress > div {
     height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-dark));
@@ -648,13 +622,13 @@
 
   /* Background status indicator */
   .bg-status {
-    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-    z-index: 9400; display: flex; align-items: center; gap: 6px;
-    padding: 5px 12px; border-radius: 100px;
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 10000; display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 100px;
     background: var(--card); border: 1px solid var(--border2);
-    font-size: 9px; font-weight: 700; color: var(--text-muted);
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
     backdrop-filter: blur(16px); box-shadow: var(--shadow);
-    letter-spacing: 0.5px; pointer-events: none; opacity: 0.85;
+    letter-spacing: 0.5px;
   }
   .bg-status.active { color: var(--success); border-color: rgba(16,185,129,0.3); }
   .bg-status .bg-dot {
@@ -669,18 +643,11 @@
     font-family: 'Cairo', sans-serif; transition: 0.2s;
   }
   .btn-end-shift {
-    padding: 9px 16px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35);
-    background: rgba(239,68,68,0.1); color: #ef4444; font-size: 12px; font-weight: 800; cursor: pointer;
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
-    font-family: 'Cairo', sans-serif; white-space: nowrap;
+    width: 36px; height: 36px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35);
+    background: rgba(239,68,68,0.1); color: #ef4444; font-size: 14px; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
   }
-  .btn-end-shift:active { background: rgba(239,68,68,0.25); transform: scale(0.96); }
-  .btn-topbar-theme {
-    width: 36px; height: 36px; border-radius: 12px; border: 1px solid var(--border2);
-    background: var(--card); font-size: 15px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-  }
-  .btn-topbar-theme:active { transform: scale(0.92); }
+  .btn-end-shift:active { background: rgba(239,68,68,0.25); transform: scale(0.92); }
 
   /* ===== QUEUE TAB — cards زي الموك أب بالظبط ===== */
   .queue-hero {
@@ -715,18 +682,10 @@
   .queue-row.me .queue-row-sub { color: rgba(255,255,255,0.8); }
   .queue-empty { text-align: center; padding: 30px 18px; color: var(--text-muted); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
 
-  /* أنيميشن نبضة خفيفة لما رقم إحصائية يتغير */
-  .stat-pop { animation: statPop 0.5s ease; color: var(--accent) !important; }
-  @keyframes statPop {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.18); }
-    100% { transform: scale(1); }
-  }
-
   /* ===== PROFILE TAB ===== */
   .profile-header { text-align: center; padding: 26px 18px 8px; position: relative; z-index: 1; }
-  .avatar-circle { position: relative; width: 88px; height: 88px; margin: 0 auto 14px; }
-  .avatar-circle img, .avatar-circle .avatar-fallback {
+  .avatar-wrap { position: relative; width: 88px; height: 88px; margin: 0 auto 12px; cursor: pointer; }
+  .avatar-wrap img, .avatar-wrap .avatar-fallback {
     width: 88px; height: 88px; border-radius: 50%; object-fit: cover;
     border: 3px solid var(--primary); box-shadow: 0 10px 26px var(--primary-glow);
   }
@@ -735,19 +694,12 @@
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: #fff; font-size: 32px; font-weight: 900;
   }
-  .btn-upload-photo {
-    display: inline-flex; align-items: center; gap: 8px;
-    margin: 0 auto 4px; padding: 10px 20px; border-radius: 100px;
-    background: var(--primary-light); border: 1.5px solid var(--border2);
-    color: var(--primary); font-family: var(--font); font-size: 13px; font-weight: 800;
-    cursor: pointer; transition: all 0.2s ease;
+  .avatar-edit-badge {
+    position: absolute; bottom: 0; left: 0; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--card); border: 2px solid var(--bg); display: flex; align-items: center;
+    justify-content: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   }
-  .btn-upload-photo:active { transform: scale(0.96); }
-  .btn-upload-photo.uploading { opacity: 0.65; pointer-events: none; }
-  .upload-status { font-size: 11px; font-weight: 700; margin-top: 8px; min-height: 15px; transition: color 0.2s ease; }
-  .upload-status.ok { color: var(--success); }
-  .upload-status.err { color: var(--danger); }
-  .profile-name { font-size: 18px; font-weight: 800; color: var(--text); margin-top: 4px; }
+  .profile-name { font-size: 18px; font-weight: 800; color: var(--text); }
   .profile-role { font-size: 12px; color: var(--text-muted); font-weight: 700; margin-top: 4px; }
 
   .week-card { margin: 16px 18px; padding: 18px; border-radius: var(--radius-sm); background: var(--primary-light); border: 1px solid var(--border); position: relative; z-index: 1; }
@@ -761,8 +713,28 @@
 
   .profile-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px 18px; position: relative; z-index: 1; }
 
-  /* hidden file input for avatar — triggered only by btn-upload-photo via JS click() */
+  /* hidden file input for avatar */
   #avatar-file-input { display: none; }
+
+  /* ===== BOTTOM NAV — زي الموك أب بالظبط ===== */
+  .bottom-nav {
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 12px 8px; border-top: 1px solid var(--border);
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; cursor: pointer; padding: 6px 16px;
+    color: var(--text-muted); font-family: var(--font); transition: all 0.25s ease;
+    position: relative;
+  }
+  .nav-btn .nav-ic { font-size: 20px; line-height: 1; transition: transform 0.25s ease; }
+  .nav-btn .nav-lbl { font-size: 10px; font-weight: 800; }
+  .nav-btn.active { color: var(--primary); }
+  .nav-btn.active .nav-ic { transform: translateY(-2px); }
+  .nav-btn.active::before {
+    content:''; position:absolute; top:-12px; left:50%; transform: translateX(-50%);
+    width: 28px; height:3px; border-radius: 4px; background: var(--primary);
+  }
 
   /* Chat popup */
   #chat-popup.show { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:auto; }
@@ -825,10 +797,8 @@
         <span id="driver-name">مندوب</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="btn-topbar-theme" id="topbar-theme-btn" onclick="toggleTheme()" title="تبديل المظهر">
-          <span id="topbar-theme-icon">☀️</span>
-        </button>
-        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹ إنهاء الشيفت</button>
+        <div class="state-chip state-waiting" id="state-chip">انتظار</div>
+        <button class="btn-end-shift" onclick="confirmEndShift()" title="إنهاء الشيفت">⏹</button>
       </div>
     </div>
 
@@ -855,6 +825,44 @@
         <div class="welcome-avatar-wrap">
           <img id="welcome-avatar-img" style="display:none" />
           <div class="welcome-avatar-fallback" id="welcome-avatar-fallback">م</div>
+        </div>
+      </div>
+
+      <!-- Shift status card -->
+      <div class="shift-card">
+        <div class="shift-left">
+          <div class="shift-label-sm">حالة الشيفت</div>
+          <div class="shift-value-row">
+            <span id="shift-status-text">في الطريق</span>
+            <span class="state-chip state-waiting" id="state-chip-mirror">انتظار</span>
+          </div>
+          <div class="shift-start-time">وقت البدء: <span id="shift-start-display">--:--</span></div>
+        </div>
+        <div class="shift-icon-badge" id="hero-bg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
+        </div>
+      </div>
+
+      <!-- Hero states (queue position / out / break) — functional views -->
+      <div class="hero-block" id="hero-block">
+        <!-- Waiting state -->
+        <div id="view-waiting">
+          <div style="text-align:center">
+            <div class="hero-number" id="pos-num">--</div>
+            <div class="hero-label">ترتيبك في الطابور</div>
+          </div>
+        </div>
+
+        <!-- Out state -->
+        <div id="view-out" style="display:none; text-align:center">
+          <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
+          <div class="hero-label">في الطريق</div>
+        </div>
+
+        <!-- Break state -->
+        <div id="view-break" style="display:none; text-align:center">
+          <div class="break-hero" id="break-timer">60:00</div>
+          <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
         </div>
       </div>
 
@@ -896,12 +904,17 @@
         </div>
       </div>
 
-      <!-- (Battery card removed per request) -->
-      <div class="info-grid" style="display:none">
+      <!-- Battery tile (visible, functional) -->
+      <div class="info-grid">
         <div class="info-tile" id="gps-tile" style="display:none">
           <div class="info-icon">📍</div>
           <div class="info-value small">--</div>
           <div class="info-label">المسافة</div>
+        </div>
+        <div class="info-tile" id="bat-tile" style="grid-column: 1 / -1;">
+          <div class="info-icon" id="bat-icon">🔋</div>
+          <div class="info-value" id="bat-percent">--%</div>
+          <div class="info-label">البطارية</div>
         </div>
       </div>
 
@@ -925,77 +938,44 @@
         </div>
       </div>
 
+      <!-- Wait message -->
+      <div class="wait-msg" id="wait-msg">
+        استنى! <span>دورك جاي قريب.</span>
+      </div>
+
+      <!-- Action button -->
+      <button class="btn-action-big btn-return-queue" id="btn-action" onclick="handleAction()" style="display:none">
+        ارجع للطابور
+      </button>
+
       <!-- Bottom action row (visual, matches mockup) -->
       <div class="bottom-action-row">
-        <button class="btn-admin-msg" type="button" style="width:100%">📢 رسالة من الإدارة</button>
+        <button class="btn-admin-msg" type="button">📢 رسالة من الإدارة</button>
+        <button class="btn-end-shift-wide" onclick="confirmEndShift()" type="button">⏹ إنهاء الشيفت</button>
       </div>
     </div>
 
 
     <!-- ===== TAB: الدور ===== -->
     <div class="sub-tab-panel" id="subtab-queue">
-      <!-- Shift status card -->
-      <div class="shift-card">
-        <div class="shift-left">
-          <div class="shift-label-sm">حالة الشيفت</div>
-          <div class="shift-value-row">
-            <span id="shift-status-text">في الطريق</span>
-            <span class="state-chip state-waiting" id="state-chip-mirror">انتظار</span>
-          </div>
-          <div class="shift-start-time">وقت البدء: <span id="shift-start-display">--:--</span></div>
-        </div>
-        <div class="shift-icon-badge" id="hero-bg">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 17l8 5 8-5"/><path d="M4 12l8 5 8-5"/></svg>
-        </div>
-      </div>
-
-      <!-- Hero states (out / break) — كل حاجة متعلقة بحالة الشيفت دلوقتي هنا بس -->
-      <div class="hero-block" id="hero-block">
-        <div id="view-waiting" class="hero-view-visible" style="display:none;"></div>
-
-        <div id="view-out" class="hero-view-hidden" style="display:none; text-align:center">
-          <div class="hero-number" style="font-size:76px; letter-spacing:-2px;">🚀</div>
-          <div class="hero-label">في الطريق</div>
-          <div class="auto-return-hint" id="auto-return-hint" style="display:none;">
-            🏠 وصلت الفرع — هتترجع للطابور تلقائيًا خلال <span id="auto-return-secs">--</span> ث
-          </div>
-        </div>
-
-        <div id="view-break" class="hero-view-hidden" style="display:none; text-align:center">
-          <div class="break-hero" id="break-timer">60:00</div>
-          <div class="hero-label" style="color: var(--break-c);">وقت الراحة</div>
-          <button class="btn-action-big btn-end-break" id="btn-action" onclick="handleAction()" style="display:none">
-            خلصت الراحة
-          </button>
-        </div>
-      </div>
-
-      <div class="queue-hero" id="queue-hero">
+      <div class="queue-hero">
         <div class="hero-number" id="queue-pos-num" style="font-size:64px;">--</div>
-        <div class="hero-label" id="queue-hero-label">ترتيبك في الطابور</div>
+        <div class="hero-label">ترتيبك في الطابور</div>
       </div>
       <div class="queue-list" id="queue-list">
         <!-- rows injected by JS -->
-      </div>
-
-      <!-- Wait message — queue-related, shown only while Waiting -->
-      <div class="wait-msg" id="wait-msg" style="display:none">
-        استنى! <span>دورك جاي قريب.</span>
       </div>
     </div>
 
     <!-- ===== TAB: حسابي ===== -->
     <div class="sub-tab-panel" id="subtab-profile">
       <div class="profile-header">
-        <div class="avatar-circle">
+        <div class="avatar-wrap" onclick="document.getElementById('avatar-file-input').click()">
           <img id="profile-avatar-img" style="display:none" />
           <div class="avatar-fallback" id="profile-avatar-fallback">م</div>
+          <div class="avatar-edit-badge">📷</div>
         </div>
-        <button type="button" class="btn-upload-photo" id="btn-upload-photo" onclick="triggerAvatarUpload()">
-          <span>📷</span><span id="upload-btn-text">رفع صورة</span>
-        </button>
         <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarSelect(event)">
-        <div class="upload-status" id="upload-status"></div>
         <div class="profile-name" id="profile-name">مندوب</div>
         <div class="profile-role">مندوب توصيل · رواحل</div>
       </div>
@@ -1010,13 +990,26 @@
       <div class="profile-stat-grid">
         <div class="stat-item">
           <div class="stat-val" id="profile-stat-orders">0</div>
-          <div class="stat-lbl">أوردر الأسبوع</div>
+          <div class="stat-lbl">أوردر اليوم</div>
         </div>
         <div class="stat-item">
           <div class="stat-val" id="profile-stat-km">0.0</div>
-          <div class="stat-lbl">كم الأسبوع</div>
+          <div class="stat-lbl">كم اليوم</div>
         </div>
       </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <button class="nav-btn active" id="nav-btn-info" onclick="switchSubTab('info')">
+        <span class="nav-ic">🏠</span><span class="nav-lbl">معلوماتي</span>
+      </button>
+      <button class="nav-btn" id="nav-btn-queue" onclick="switchSubTab('queue')">
+        <span class="nav-ic">📋</span><span class="nav-lbl">الدور</span>
+      </button>
+      <button class="nav-btn" id="nav-btn-profile" onclick="switchSubTab('profile')">
+        <span class="nav-ic">👤</span><span class="nav-lbl">حسابي</span>
+      </button>
     </div>
 
   </div>
@@ -1034,19 +1027,9 @@
 function updateThemeUI(theme) {
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
-  const topbarIcon = document.getElementById('topbar-theme-icon');
-  const isDark = theme === 'dark';
-  if (icon)  icon.textContent  = isDark ? '☀️' : '🌙';
-  if (label) label.textContent = isDark ? 'فاتح' : 'داكن';
-  if (topbarIcon) topbarIcon.textContent = isDark ? '☀️' : '🌙';
-}
-
-function setFloatingPillsVisible(visible) {
-  // البيلز العايمة (المظهر) بتتخبى جوه شاشة التطبيق عشان متتصادمش مع الـ topbar بتاعها
-  // وبتظهر تاني بس في شاشة تسجيل الدخول. bg-status (خلفية نشطة) مالهاش لازمة تتخبى —
-  // هي تحت في نص الشاشة وpointer-events:none فمش بتصطدم مع حاجة.
-  const pill = document.getElementById('theme-toggle');
-  if (pill) pill.style.display = visible ? 'flex' : 'none';
+  if (!icon) return;
+  if (theme === 'dark') { icon.textContent = '☀️'; label.textContent = 'فاتح'; }
+  else                  { icon.textContent = '🌙'; label.textContent = 'داكن'; }
 }
 
 function toggleTheme() {
@@ -1062,10 +1045,7 @@ const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hos
 let ws, driverName = null, kicked = false;
 let gpsWatchId = null, lastGpsPos = null;
 let pingInterval = null, reconnectTimer = null;
-let reconnectAttempts = 0; // لحساب الـ exponential backoff عند تكرار فشل الاتصال
 let currentBreakEnd = null;
-let _lastRenderedState = null;
-let currentDriverState = 'Waiting';
 
 function showToast(msg) {
   // لو على Android والصفحة في الخلفية، متعرضش toast
@@ -1180,32 +1160,20 @@ document.addEventListener('visibilitychange', () => {
 // ===== GPS =====
 let gpsForceInterval = null;
 let _lastSpeedCalc = null; // {lat, lng, ts} — لحساب السرعة يدويًا كـ fallback
-let _gpsRetryTimer = null; // عشان مانعملش أكتر من محاولة إعادة تشغيل في نفس الوقت
 
 function startGPS() {
   if (!navigator.geolocation || gpsWatchId !== null) return;
-  clearTimeout(_gpsRetryTimer);
   gpsWatchId = navigator.geolocation.watchPosition(
     pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
     () => {
-      // watchPosition بيوقف تمامًا لو حصل error واحد (timeout / إشارة ضعيفة / إلخ)
-      // من غير retry تلقائي هيفضل واقف كده للأبد لحد ما حد يقفل ويفتح التطبيق يدويًا.
-      // فبنعمل retry تلقائي بعد ثانيتين طول ما الصفحة لسه شغالة.
-      document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك — بيحاول تاني...';
+      document.getElementById('gps-text').innerText = 'مش قادر يحدد موقعك';
       gpsWatchId = null;
-      clearTimeout(_gpsRetryTimer);
-      _gpsRetryTimer = setTimeout(() => {
-        if (gpsWatchId === null && driverName) startGPS();
-      }, 2000);
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
   // force-send آخر موقع معروف كل 10 ثانية (مهم للخلفية)
   clearInterval(gpsForceInterval);
   gpsForceInterval = setInterval(() => {
-    // لو watchPosition واقف (مات بسبب error ولسه في retry مجدول)، نحاول نشغّله تاني هنا كمان
-    // بدل ما نستنى الـ retry timer بس — طبقة أمان إضافية تمنع الـ GPS يفضل ميت بصمت
-    if (gpsWatchId === null && driverName) startGPS();
     if (lastGpsPos) sendLocation(lastGpsPos);
     else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -1252,16 +1220,7 @@ function computeSpeedKmh(pos) {
   return manualKmh != null ? manualKmh : 0;
 }
 
-// أقصى دقة GPS مقبولة (بالمتر) — أي نقطة أسوأ من كده بنتجاهلها في الإرسال
-// عشان متبوظش حساب shift_km أو تحرك الماركر على خريطة الأدمن بشكل غلط
-const GPS_MAX_ACCEPTABLE_ACCURACY = 50;
-
 function sendLocation(pos) {
-  // نتجاهل نقاط الـ GPS الرديئة (جوه مبنى / تحت سقف) — لسه بنعرض رقم الدقة للسواق
-  // في updateGpsDisplay بس مش هنبعتها للسيرفر عشان متلوثش المسافة/الكيلومترات
-  if (pos.coords.accuracy != null && pos.coords.accuracy > GPS_MAX_ACCEPTABLE_ACCURACY) {
-    return;
-  }
   if (ws && ws.readyState === WebSocket.OPEN) {
     const speedKmh = computeSpeedKmh(pos);
     ws.send(JSON.stringify({
@@ -1278,33 +1237,15 @@ function updateGpsDisplay(pos) {
   const speed = Math.round(computeSpeedKmh(pos));
   const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
   document.getElementById('gps-speed').innerText = speed;
-  const accEl = document.getElementById('gps-accuracy');
-  accEl.innerText = acc;
-  // لو الدقة ضعيفة، النقطة دي مش هتتبعت للسيرفر (سطر sendLocation) — نوري السواق ليه
-  const isPoor = pos.coords.accuracy != null && pos.coords.accuracy > GPS_MAX_ACCEPTABLE_ACCURACY;
-  accEl.style.color = isPoor ? 'var(--out, #e74c3c)' : '';
-  accEl.title = isPoor ? 'الدقة ضعيفة — الموقع مش بيتبعت لحد ما تتحسن' : '';
+  document.getElementById('gps-accuracy').innerText = acc;
 }
 
 // ===== WS =====
-let lastPongTs = Date.now();
-let pongWatchdogInterval = null;
-
 function startPing() {
   clearInterval(pingInterval);
   pingInterval = setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
   }, 10000); // كل 10 ثواني — هامش أمان كويس قبل حد الـ 35 ثانية في السيرفر (watchdog)
-
-  // watchdog من ناحية العميل: لو السيرفر بطّل يرد بـ pong، الاتصال بقى "زومبي"
-  // (السوكيت مفتوح شكليًا بس مفيش داتا فعليًا بتعدي) — نقفله يدويًا عشان الـ onclose يشغل reconnect بسرعة
-  // بدل ما نستنى الـ TCP نفسه يكتشف الانقطاع (ممكن ياخد دقايق على بعض الشبكات)
-  clearInterval(pongWatchdogInterval);
-  pongWatchdogInterval = setInterval(() => {
-    if (Date.now() - lastPongTs > 25000) {
-      try { ws.close(); } catch(e) {}
-    }
-  }, 5000);
 }
 
 function connectWS() {
@@ -1312,8 +1253,6 @@ function connectWS() {
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(WSURL);
   ws.onopen = () => {
-    reconnectAttempts = 0; // الاتصال نجح — نرجع نبدأ من أول تأخير بسيط في المرة الجاية
-    lastPongTs = Date.now();
     // بنبعت الـ lat/lng مع رسالة الـ join عشان الـ server يتأكد من المسافة
     const joinMsg = {type:'join', name: driverName};
     if (lastGpsPos) {
@@ -1326,32 +1265,13 @@ function connectWS() {
   };
   ws.onmessage = (e) => {
     const d = JSON.parse(e.data);
-    if (d.type === 'pong') lastPongTs = Date.now();
-    if (d.type === 'sync') {
-      updateUI(d.me); // ده كمان بيحدث شارت اليوم لايف عن طريق updateTodayInWeekChart
-      renderQueueList(d.queue || []);
-    }
+    if (d.type === 'sync') { updateUI(d.me); renderQueueList(d.queue || []); }
     else if (d.type === 'distance') {
       updateGPS(d.meters);
       if (d.shift_km !== undefined) {
         const el = document.getElementById('stat-km');
         if (el) el.innerText = d.shift_km.toFixed(1);
       }
-      const hint = document.getElementById('auto-return-hint');
-      const secsEl = document.getElementById('auto-return-secs');
-      if (hint) {
-        if (d.auto_return_secs_left !== null && d.auto_return_secs_left !== undefined) {
-          hint.style.display = 'inline-flex';
-          if (secsEl) secsEl.innerText = d.auto_return_secs_left;
-        } else {
-          hint.style.display = 'none';
-        }
-      }
-    }
-    else if (d.type === 'auto_returned') {
-      showToast(d.msg || '🏠 رجعت للفرع — اتضفت في الطابور تلقائياً');
-      const hint = document.getElementById('auto-return-hint');
-      if (hint) hint.style.display = 'none';
     }
     else if (d.type === 'kicked') handleKick();
     else if (d.type === 'join_rejected') {
@@ -1361,7 +1281,6 @@ function connectWS() {
       driverName = null;
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('app-screen').style.display = 'none';
-      setFloatingPillsVisible(true);
       const btn = document.getElementById('btn-start-shift');
       if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
     }
@@ -1383,16 +1302,11 @@ function connectWS() {
   };
   ws.onclose = () => {
     clearInterval(pingInterval);
-    clearInterval(pongWatchdogInterval);
     if (kicked) return;
     // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
     if (window.AndroidBridge && document.visibilityState === 'hidden') return;
     clearTimeout(reconnectTimer);
-    // exponential backoff: أول محاولة سريعة (1 ثانية) وبعدين بتزيد تدريجيًا لحد 15 ثانية
-    // عشان لو النت فعلاً واقع منضربش السيرفر بمعدل عالي ومنستنزفش البطارية بلا فايدة
-    const delay = Math.min(1000 * Math.pow(1.6, reconnectAttempts), 15000);
-    reconnectAttempts++;
-    reconnectTimer = setTimeout(connectWS, delay);
+    reconnectTimer = setTimeout(connectWS, 1000); // ثانية واحدة بس — اتصال سريع لأن الانقطاع دلوقتي بيتكشف بسرعة كمان
   };
   ws.onerror = () => { try { ws.close(); } catch(e){} };
 }
@@ -1471,7 +1385,6 @@ function _doJoin(name, pos) {
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  setFloatingPillsVisible(false);
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
   setShiftStartDisplay();
@@ -1508,7 +1421,6 @@ window.androidAutoJoin = function(name) {
   localStorage.setItem('fleet_driver_name', name);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  setFloatingPillsVisible(false);
   document.getElementById('driver-name').innerText = name;
   renderProfileHeader();
   setShiftStartDisplay();
@@ -1530,10 +1442,7 @@ function cancelEndShift() {
 // === Stop everything ===
 function stopAllServices() {
   clearInterval(pingInterval);
-  clearInterval(pongWatchdogInterval);
   clearTimeout(reconnectTimer);
-  clearTimeout(_gpsRetryTimer);
-  clearInterval(gpsForceInterval);
   if (ws) try { ws.close(); } catch(e) {}
   if (navigator.geolocation && gpsWatchId !== null) {
     navigator.geolocation.clearWatch(gpsWatchId);
@@ -1549,77 +1458,15 @@ function stopAllServices() {
 
 function endShift() {
   document.getElementById('end-shift-overlay').style.display = 'none';
-
-  // لازم نبلّغ السيرفر إنه يمسحنا من Redis/الطابور قبل ما نقفل السوكيت،
-  // وإلا هنفضل ظاهرين عند الأدمن كـ "ghost" لحد ما هو يمسحنا يدوي
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    try { ws.send(JSON.stringify({ type: 'end_shift' })); } catch(e) {}
-  }
-
-  const finish = () => {
-    const savedName = driverName; // نحتفظ بالاسم عشان "ابدأ شيفت" يشتغل من غير تسجيل تاني
-    stopAllServices();
-    kicked = false;
-    document.getElementById('app-screen').style.display = 'none';
-
-    const login = document.getElementById('login-screen');
-    login.style.display = 'flex';
-    login.classList.remove('login-in');
-    // نجبر الـ reflow عشان الـ animation يشتغل من الأول (مش يفضل opacity:0)
-    void login.offsetWidth;
-    requestAnimationFrame(() => { login.classList.add('login-in'); });
-
-    setFloatingPillsVisible(true);
-    switchSubTab('info');
-    showShiftEndedScreen(savedName);
-  };
-
-  // نديله فرصة صغيرة إن الرسالة توصل فعليًا قبل ما نقفل الاتصال
-  setTimeout(finish, 300);
-}
-
-// شاشة "خلص الشيفت" — زرار ابدأ شيفت من غير ما يحتاج يكتب اسمه أو يسجل تاني
-function showShiftEndedScreen(name) {
-  const nameInput = document.getElementById('name');
-  const sub = document.getElementById('login-sub');
-  const btn = document.getElementById('btn-start-shift');
-  if (name) {
-    localStorage.setItem('fleet_driver_name', name); // تأكيد إنه محفوظ
-    if (nameInput) { nameInput.value = name; nameInput.style.display = 'none'; }
-    if (sub) sub.textContent = `تم إنهاء الشيفت ✅ — يلا يا ${name}، جاهز تبدأ تاني؟`;
-  } else if (sub) {
-    sub.textContent = 'تم إنهاء الشيفت ✅';
-  }
-  if (btn) { btn.disabled = false; btn.innerText = '🟢 ابدأ الشيفت'; }
+  stopAllServices();
+  kicked = false;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  switchSubTab('info');
 }
 
 // === Chat Notification ===
 let chatPopupTimer = null;
-
-// ===== ANIMATED STAT NUMBERS =====
-// بيحرك أي رقم من قيمته الحالية للقيمة الجديدة بدل ما يقفز فجأة
-function animateStatValue(el, newValue, opts) {
-  if (!el) return;
-  const decimals = (opts && opts.decimals) || 0;
-  const suffix = (opts && opts.suffix) || '';
-  const prefix = (opts && opts.prefix) || '';
-  const from = parseFloat(el.dataset.rawVal || '0') || 0;
-  const to = parseFloat(newValue) || 0;
-  if (from === to) { el.dataset.rawVal = to; return; }
-  el.dataset.rawVal = to;
-  const duration = 500;
-  const start = performance.now();
-  el.classList.add('stat-pop');
-  function tick(now) {
-    const p = Math.min(1, (now - start) / duration);
-    const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
-    const val = from + (to - from) * eased;
-    el.innerText = prefix + val.toFixed(decimals) + suffix;
-    if (p < 1) requestAnimationFrame(tick);
-    else setTimeout(() => el.classList.remove('stat-pop'), 200);
-  }
-  requestAnimationFrame(tick);
-}
 function showChatPopup(text) {
   const popup = document.getElementById('chat-popup');
   const textEl = document.getElementById('chat-popup-text');
@@ -1645,12 +1492,7 @@ function handleKick() {
   kicked = false;
   localStorage.removeItem('fleet_driver_name');
   document.getElementById('app-screen').style.display = 'none';
-  const login = document.getElementById('login-screen');
-  login.style.display = 'flex';
-  login.classList.remove('login-in');
-  void login.offsetWidth;
-  requestAnimationFrame(() => { login.classList.add('login-in'); });
-  setFloatingPillsVisible(true);
+  document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('name').value = '';
   const sub = document.getElementById('login-sub');
   if (sub) sub.textContent = 'ادخل اسمك وابدأ شغل';
@@ -1665,6 +1507,7 @@ function switchSubTab(tab) {
   ['info','queue','profile'].forEach(t => {
     document.getElementById('subtab-' + t).classList.toggle('active', t === tab);
     document.getElementById('subtab-btn-' + t).classList.toggle('active', t === tab);
+    document.getElementById('nav-btn-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'queue') renderQueueList(lastQueueList);
   if (tab === 'profile') loadWeeklyStats();
@@ -1673,25 +1516,12 @@ function switchSubTab(tab) {
 // ===== QUEUE TAB =====
 function renderQueueList(queue) {
   lastQueueList = queue || [];
-  const heroEl = document.getElementById('queue-hero');
   const posEl = document.getElementById('queue-pos-num');
-  const labelEl = document.getElementById('queue-hero-label');
   const listEl = document.getElementById('queue-list');
   if (!listEl) return;
 
   const myIndex = lastQueueList.indexOf(driverName);
-  const myPos = myIndex >= 0 ? myIndex + 1 : null;
-
-  if (myPos !== null) {
-    // المندوب في الانتظار فعلاً — نعرض ترتيبه
-    if (heroEl) heroEl.style.display = '';
-    animateStatValue(posEl, myPos, { prefix: '#' });
-    if (labelEl) labelEl.textContent = 'ترتيبك في الطابور';
-  } else {
-    // مش في قايمة الانتظار (في أوردر أو راحة) — حالته دلوقتي ظاهرة فوق في hero-block،
-    // فمنعرضش رقم/أيقونة تانية هنا عشان منكررش نفس المعلومة
-    if (heroEl) heroEl.style.display = 'none';
-  }
+  posEl.innerText = myIndex >= 0 ? `#${myIndex + 1}` : '--';
 
   if (!lastQueueList.length) {
     listEl.innerHTML = '<div class="queue-empty">مفيش حد في الطابور دلوقتي</div>';
@@ -1742,113 +1572,32 @@ function applyAvatar(avatarDataUrl) {
   }
 }
 
-// ===== رفع صورة البروفايل — من الأول بمنطق واضح =====
-// 1) المستخدم بيدوس على الزرار → triggerAvatarUpload بتفتح الـ file picker
-// 2) لما يختار صورة → handleAvatarSelect بتتحقق منها وتبعتها للسيرفر
-// 3) كل خطوة بتوضح حالتها في نص تحت الزرار (بيرفع.../اتحفظت/فشل)
-function triggerAvatarUpload() {
-  if (!driverName) { setUploadStatus('لازم تسجل دخول الأول', 'err'); return; }
-  const input = document.getElementById('avatar-file-input');
-  if (!input) return;
-  input.value = ''; // نصفّرها عشان لو المستخدم يختار نفس الصورة تاني تتسجل onchange
-  input.click();
-}
-
-function setUploadStatus(text, kind) {
-  const el = document.getElementById('upload-status');
-  if (!el) return;
-  el.textContent = text || '';
-  el.className = 'upload-status' + (kind ? ' ' + kind : '');
-}
-
-function setUploadButtonState(uploading) {
-  const btn = document.getElementById('btn-upload-photo');
-  const txt = document.getElementById('upload-btn-text');
-  if (!btn || !txt) return;
-  btn.classList.toggle('uploading', !!uploading);
-  txt.textContent = uploading ? 'بيرفع...' : 'رفع صورة';
-}
-
 function handleAvatarSelect(event) {
   const file = event.target.files && event.target.files[0];
-  if (!file) return; // المستخدم فتح نافذة الاختيار وقفلها من غير ما يختار حاجة
-
-  if (!driverName) { setUploadStatus('لازم تسجل دخول الأول', 'err'); return; }
-
-  if (!file.type || !file.type.startsWith('image/')) {
-    setUploadStatus('الملف ده مش صورة', 'err');
-    return;
-  }
-  if (file.size > 4 * 1024 * 1024) {
-    setUploadStatus('الصورة كبيرة أوي (أقصى حجم 4MB)', 'err');
-    return;
-  }
-
-  setUploadButtonState(true);
-  setUploadStatus('بيرفع الصورة...', '');
-
+  if (!file || !driverName) return;
+  if (file.size > 4 * 1024 * 1024) { showToast('❌ الصورة كبيرة أوي، اختار صورة أصغر'); return; }
   const reader = new FileReader();
-  reader.onerror = () => {
-    setUploadButtonState(false);
-    setUploadStatus('متقدرش يقرأ الصورة دي، جرّب صورة تانية', 'err');
-  };
   reader.onload = async () => {
     const dataUrl = reader.result;
+    applyAvatar(dataUrl); // نعرضها فوراً
     try {
-      const res = await fetch('/api/avatar', {
+      await fetch('/api/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: driverName, avatar: dataUrl })
       });
-      if (!res.ok) throw new Error('bad status ' + res.status);
-      applyAvatar(dataUrl); // نعرضها بس بعد ما نتأكد إنها اتحفظت فعلاً على السيرفر
-      setUploadStatus('✅ اتحفظت الصورة', 'ok');
-    } catch (e) {
-      setUploadStatus('❌ الصورة متحفظتش، حاول تاني', 'err');
-    } finally {
-      setUploadButtonState(false);
-    }
+    } catch (e) { showToast('❌ الصورة متحفظتش، حاول تاني'); }
   };
   reader.readAsDataURL(file);
 }
-
-let lastWeeklyStats = null;
 
 async function loadWeeklyStats() {
   if (!driverName) return;
   try {
     const res = await fetch(`/api/weekly_stats/${encodeURIComponent(driverName)}`);
     const data = await res.json();
-    if (data.ok) {
-      lastWeeklyStats = data.stats;
-      renderWeekChart(data.stats);
-      renderWeekTotals(data.stats);
-    }
+    if (data.ok) renderWeekChart(data.stats);
   } catch (e) { /* silent fail */ }
-}
-
-// بتحدث بار اليوم بس في الشارت لايف من غير ما تعمل fetch جديد للسيرفر —
-// بتتنده كل مرة عدد الأوردرات أو الكيلومترات يتغيروا خلال الشيفت (من الـ sync)
-function updateTodayInWeekChart(liveOrders, liveKm) {
-  if (!Array.isArray(lastWeeklyStats) || !lastWeeklyStats.length) return;
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const todayEntry = lastWeeklyStats.find(s => s.date === todayKey);
-  if (!todayEntry) return;
-  if (todayEntry.orders === liveOrders && todayEntry.km === liveKm) return; // مفيش تغيير
-  todayEntry.orders = liveOrders;
-  todayEntry.km = liveKm;
-  renderWeekChart(lastWeeklyStats);
-  renderWeekTotals(lastWeeklyStats);
-}
-
-function renderWeekTotals(stats) {
-  if (!Array.isArray(stats)) return;
-  const totalOrders = stats.reduce((sum, s) => sum + (s.orders || 0), 0);
-  const totalKm = stats.reduce((sum, s) => sum + (s.km || 0), 0);
-  const ordersEl = document.getElementById('profile-stat-orders');
-  const kmEl = document.getElementById('profile-stat-km');
-  if (ordersEl) animateStatValue(ordersEl, totalOrders);
-  if (kmEl) animateStatValue(kmEl, totalKm, { decimals: 1 });
 }
 
 function renderWeekChart(stats) {
@@ -1878,10 +1627,11 @@ function updateUI(data) {
   const state = data.state;
   const cfg = STATE_CONFIG[state] || STATE_CONFIG.Waiting;
   currentBreakEnd = data.break_end;
-  currentDriverState = state;
-  renderQueueList(lastQueueList); // نحدّث تاب "الدور" فورًا بحالة المندوب الجديدة
 
-  // state chip (الكارت بتاع حالة الشيفت هو المصدر الوحيد دلوقتي بعد ما شلنا التكرار من الـ topbar)
+  // state chip
+  const chip = document.getElementById('state-chip');
+  chip.className = `state-chip ${cfg.chip}`;
+  chip.innerText = cfg.label;
   const chipMirror = document.getElementById('state-chip-mirror');
   if (chipMirror) { chipMirror.className = `state-chip ${cfg.chip}`; chipMirror.innerText = cfg.label; }
 
@@ -1896,38 +1646,20 @@ function updateUI(data) {
   document.documentElement.style.setProperty('--accent', cfg.accent);
   document.documentElement.style.setProperty('--accent-glow', cfg.accentGlow);
 
-  // views — كروس فيد سلس بدل القطع المفاجئ، وما بيعيدش الأنيميشن إلا لما الحالة فعلاً تتغير
-  const viewIds = { Waiting: 'view-waiting', Out: 'view-out', Break: 'view-break' };
-  if (state !== _lastRenderedState) {
-    Object.entries(viewIds).forEach(([s, id]) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (s === state) {
-        el.style.display = 'block';
-        // نضمن reflow قبل ما نشيل الكلاس المخفي عشان الترانزيشن يشتغل فعليًا
-        requestAnimationFrame(() => {
-          el.classList.remove('hero-view-hidden');
-          el.classList.add('hero-view-visible');
-        });
-      } else {
-        el.classList.remove('hero-view-visible');
-        el.classList.add('hero-view-hidden');
-      }
-    });
-    _lastRenderedState = state;
-  }
+  // views
+  document.getElementById('view-waiting').style.display = state === 'Waiting' ? 'block' : 'none';
+  document.getElementById('view-out').style.display     = state === 'Out'     ? 'block' : 'none';
+  document.getElementById('view-break').style.display   = state === 'Break'   ? 'block' : 'none';
 
   // stats row
-  const statRow = document.getElementById('stat-row');
-  if (statRow) statRow.style.display = 'flex';
-  animateStatValue(document.getElementById('stat-orders'), data.orders || 0);
-  animateStatValue(document.getElementById('stat-returns'), data.returns || 0);
-  animateStatValue(document.getElementById('stat-misses'), data.misses || 0);
-  animateStatValue(document.getElementById('stat-km'), data.shift_km || 0, { decimals: 1 });
+  document.getElementById('stat-row').style.display = 'flex';
+  document.getElementById('stat-orders').innerText  = data.orders  || 0;
+  document.getElementById('stat-returns').innerText = data.returns || 0;
+  document.getElementById('stat-misses').innerText  = data.misses  || 0;
+  document.getElementById('stat-km').innerText      = (data.shift_km || 0).toFixed(1);
 
-  // "استنى دورك جاي" — جوه تاب الدور بس
-  const waitMsg = document.getElementById('wait-msg');
-  if (waitMsg) waitMsg.style.display = state === 'Waiting' ? 'block' : 'none';
+  // wait msg
+  document.getElementById('wait-msg').style.display = state === 'Waiting' ? 'block' : 'none';
 
   // action btn
   const btn = document.getElementById('btn-action');
@@ -1942,14 +1674,18 @@ function updateUI(data) {
     btn.style.display = 'none';
   }
 
-  // waiting number moved to "الدور" tab — nothing to update here anymore
-  if (state === 'Waiting' && data.queue_pos === 1) {
-    confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
+  // waiting number
+  if (state === 'Waiting') {
+    const pos = data.queue_pos;
+    document.getElementById('pos-num').innerText = `#${pos}`;
+    if (pos === 1) confetti({ particleCount: 100, spread: 80, origin: {y: 0.6} });
   }
 
-  // ملحوظة: أرقام تاب "حسابي" بقت إجمالي الأسبوع (renderWeekTotals) مش أرقام اليوم، فمش بنحدثها هنا
-  // لكن لو الشارت الأسبوعي متحمل أصلاً، نحدث بار اليوم لايف بعدد الأوردرات الجديد
-  updateTodayInWeekChart(data.orders || 0, data.shift_km || 0);
+  // profile tab: today's stats + avatar (لو وصلت مع sync)
+  const profOrders = document.getElementById('profile-stat-orders');
+  const profKm = document.getElementById('profile-stat-km');
+  if (profOrders) profOrders.innerText = data.orders || 0;
+  if (profKm) profKm.innerText = (data.shift_km || 0).toFixed(1);
   if (data.avatar !== undefined) applyAvatar(data.avatar);
 }
 
