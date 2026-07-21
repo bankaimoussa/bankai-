@@ -287,13 +287,6 @@
   }
   .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
 
-  .card-details {
-    font-size: 9.5px; color: var(--muted); line-height: 1.25; font-weight: 500;
-    display: flex; gap: 7px; flex-wrap: wrap;
-  }
-  .card-details span { display: inline-flex; align-items: center; gap: 2px; }
-  .card-details b { color: var(--text-2); font-weight: 700; }
-
   .card-actions { display: flex; gap: 3px; margin-top: 0; }
   .action-btn {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
@@ -798,8 +791,8 @@ function connect() {
             div.className = 'auto-return-timer';
             div.id = `artimer-${safeId(d.name)}`;
             div.innerHTML = formatAutoReturnRemaining(d.out_since);
-            const details = card.querySelector('.card-details');
-            if (details) details.insertAdjacentElement('afterend', div);
+            const anchor = card.querySelector('.indicators');
+            if (anchor) anchor.insertAdjacentElement('afterend', div);
           } else if (!shouldShow && arEl) {
             arEl.remove();
           }
@@ -1045,10 +1038,6 @@ function renderBoard() {
           <button class="btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة"><span>📍</span> Locate</button>
           <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
-        </div>
-        <div class="card-details">
-          <span title="آخر خروج">🚀 <b>${d.last_out}</b></span>
-          <span title="آخر رجوع">🏠 <b>${d.last_return}</b></span>
         </div>
         ${breakLine}
         ${autoReturnLine}
