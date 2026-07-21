@@ -165,62 +165,111 @@
   .btn-autofit:hover { transform: scale(1.05); box-shadow: 0 6px 28px var(--primary-glow); }
   .leaflet-marker-icon { transition: transform 1s linear; }
 
-  /* === Driver Markers === */
+  /* === Driver Trail (v2 — flowing dots) === */
+  .driver-trail-flow {
+    animation: trailFlow 0.9s linear infinite;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+  @keyframes trailFlow {
+    0%   { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  /* === Driver Markers (v2 — orbit-ring + liquid-morph) === */
   .driver-marker-wrap {
     position: relative;
     display: flex; flex-direction: column; align-items: center;
     pointer-events: none;
+    animation: markerDrop 0.55s cubic-bezier(.34,1.56,.64,1);
   }
+  @keyframes markerDrop {
+    0%   { transform: translateY(-22px) scale(0.4); opacity: 0; }
+    60%  { transform: translateY(3px) scale(1.08); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
   .driver-marker-pulse {
     position: absolute;
-    width: 36px; height: 36px;
+    width: 34px; height: 34px;
     border-radius: 50%;
     background: transparent;
-    border: 2px solid currentColor;
+    border: none;
     top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-    animation: markerPulse 2.2s ease-out infinite;
+    transform: translate(-50%, -50%);
+    opacity: 1;
     pointer-events: none;
   }
-  @keyframes markerPulse {
-    0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.9; }
-    100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; }
+  .driver-marker-pulse::before,
+  .driver-marker-pulse::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+  }
+  .driver-marker-pulse::before { animation: markerOrbitSweep 1.8s cubic-bezier(.16,1,.3,1) infinite; }
+  .driver-marker-pulse::after  { animation: markerOrbitSweep 1.8s cubic-bezier(.16,1,.3,1) infinite 0.9s; }
+  @keyframes markerOrbitSweep {
+    0%   { transform: scale(0.5); opacity: 0.95; }
+    70%  { opacity: 0.3; }
+    100% { transform: scale(2.6); opacity: 0; }
   }
 
   .driver-marker-point {
-    width: 16px; height: 16px;
+    width: 17px; height: 17px;
     border-radius: 50%;
     border: 2.5px solid rgba(255,255,255,0.95);
-    box-shadow: 0 0 0 4px rgba(6,6,13,0.55), 0 0 16px 2px currentColor, 0 0 3px rgba(0,0,0,0.4);
+    box-shadow: 0 0 0 4px rgba(6,6,13,0.55), 0 0 18px 3px currentColor, 0 0 3px rgba(0,0,0,0.4);
     position: relative;
-    transition: background 0.4s, transform 0.6s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s;
+    transition: background 0.4s, box-shadow 0.4s;
+    transform-origin: center;
+    animation: markerBreathe 2.4s ease-in-out infinite;
     z-index: 2;
   }
+  @keyframes markerBreathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.16); }
+  }
+  .driver-marker-point.is-moving {
+    transition: background 0.4s, transform 0.5s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s;
+  }
+
   .driver-marker-arrow {
     width: 0; height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-bottom: 10px solid rgba(255,255,255,0.85);
+    border-bottom: 11px solid rgba(255,255,255,0.9);
     position: absolute;
-    top: -12px; left: 50%;
+    top: -13px; left: 50%;
     transform: translateX(-50%);
-    filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
+    animation: arrowFlicker 1s ease-in-out infinite;
   }
+  @keyframes arrowFlicker {
+    0%, 100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    50%      { opacity: 0.65; transform: translateX(-50%) translateY(-2px); }
+  }
+
   .driver-marker-name {
-    margin-top: 6px;
+    margin-top: 7px;
     font-size: 10px;
     font-weight: 800;
     color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     white-space: nowrap;
     background: rgba(8,8,16,0.82);
-    padding: 3px 8px;
+    padding: 3px 9px;
     border-radius: 20px;
     backdrop-filter: blur(6px);
     letter-spacing: 0.3px;
     border: 1px solid rgba(124,106,247,0.35);
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    opacity: 0;
+    transform: translateY(-4px) scale(0.85);
+    animation: labelPop 0.45s cubic-bezier(.34,1.56,.64,1) 0.35s forwards;
+    transform-origin: top center;
+  }
+  @keyframes labelPop {
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   /* Popups */
@@ -289,10 +338,41 @@
 
   .card-details {
     font-size: 9.5px; color: var(--muted); line-height: 1.25; font-weight: 500;
-    display: flex; gap: 7px; flex-wrap: wrap;
+    display: flex; gap: 6px; flex-wrap: wrap;
   }
-  .card-details span { display: inline-flex; align-items: center; gap: 2px; }
-  .card-details b { color: var(--text-2); font-weight: 700; }
+  .card-details span {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 2px 6px 2px 5px;
+    border-radius: 7px;
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+    animation: detailChipIn 0.4s cubic-bezier(.34,1.56,.64,1) forwards;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  }
+  .card-details span:nth-child(1) { animation-delay: 0.03s; }
+  .card-details span:nth-child(2) { animation-delay: 0.11s; }
+  .card-details span:nth-child(3) { animation-delay: 0.19s; }
+  .card-details span:nth-child(4) { animation-delay: 0.27s; }
+  .card-details span:hover {
+    background: rgba(124,106,247,0.1);
+    border-color: rgba(124,106,247,0.3);
+    transform: translateY(-1px) scale(1.04);
+  }
+  @keyframes detailChipIn {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-details b {
+    color: var(--text-2); font-weight: 700;
+    display: inline-block;
+    animation: detailValuePop 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes detailValuePop {
+    0%   { transform: scale(0.6); opacity: 0.4; }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
 
   .card-actions { display: flex; gap: 3px; margin-top: 0; }
   .action-btn {
@@ -470,24 +550,32 @@ function initMap() {
   const geofenceStyle = document.createElement('style');
   geofenceStyle.textContent = `
     @keyframes geofencePulse {
-      0%, 100% { stroke-opacity: 0.9; stroke-width: 2.5; }
-      50%       { stroke-opacity: 0.4; stroke-width: 1.5; }
+      0%   { stroke-opacity: 1;   stroke-width: 3;   stroke-dashoffset: 0; }
+      100% { stroke-opacity: 0.55; stroke-width: 1.8; stroke-dashoffset: -52; }
     }
     @keyframes geofenceFill {
-      0%, 100% { fill-opacity: 0.12; }
-      50%       { fill-opacity: 0.05; }
+      0%, 100% { fill-opacity: 0.16; }
+      50%       { fill-opacity: 0.03; }
     }
     @keyframes radarSweep {
-      0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
-      100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
+      0%   { transform: translate(-50%,-50%) scale(0.15) rotate(0deg); opacity: 1; border-width: 3px; }
+      70%  { opacity: 0.4; }
+      100% { transform: translate(-50%,-50%) scale(1) rotate(160deg);   opacity: 0; border-width: 0.5px; }
     }
-    @keyframes branchPing {
-      0%   { transform: scale(1);   opacity: 1; }
-      50%  { transform: scale(1.3); opacity: 0.7; }
-      100% { transform: scale(1);   opacity: 1; }
+    @keyframes radarBeam {
+      0%   { transform: translate(-50%,-100%) rotate(0deg); opacity: 0.9; }
+      100% { transform: translate(-50%,-100%) rotate(360deg); opacity: 0.9; }
+    }
+    @keyframes branchFloat {
+      0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 8px rgba(124,106,247,0.9)) drop-shadow(0 6px 4px rgba(0,0,0,0.4)); }
+      50%      { transform: translateY(-5px) scale(1.08); filter: drop-shadow(0 0 16px rgba(124,106,247,1)) drop-shadow(0 10px 6px rgba(0,0,0,0.3)); }
+    }
+    @keyframes branchGlow {
+      0%, 100% { opacity: 0.5; transform: translate(-50%,-50%) scale(0.9); }
+      50%      { opacity: 1;   transform: translate(-50%,-50%) scale(1.25); }
     }
     .geofence-path {
-      animation: geofencePulse 3s ease-in-out infinite, geofenceFill 3s ease-in-out infinite;
+      animation: geofencePulse 1.6s linear infinite alternate, geofenceFill 3s ease-in-out infinite;
     }
     .radar-sweep {
       position: absolute;
@@ -496,11 +584,34 @@ function initMap() {
       pointer-events: none;
       width: var(--radar-px, 80px);
       height: var(--radar-px, 80px);
-      animation: radarSweep 2s ease-out infinite;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      animation: radarSweep 2.6s cubic-bezier(.16,1,.3,1) infinite;
     }
-    .radar-sweep-2 { animation-delay: 0.7s; }
-    .radar-sweep-3 { animation-delay: 1.4s; }
-    .branch-icon { animation: branchPing 3s ease-in-out infinite; display:inline-block; }
+    .radar-sweep-2 { animation-delay: 0.87s; }
+    .radar-sweep-3 { animation-delay: 1.74s; }
+    .radar-beam {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 2px;
+      height: var(--radar-px, 80px);
+      background: linear-gradient(to top, rgba(167,139,250,0.9), transparent 85%);
+      transform-origin: bottom center;
+      transform: translate(-50%,-100%) rotate(0deg);
+      animation: radarBeam 3.4s linear infinite;
+      pointer-events: none;
+    }
+    .branch-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,106,247,0.55), transparent 70%);
+      transform: translate(-50%,-50%);
+      animation: branchGlow 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .branch-icon { animation: branchFloat 2.4s ease-in-out infinite; display:inline-block; position: relative; z-index: 2; }
   `;
   document.head.appendChild(geofenceStyle);
 
@@ -518,7 +629,7 @@ function initMap() {
   // Radar sweep rings
   const radarIcon = L.divIcon({
     className: '',
-    html: `<div class="radar-sweep"></div><div class="radar-sweep radar-sweep-2"></div><div class="radar-sweep radar-sweep-3"></div>`,
+    html: `<div class="radar-sweep"></div><div class="radar-sweep radar-sweep-2"></div><div class="radar-sweep radar-sweep-3"></div><div class="radar-beam"></div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0]
   });
@@ -527,8 +638,9 @@ function initMap() {
   // Branch icon
   L.marker([BRANCH_LAT, BRANCH_LNG], {
     icon: L.divIcon({
-      html: `<div style="text-align:center;">
-        <div class="branch-icon" style="font-size:28px;filter:drop-shadow(0 0 8px rgba(124,106,247,0.9));">🏢</div>
+      html: `<div style="text-align:center;position:relative;">
+        <div class="branch-glow"></div>
+        <div class="branch-icon" style="font-size:28px;">🏢</div>
       </div>`,
       className: '',
       iconSize: [34, 34],
@@ -640,9 +752,10 @@ function updateSingleMarkerAndTrail(d) {
   // 1. تحديث أو رسم الـ Trail (مسار المندوب الأخير)
   if (!driverTrails[d.name]) {
     driverTrails[d.name] = L.polyline([], {
-      color: color, weight: 3.5, opacity: 0.55,
-      dashArray: '6 8',
-      lineCap: 'round', lineJoin: 'round'
+      color: color, weight: 4, opacity: 0.6,
+      dashArray: '1 9',
+      lineCap: 'round', lineJoin: 'round',
+      className: 'driver-trail-flow'
     }).addTo(map);
   }
   driverTrails[d.name].setStyle({color: color});
