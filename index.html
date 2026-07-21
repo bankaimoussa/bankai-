@@ -696,6 +696,7 @@ function updateSingleMarkerAndTrail(d) {
 const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/admin`;
 let ws;
 let currentDrivers = [];
+let _suppressNextReorderRender = false; // لمنع full re-render فورًا بعد drag محلي عشان يمنع التعليق/القفزة
 let currentLang = 'en';
 let _adminPingInterval = null;
 let _adminWatchdogInterval = null;
@@ -737,9 +738,22 @@ function connect() {
     const data = JSON.parse(e.data);
     
     if (data.type === 'update') {
+      const incomingWaitingNames = data.drivers.filter(d => d.state === 'Waiting').sort((a,b)=>a.queue_pos-b.queue_pos).map(d=>d.name);
+      const localWaitingNames = currentDrivers.filter(d => d.state === 'Waiting').sort((a,b)=>a.queue_pos-b.queue_pos).map(d=>d.name);
+      const sameOrder = _suppressNextReorderRender &&
+        incomingWaitingNames.length === localWaitingNames.length &&
+        incomingWaitingNames.every((n, i) => n === localWaitingNames[i]);
+
       currentDrivers = data.drivers;
       if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
-      renderBoard();
+      if (sameOrder) {
+        // أول update بعد drag محلي وبنفس الترتيب بالظبط — الـ DOM أصلًا متزامن (Optimistic update)،
+        // نتجاهل الـ re-render الكامل عشان منعملش قفزة بصرية أو تعليق
+        _suppressNextReorderRender = false;
+      } else {
+        _suppressNextReorderRender = false;
+        renderBoard();
+      }
       // تحديث كامل الخريطة وتجاهل المنفصلين
       const activeNames = currentDrivers.map(d => d.name);
       Object.keys(driverMarkers).forEach(name => {
@@ -1099,6 +1113,21 @@ function commitNewOrder() {
   const list = document.getElementById('list-waiting');
   if (!list || !ws || ws.readyState !== WebSocket.OPEN) return;
   const newOrder = [...list.querySelectorAll('.draggable-card')].map(c => c.dataset.name);
+
+  // Optimistic update: نحدّث queue_pos و currentDrivers محليًا فورًا من غير ما ننتظر رد السيرفر،
+  // وكمان نحدّث رقم #N جوه كل كارت مباشرة (DOM patch خفيف بدل renderBoard كامل) —
+  // ده بيمنع القفزة البصرية والتعليق اللي كان بيحصل وقت ما رد السيرفر يوصل متأخر أو يتزامن مع تحديث تاني
+  newOrder.forEach((name, i) => {
+    const d = currentDrivers.find(x => x.name === name);
+    if (d) d.queue_pos = i + 1;
+    const card = document.getElementById(safeId(name));
+    if (card) {
+      const numEl = card.querySelector('.queue-num');
+      if (numEl) numEl.textContent = `#${i + 1}`;
+    }
+  });
+  _suppressNextReorderRender = true;
+
   // الترتيب الكامل للطابور = ترتيب Waiting الجديد (المناديب الـ Out/Break بيتضافوا تلقائي لما يرجعوا)
   ws.send(JSON.stringify({ type: 'reorder', new_queue: newOrder }));
 }
