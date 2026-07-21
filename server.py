@@ -816,17 +816,15 @@ async def driver_ws(ws: WebSocket):
                     out_since_val = driver.get("out_since", 0)
                     auto_return_secs_left = None
                     if driver["state"] == "Out" and dist <= 100 and out_since_val:
-                        auto_return_secs_left = max(0, 45 - (now_ts - out_since_val))
+                        auto_return_secs_left = max(0, 480 - (now_ts - out_since_val))
                     await ws.send_text(json.dumps({
                         "type": "distance", "meters": dist, "shift_km": shift_km,
                         "auto_return_secs_left": auto_return_secs_left
                     }))
 
-                    # AUTO-RETURN: لو Out فأكتر من 45 ثانية وراجع للفرع (≤50m) → Waiting تلقائي
-                    # (كانت دقيقتين قبل كده — قللناها عشان الحالة ماتفضلش حاسة إنها "متأخرة" من وجهة نظر المندوب،
-                    #  مع الاحتفاظ بحد أدنى يمنع الـ flapping لو المندوب مر بالصدفة جنب الفرع أثناء التوصيل)
+                    # AUTO-RETURN: لو Out فأكتر من 8 دقايق وراجع للفرع (≤50m) → Waiting تلقائي
                     out_since = driver.get("out_since", 0)
-                    two_mins_passed = (now_ts - out_since) >= 45
+                    two_mins_passed = (now_ts - out_since) >= 480
                     if driver["state"] == "Out" and dist <= 100 and two_mins_passed:
                         await change_driver_state(driver_name, "Waiting")
                         # بلّغ السواق إنه رجع في الطابور
