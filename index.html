@@ -251,10 +251,6 @@
   .driver-card.state-waiting { border-inline-start-color: var(--primary); }
   .driver-card.state-out { border-inline-start-color: var(--out); }
   .driver-card.state-break { border-inline-start-color: var(--break); }
-  .draggable-card { cursor: grab; }
-  .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
-  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 14px; }
-
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 0; }
   .card-name { font-weight: 700; font-size: 12.5px; color: var(--text); word-break: break-word; line-height: 1.25; display: flex; align-items: center; gap: 3px; }
   .queue-num {
@@ -690,7 +686,6 @@ function updateSingleMarkerAndTrail(d) {
 const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/admin`;
 let ws;
 let currentDrivers = [];
-let _suppressNextReorderRender = false; // لمنع full re-render فورًا بعد drag محلي عشان يمنع التعليق/القفزة
 let currentLang = 'en';
 let _adminPingInterval = null;
 let _adminWatchdogInterval = null;
@@ -734,10 +729,6 @@ function connect() {
     if (data.type === 'update') {
       currentDrivers = data.drivers;
       if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
-      // دايمًا renderBoard كامل — أي optimization بيتفادى الـ re-render بناءً على "نفس
-      // الترتيب" كان بيفشل لو حدث تاني (kick/join/location) وصل والـ suppress flag
-      // لسه معلقة من drag سابق، فيسيب كروت قديمة في أماكنها الغلط في الـ DOM رغم إن
-      // الأرقام (#N) اتحدثت صح. renderBoard رخيصة كفاية إنها تتنفذ كل مرة.
       renderBoard();
       // تحديث كامل الخريطة وتجاهل المنفصلين
       const activeNames = currentDrivers.map(d => d.name);
@@ -994,11 +985,10 @@ function renderBoard() {
     const batIcon = batLevel <= 20 ? '🪫' : '🔋';
 
     const stateClass = d.state === 'Waiting' ? 'state-waiting' : d.state === 'Out' ? 'state-out' : 'state-break';
-    const isDraggable = d.state === 'Waiting';
     let html = `
-      <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
+      <div class="driver-card ${stateClass}" id="${safeId(d.name)}" data-name="${d.name}">
         <div class="card-top">
-          <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}${d.name}</div>
+          <div class="card-name">${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}${d.name}</div>
           <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">✖</button>
         </div>
         <div class="indicators">
@@ -1012,7 +1002,6 @@ function renderBoard() {
     list.innerHTML += html;
   });
 
-  attachDragHandlers();
   applyDriverSearch();
 }
 
@@ -1046,72 +1035,6 @@ function applyDriverSearch() {
       card.classList.remove('search-match');
     }
   });
-}
-
-// ===== DRAG & DROP للترتيب (بس في عمود Waiting) =====
-let _dragEl = null;
-
-function attachDragHandlers() {
-  const list = document.getElementById('list-waiting');
-  if (!list) return;
-
-  list.querySelectorAll('.draggable-card').forEach(card => {
-    card.addEventListener('dragstart', () => {
-      _dragEl = card;
-      card.classList.add('dragging');
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      _dragEl = null;
-      commitNewOrder();
-    });
-  });
-
-  list.addEventListener('dragover', e => {
-    e.preventDefault();
-    if (!_dragEl) return;
-    const after = getDragAfterElement(list, e.clientY);
-    if (after == null) list.appendChild(_dragEl);
-    else list.insertBefore(_dragEl, after);
-  });
-}
-
-function getDragAfterElement(container, y) {
-  const els = [...container.querySelectorAll('.draggable-card:not(.dragging)')];
-  return els.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    }
-    return closest;
-  }, { offset: -Infinity }).element;
-}
-
-function commitNewOrder() {
-  const list = document.getElementById('list-waiting');
-  if (!list || !ws || ws.readyState !== WebSocket.OPEN) return;
-  const newOrder = [...list.querySelectorAll('.draggable-card')].map(c => c.dataset.name);
-
-  // Optimistic update: نحدّث queue_pos و currentDrivers محليًا فورًا من غير ما ننتظر رد السيرفر،
-  // وكمان نحدّث رقم #N جوه كل كارت مباشرة (DOM patch خفيف بدل renderBoard كامل) —
-  // ده بيمنع القفزة البصرية والتعليق اللي كان بيحصل وقت ما رد السيرفر يوصل متأخر أو يتزامن مع تحديث تاني
-  newOrder.forEach((name, i) => {
-    const d = currentDrivers.find(x => x.name === name);
-    if (d) d.queue_pos = i + 1;
-    const card = document.getElementById(safeId(name));
-    if (card) {
-      const numEl = card.querySelector('.queue-num');
-      if (numEl) numEl.textContent = `#${i + 1}`;
-    }
-  });
-  // ملحوظة: renderBoard بقت بتتنفذ دايمًا عند أي update من السيرفر، فالـ flag ده
-  // مالوش تأثير فعلي دلوقتي — سايبينه لأمان بس، الأرقام هنا بتتحدث فورًا محليًا
-  // (optimistic) لحد ما رد السيرفر يوصل ويعمل renderBoard كامل بالترتيب المؤكد
-  _suppressNextReorderRender = true;
-
-  // الترتيب الكامل للطابور = ترتيب Waiting الجديد (المناديب الـ Out/Break بيتضافوا تلقائي لما يرجعوا)
-  ws.send(JSON.stringify({ type: 'reorder', new_queue: newOrder }));
 }
 
 function formatBreakRemaining(breakEnd) {
