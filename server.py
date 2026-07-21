@@ -579,6 +579,14 @@ async def admin_ws(ws: WebSocket):
             if data["type"] == "reorder":
                 async with queue_lock:
                     current_queue = await get_queue_from_redis()
+                    # SAFETY NET (نفس فكرة change_driver_state): قبل ما نقارن مع new_queue،
+                    # نتأكد إن current_queue متضمن أي مندوب Waiting فعلاً بس drifted برة الـ
+                    # array (يعني set(new_queue) مش هيتطابق أبدًا وهيترفض السحب اليدوي بصمت،
+                    # فيبان للأدمن إنه رتّب بس الترتيب "رجع لوحده" — ده كان سبب المشكلة).
+                    all_drivers = await get_drivers_from_redis()
+                    for other_name, other_data in all_drivers.items():
+                        if other_data.get("state") == "Waiting" and other_name not in current_queue:
+                            current_queue.append(other_name)
                     new_queue = data["new_queue"]
                     # لازم new_queue يبقى نفس أعضاء الطابور الحالي بالظبط (نفس الـ set) —
                     # مجرد إعادة ترتيب، مش استبدال. لو الأدمن كان بيسحب وقت ما مندوب
@@ -589,8 +597,10 @@ async def admin_ws(ws: WebSocket):
                     # (وبنعمل broadcast بالحالة الصح عشان الأدمن ياخد آخر تحديث فورًا).
                     if set(new_queue) == set(current_queue):
                         await save_queue_to_redis(new_queue)
-                    # لو مش متطابق، منعملش save خالص — بس الـ broadcast تحت هيرجّع للأدمن
-                    # الحالة الصحيحة فورًا (يعني الكارت هيرجع مكانه، مش هيفضل معلّق غلط)
+                    else:
+                        # مفيش تطابق حتى بعد تصليح الـ drift — نحفظ current_queue المُصلّح
+                        # على الأقل (بدل ما نسيب الـ drift زي ما هو من غير أي تصليح)
+                        await save_queue_to_redis(current_queue)
                     await broadcast_state("update")
             elif data["type"] == "admin_change_state":
                 await change_driver_state(data["driver"], data["state"])
