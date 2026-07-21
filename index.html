@@ -937,51 +937,9 @@ function getDistanceBadge(dist, lastSeen, state) {
   return `<span class="badge ${statusClass}" title="${statusText}">📍 ${distText}</span>`;
 }
 
-function buildCardHTML(d) {
-  let actionButtons = '';
-  if (d.state === 'Waiting') {
-    actionButtons = `<div class="card-actions">
-      <button class="action-btn btn-out" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر"><span>🚀</span> أوردر</button>
-      <button class="action-btn btn-break" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك"><span>☕</span> بريك</button>
-      <button class="action-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">🔔</button>
-    </div>`;
-  } else if (d.state === 'Out') {
-    actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
-  } else if (d.state === 'Break') {
-    actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
-  }
-
-  // Break timer display
-  let breakLine = '';
-  if (d.state === 'Break' && d.break_end) {
-    breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
-  }
-
-  // البطارية بتتلوّن أحمر لو واطية عشان الأدمن ياخد باله بسرعة
-  const batLevel = parseInt(d.battery) || 100;
-  const batClass = batLevel <= 20 ? 'badge-battery low' : 'badge-battery';
-  const batIcon = batLevel <= 20 ? '🪫' : '🔋';
-
-  const stateClass = d.state === 'Waiting' ? 'state-waiting' : d.state === 'Out' ? 'state-out' : 'state-break';
-  const isDraggable = d.state === 'Waiting';
-  return `
-    <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
-      <div class="card-top">
-        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}${d.name}</div>
-        <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">✖</button>
-      </div>
-      <div class="indicators">
-        <button class="btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة"><span>📍</span> Locate</button>
-        <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
-        <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
-      </div>
-      ${breakLine}
-      ${actionButtons}
-    </div>`;
-}
-
 function renderBoard() {
   const lists = { Waiting: document.getElementById('list-waiting'), Out: document.getElementById('list-out'), Break: document.getElementById('list-break') };
+  Object.values(lists).forEach(l => l.innerHTML = '');
 
   // queue_pos معناها بس للـ Waiting (ترتيب الطابور). لو رتبنا كل المناديب بيها سوا،
   // أي درايفر Out أو Break بيتساوى عند queue_pos=0 (مش موجود في الطابور) وبيطلع بترتيب عشوائي.
@@ -1007,48 +965,51 @@ function renderBoard() {
   document.getElementById('count-out').textContent = currentDrivers.filter(d => d.state === 'Out').length;
   document.getElementById('count-break').textContent = currentDrivers.filter(d => d.state === 'Break').length;
 
-  // لو في drag شغال دلوقتي، منأجلش أي reconcile لحد ما يخلص (commitNewOrder هو
-  // اللي بيحدث currentDrivers ويعمل render بعدها) عشان منقطعش السحب نفسه
-  if (_dragEl) return;
+  sortedDrivers.forEach(d => {
+    const list = lists[d.state];
+    if(!list) return;
+    
+    let actionButtons = '';
+    if (d.state === 'Waiting') {
+      actionButtons = `<div class="card-actions">
+        <button class="action-btn btn-out" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر"><span>🚀</span> أوردر</button>
+        <button class="action-btn btn-break" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك"><span>☕</span> بريك</button>
+        <button class="action-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">🔔</button>
+      </div>`;
+    } else if (d.state === 'Out') {
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
+    } else if (d.state === 'Break') {
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
+    }
 
-  // نجمع الكروت الحالية حسب الليست بتاعتها عشان نعرف إيه اتشال وإيه اتضاف
-  const seenIds = new Set();
+    // Break timer display
+    let breakLine = '';
+    if (d.state === 'Break' && d.break_end) {
+      breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
+    }
 
-  ['Waiting', 'Out', 'Break'].forEach(stateName => {
-    const list = lists[stateName];
-    if (!list) return;
-    const wanted = sortedDrivers.filter(d => d.state === stateName);
-    let cursor = list.firstElementChild;
+    // البطارية بتتلوّن أحمر لو واطية عشان الأدمن ياخد باله بسرعة
+    const batLevel = parseInt(d.battery) || 100;
+    const batClass = batLevel <= 20 ? 'badge-battery low' : 'badge-battery';
+    const batIcon = batLevel <= 20 ? '🪫' : '🔋';
 
-    wanted.forEach(d => {
-      const id = safeId(d.name);
-      seenIds.add(id);
-      let card = document.getElementById(id);
-
-      if (card && card.parentElement === list) {
-        // الكارت موجود بالفعل في نفس الليست — نحدّث محتواه في مكانه (يحافظ على أي
-        // حالة UI زي focus)، ونحركه لمكانه الصح بس لو الترتيب اتغير فعلاً
-        card.outerHTML = buildCardHTML(d);
-        card = document.getElementById(id); // outerHTML بيستبدل العنصر، لازم نجيبه تاني
-        if (cursor !== card) {
-          list.insertBefore(card, cursor || null);
-        }
-        cursor = card.nextElementSibling;
-      } else {
-        // الكارت مش موجود هنا (مندوب جديد، أو نقل من ليست تانية) — نبنيه ونحطه
-        // في مكانه الصح، وأي نسخة قديمة في ليست تانية بتتشال لوحدها لأن الـ id فريد
-        const temp = document.createElement('div');
-        temp.innerHTML = buildCardHTML(d).trim();
-        const newCard = temp.firstElementChild;
-        list.insertBefore(newCard, cursor || null);
-        cursor = newCard.nextElementSibling;
-      }
-    });
-  });
-
-  // أي كارت قديم لمندوب مبقاش موجود في currentDrivers خالص (kick / disconnect) بيتشال
-  document.querySelectorAll('.driver-card').forEach(card => {
-    if (!seenIds.has(card.id)) card.remove();
+    const stateClass = d.state === 'Waiting' ? 'state-waiting' : d.state === 'Out' ? 'state-out' : 'state-break';
+    const isDraggable = d.state === 'Waiting';
+    let html = `
+      <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
+        <div class="card-top">
+          <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}${d.name}</div>
+          <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">✖</button>
+        </div>
+        <div class="indicators">
+          <button class="btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة"><span>📍</span> Locate</button>
+          <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
+          <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
+        </div>
+        ${breakLine}
+        ${actionButtons}
+      </div>`;
+    list.innerHTML += html;
   });
 
   attachDragHandlers();
