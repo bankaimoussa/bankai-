@@ -44,6 +44,15 @@ admin_connections: list[WebSocket] = []
 driver_connections: Dict[str, WebSocket] = {}
 driver_last_activity: Dict[str, float] = {}  # آخر مرة استقبلنا فيها أي رسالة من كل مندوب (ping/location/battery)
 
+# قفل واحد لكل عمليات قراءة-تعديل-كتابة على fleet:queue في Redis.
+# المشكلة الأصلية: كل مكان كان بيعمل get_queue_from_redis() ثم يعدّل القائمة في الذاكرة
+# ثم save_queue_to_redis() — وبين الـ get والـ save فيه await (I/O لـ Redis)، يعني ممكن
+# طلبين مختلفين (join / change_state / drag reorder) يقرأوا نفس النسخة القديمة في نفس اللحظة
+# وبعدين كل واحد يكتب فوق التاني (lost update) — ده اللي كان بيسبب اختفاء رقم مندوب من
+# الطابور (queue_pos بيتحسب من index في الليستة) وترتيب الأرقام المبعثر.
+# الحل: أي عملية بتقرا الطابور بنية تعدّله وتحفظه، لازم تحصل كلها جوه نفس الـ lock.
+queue_lock = asyncio.Lock()
+
 HEARTBEAT_CHECK_INTERVAL = 10   # كل كام ثانية نفحص الاتصالات
 HEARTBEAT_DEAD_AFTER = 35       # لو مفيش نشاط من المندوب لأكتر من كده، نعتبر الاتصال ميت ونقفله
 # أقصى وقت اكتشاف = CHECK_INTERVAL + DEAD_AFTER ≈ 45 ثانية (بدل 80 ثانية الأصلية، وبدل 23 ثانية اللي كانت بتفصل كتير)
@@ -139,6 +148,15 @@ def get_dashboard_stats(drivers: dict):
 def get_drivers_list(drivers: dict, queue: list):
     for i, name in enumerate(queue):
         if name in drivers: drivers[name]["queue_pos"] = i + 1
+    # شبكة أمان: أي مندوب حالته Waiting بس مش موجود في queue (drift قديم أو bug متوقع)
+    # مايفضلش من غير رقم في العرض — نديله رقم آخر الطابور بشكل ثابت (مش 0)،
+    # مع إنه ده عرض بس هنا ومش بيصلح fleet:queue في Redis نفسه (بيتصلح لوحده عند
+    # أي عملية join/change_state تانية جوه الـ lock).
+    next_pos = len(queue) + 1
+    for name, d in drivers.items():
+        if d.get("state") == "Waiting" and name not in queue:
+            d["queue_pos"] = next_pos
+            next_pos += 1
     return list(drivers.values())
 
 async def broadcast_state(event_type="update"):
@@ -221,7 +239,6 @@ async def connection_watchdog():
 
 async def change_driver_state(driver_name: str, new_state: str):
     drivers = await get_drivers_from_redis()
-    queue = await get_queue_from_redis()
 
     if driver_name not in drivers: return
 
@@ -231,13 +248,11 @@ async def change_driver_state(driver_name: str, new_state: str):
     if new_state == "Waiting":
         drivers[driver_name]["last_return"] = datetime.now().strftime("%I:%M %p")
         drivers[driver_name]["break_end"] = None
-        if driver_name not in queue: queue.append(driver_name)
         # الأوردر بيتحسب هنا — لما المندوب يرجع من Out (يعني خلص التوصيل)، مش لما يخرج
         if prev_state == "Out":
             drivers[driver_name]["orders"] += 1
             await bump_weekly_stat(driver_name, orders_delta=1)
     else:
-        if driver_name in queue: queue.remove(driver_name)
         if new_state == "Out":
             drivers[driver_name]["last_out"] = datetime.now().strftime("%I:%M %p")
             drivers[driver_name]["out_since"] = int(time.time())
@@ -246,7 +261,15 @@ async def change_driver_state(driver_name: str, new_state: str):
             drivers[driver_name]["break_end"] = int(time.time()) + 3600
 
     await save_driver_to_redis(driver_name, drivers[driver_name])
-    await save_queue_to_redis(queue)
+
+    async with queue_lock:
+        queue = await get_queue_from_redis()
+        if new_state == "Waiting":
+            if driver_name not in queue: queue.append(driver_name)
+        else:
+            if driver_name in queue: queue.remove(driver_name)
+        await save_queue_to_redis(queue)
+
     await broadcast_state("update")
 
     # توست للأدمن بالتغيير اللي حصل — منفصل عن broadcast_state عشان يبقى event واضح
@@ -482,7 +505,8 @@ async def admin_ws(ws: WebSocket):
             raw = await ws.receive_text()
             data = json.loads(raw)
             if data["type"] == "reorder":
-                await save_queue_to_redis(data["new_queue"])
+                async with queue_lock:
+                    await save_queue_to_redis(data["new_queue"])
                 await broadcast_state("update")
             elif data["type"] == "admin_change_state":
                 await change_driver_state(data["driver"], data["state"])
@@ -496,10 +520,11 @@ async def admin_ws(ws: WebSocket):
             elif data["type"] == "kick_driver":
                 d_name = data["driver"]
                 drivers = await get_drivers_from_redis()
-                queue = await get_queue_from_redis()
                 if d_name in drivers: await delete_driver_from_redis(d_name)
-                if d_name in queue: queue.remove(d_name)
-                await save_queue_to_redis(queue)
+                async with queue_lock:
+                    queue = await get_queue_from_redis()
+                    if d_name in queue: queue.remove(d_name)
+                    await save_queue_to_redis(queue)
                 await delete_fcm_token(d_name)  # امسح التوكن عشان ميوصلوش إشعارات وهو مش شغال
                 
                 if d_name in driver_connections:
@@ -556,8 +581,7 @@ async def driver_ws(ws: WebSocket):
                 # لو في connection قديم لنفس الدرايفر (reconnect)، بنبدّله بالجديد بدون أي noise
                 driver_connections[driver_name] = ws
                 driver_last_activity[driver_name] = time.time()
-                queue = await get_queue_from_redis()
-                
+
                 if driver_name not in drivers:
                     # دخول جديد خالص - نسجله من الأول
                     drivers[driver_name] = {
@@ -570,25 +594,31 @@ async def driver_ws(ws: WebSocket):
                         "shift_km": 0.0, "_last_gps": {"lat": data.get("lat"), "lng": data.get("lng"), "ts": int(time.time())}
                     }
                     await save_driver_to_redis(driver_name, drivers[driver_name])
-                else:
-                    # reconnect - بنبعتله state الحالي فوراً عشان يعرف هو فين
+
+                # كل قراءة-تعديل-كتابة على الطابور بتحصل هنا جوه الـ lock كوحدة واحدة،
+                # عشان مفيش طلب تاني (state change / drag reorder / join تاني) يقرا نسخة
+                # قديمة من الطابور ويكتب فوق التعديل ده (lost update).
+                async with queue_lock:
+                    queue = await get_queue_from_redis()
+                    if not is_reconnect:
+                        # دخول جديد خالص بس — نضيفه آخر الطابور
+                        if driver_name not in queue:
+                            queue.append(driver_name)
+                            await save_queue_to_redis(queue)
+                    elif driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
+                        # حالة استثنائية: مندوب موجود أصلاً وحالته Waiting بس مش موجود في الطابور
+                        # (يعني حصل خلل ما وسبب فقدانه من الـ queue list) — نرجّعه تاني كمعالجة أمان،
+                        # لكن ده مش المفروض يحصل في الـ reconnect العادي
+                        queue.append(driver_name)
+                        await save_queue_to_redis(queue)
+
+                if is_reconnect:
+                    # reconnect - بنبعتله state الحالي فوراً عشان يعرف هو فين (بعد أي تعديل فوق)
                     queue = await get_queue_from_redis()
                     avatar = await get_driver_avatar(driver_name)
                     me = dict(drivers[driver_name])
                     me["avatar"] = avatar
                     await ws.send_text(json.dumps({"type": "sync", "me": me, "queue": queue}))
-
-                if not is_reconnect:
-                    # دخول جديد خالص بس — نضيفه آخر الطابور
-                    if driver_name not in queue:
-                        queue.append(driver_name)
-                        await save_queue_to_redis(queue)
-                elif driver_name not in queue and drivers[driver_name]["state"] == "Waiting":
-                    # حالة استثنائية: مندوب موجود أصلاً وحالته Waiting بس مش موجود في الطابور
-                    # (يعني حصل خلل ما وسبب فقدانه من الـ queue list) — نرجّعه تاني كمعالجة أمان،
-                    # لكن ده مش المفروض يحصل في الـ reconnect العادي
-                    queue.append(driver_name)
-                    await save_queue_to_redis(queue)
 
                 # broadcast عشان الادمن يشوف إن الدرايفر اتوصل تاني
                 await broadcast_state("update")
@@ -743,12 +773,13 @@ async def driver_ws(ws: WebSocket):
                 # مش بس نقفل الـ WebSocket، عشان الأدمن يشوفه اتشال فورًا
                 ended_name = driver_name
                 drivers = await get_drivers_from_redis()
-                queue = await get_queue_from_redis()
                 if driver_name in drivers:
                     await delete_driver_from_redis(driver_name)
-                if driver_name in queue:
-                    queue.remove(driver_name)
-                    await save_queue_to_redis(queue)
+                async with queue_lock:
+                    queue = await get_queue_from_redis()
+                    if driver_name in queue:
+                        queue.remove(driver_name)
+                        await save_queue_to_redis(queue)
                 await delete_fcm_token(driver_name)
                 if driver_connections.get(driver_name) is ws:
                     del driver_connections[driver_name]
