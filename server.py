@@ -67,7 +67,7 @@ driver_last_activity: Dict[str, float] = {}  # آخر مرة استقبلنا ف
 # قفل واحد لكل عمليات قراءة-تعديل-كتابة على fleet:queue في Redis.
 # المشكلة الأصلية: كل مكان كان بيعمل get_queue_from_redis() ثم يعدّل القائمة في الذاكرة
 # ثم save_queue_to_redis() — وبين الـ get والـ save فيه await (I/O لـ Redis)، يعني ممكن
-# طلبين مختلفين (join / change_state / drag reorder) يقرأوا نفس النسخة القديمة في نفس اللحظة
+# طلبين مختلفين (join / change_state) يقرأوا نفس النسخة القديمة في نفس اللحظة
 # وبعدين كل واحد يكتب فوق التاني (lost update) — ده اللي كان بيسبب اختفاء رقم مندوب من
 # الطابور (queue_pos بيتحسب من index في الليستة) وترتيب الأرقام المبعثر.
 # الحل: أي عملية بتقرا الطابور بنية تعدّله وتحفظه، لازم تحصل كلها جوه نفس الـ lock.
@@ -203,8 +203,8 @@ async def repair_queue_drift():
     بتديله رقم احتياطي للعرض بس، من غير ما تصلح المصدر في Redis)، فكان بيبان للأدمن
     إن المندوب ده "بيرجع فوق" رغم إن حد رتّبه صح — لأن كل broadcast كان بيرجّع
     نفس الترتيب المبني على الـ drift القديم من غير أي تصليح حقيقي.
-    ماينفعش تتنده من مكان ماسك queue_lock بالفعل (زي جوه change_driver_state أو
-    الـ reorder handler) — دول عندهم نفس منطق التصليح مدمج فيهم أصلاً.
+    ماينفعش تتنده من مكان ماسك queue_lock بالفعل (زي جوه change_driver_state) —
+    ده عنده نفس منطق التصليح مدمج فيه أصلاً.
     """
     async with queue_lock:
         drivers = await get_drivers_from_redis()
@@ -605,33 +605,7 @@ async def admin_ws(ws: WebSocket):
         while True:
             raw = await ws.receive_text()
             data = json.loads(raw)
-            if data["type"] == "reorder":
-                async with queue_lock:
-                    current_queue = await get_queue_from_redis()
-                    # SAFETY NET (نفس فكرة change_driver_state): قبل ما نقارن مع new_queue،
-                    # نتأكد إن current_queue متضمن أي مندوب Waiting فعلاً بس drifted برة الـ
-                    # array (يعني set(new_queue) مش هيتطابق أبدًا وهيترفض السحب اليدوي بصمت،
-                    # فيبان للأدمن إنه رتّب بس الترتيب "رجع لوحده" — ده كان سبب المشكلة).
-                    all_drivers = await get_drivers_from_redis()
-                    for other_name, other_data in all_drivers.items():
-                        if other_data.get("state") == "Waiting" and other_name not in current_queue:
-                            current_queue.append(other_name)
-                    new_queue = data["new_queue"]
-                    # لازم new_queue يبقى نفس أعضاء الطابور الحالي بالظبط (نفس الـ set) —
-                    # مجرد إعادة ترتيب، مش استبدال. لو الأدمن كان بيسحب وقت ما مندوب
-                    # اتضاف/اتشال من الطابور من عملية تانية (join / state change) في نفس اللحظة،
-                    # الـ new_queue اللي جاي من الـ DOM القديم ممكن يكون ناقص أو زيادة —
-                    # وقتها كنا بنستبدل الطابور بالكامل ونمسح مناديب بالغلط.
-                    # الحل: لو الـ set مش متطابق، نرفض ونسيب الطابور الحالي زي ما هو
-                    # (وبنعمل broadcast بالحالة الصح عشان الأدمن ياخد آخر تحديث فورًا).
-                    if set(new_queue) == set(current_queue):
-                        await save_queue_to_redis(new_queue)
-                    else:
-                        # مفيش تطابق حتى بعد تصليح الـ drift — نحفظ current_queue المُصلّح
-                        # على الأقل (بدل ما نسيب الـ drift زي ما هو من غير أي تصليح)
-                        await save_queue_to_redis(current_queue)
-                    await broadcast_state("update")
-            elif data["type"] == "admin_change_state":
+            if data["type"] == "admin_change_state":
                 await change_driver_state(data["driver"], data["state"])
             elif data["type"] == "set_auto_out":
                 await set_auto_out_enabled(bool(data.get("enabled")))
@@ -718,7 +692,7 @@ async def driver_ws(ws: WebSocket):
                     await save_driver_to_redis(driver_name, drivers[driver_name])
 
                 # كل قراءة-تعديل-كتابة على الطابور بتحصل هنا جوه الـ lock كوحدة واحدة،
-                # عشان مفيش طلب تاني (state change / drag reorder / join تاني) يقرا نسخة
+                # عشان مفيش طلب تاني (state change / join تاني) يقرا نسخة
                 # قديمة من الطابور ويكتب فوق التعديل ده (lost update).
                 async with queue_lock:
                     queue = await get_queue_from_redis()
