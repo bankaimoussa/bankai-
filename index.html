@@ -741,22 +741,13 @@ function connect() {
     const data = JSON.parse(e.data);
     
     if (data.type === 'update') {
-      const incomingWaitingNames = data.drivers.filter(d => d.state === 'Waiting').sort((a,b)=>a.queue_pos-b.queue_pos).map(d=>d.name);
-      const localWaitingNames = currentDrivers.filter(d => d.state === 'Waiting').sort((a,b)=>a.queue_pos-b.queue_pos).map(d=>d.name);
-      const sameOrder = _suppressNextReorderRender &&
-        incomingWaitingNames.length === localWaitingNames.length &&
-        incomingWaitingNames.every((n, i) => n === localWaitingNames[i]);
-
       currentDrivers = data.drivers;
       if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
-      if (sameOrder) {
-        // أول update بعد drag محلي وبنفس الترتيب بالظبط — الـ DOM أصلًا متزامن (Optimistic update)،
-        // نتجاهل الـ re-render الكامل عشان منعملش قفزة بصرية أو تعليق
-        _suppressNextReorderRender = false;
-      } else {
-        _suppressNextReorderRender = false;
-        renderBoard();
-      }
+      // دايمًا renderBoard كامل — أي optimization بيتفادى الـ re-render بناءً على "نفس
+      // الترتيب" كان بيفشل لو حدث تاني (kick/join/location) وصل والـ suppress flag
+      // لسه معلقة من drag سابق، فيسيب كروت قديمة في أماكنها الغلط في الـ DOM رغم إن
+      // الأرقام (#N) اتحدثت صح. renderBoard رخيصة كفاية إنها تتنفذ كل مرة.
+      renderBoard();
       // تحديث كامل الخريطة وتجاهل المنفصلين
       const activeNames = currentDrivers.map(d => d.name);
       Object.keys(driverMarkers).forEach(name => {
@@ -1146,6 +1137,9 @@ function commitNewOrder() {
       if (numEl) numEl.textContent = `#${i + 1}`;
     }
   });
+  // ملحوظة: renderBoard بقت بتتنفذ دايمًا عند أي update من السيرفر، فالـ flag ده
+  // مالوش تأثير فعلي دلوقتي — سايبينه لأمان بس، الأرقام هنا بتتحدث فورًا محليًا
+  // (optimistic) لحد ما رد السيرفر يوصل ويعمل renderBoard كامل بالترتيب المؤكد
   _suppressNextReorderRender = true;
 
   // الترتيب الكامل للطابور = ترتيب Waiting الجديد (المناديب الـ Out/Break بيتضافوا تلقائي لما يرجعوا)
