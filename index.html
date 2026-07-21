@@ -299,15 +299,6 @@
   .btn-notify { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); flex: 0 0 auto; min-width: 34px; padding: 5px 8px; font-size: 14px; }
   .btn-done { background: rgba(45,210,207,0.12); color: var(--success); border-color: rgba(45,210,207,0.22); }
   .break-timer { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
-  .auto-return-timer { font-size: 10px; }
-  .auto-return-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 100px;
-    background: rgba(45,212,207,0.12); color: var(--success, #0fd4c8);
-    font-weight: 700; font-size: 10px; border: 1px solid rgba(45,212,207,0.25);
-  }
-  .auto-return-badge.ready { background: rgba(34,197,94,0.18); color: #22c55e; animation: arPulse 1s ease-in-out infinite; }
-  @keyframes arPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
-
   /* ===== TABS ===== */
   .tab-bar {
     position: relative; z-index: 1;
@@ -771,22 +762,6 @@ function connect() {
           distEl.classList.remove('dist-flash');
           void distEl.offsetWidth; // force reflow
           distEl.classList.add('dist-flash');
-
-          // auto-return badge: هيظهر/يختفي حسب دخول أو خروج المندوب من نطاق الفرع (100م)
-          const d = currentDrivers[dIndex];
-          const card = document.getElementById(safeId(d.name));
-          let arEl = document.getElementById(`artimer-${safeId(d.name)}`);
-          const shouldShow = d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100;
-          if (shouldShow && !arEl && card) {
-            const div = document.createElement('div');
-            div.className = 'auto-return-timer';
-            div.id = `artimer-${safeId(d.name)}`;
-            div.innerHTML = formatAutoReturnRemaining(d.out_since);
-            const anchor = card.querySelector('.indicators');
-            if (anchor) anchor.insertAdjacentElement('afterend', div);
-          } else if (!shouldShow && arEl) {
-            arEl.remove();
-          }
         } else {
           // element مش موجود = renderBoard قديم، نعمل re-render كامل
           renderBoard();
@@ -1013,12 +988,6 @@ function renderBoard() {
       breakLine = `<div class="break-timer" id="btimer-${safeId(d.name)}">⏱ ${formatBreakRemaining(d.break_end)}</div>`;
     }
 
-    // Auto-return countdown — لو المندوب Out ورجع في نطاق الفرع (100م)، بيتحول Waiting تلقائي بعد دقيقتين
-    let autoReturnLine = '';
-    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100) {
-      autoReturnLine = `<div class="auto-return-timer" id="artimer-${safeId(d.name)}">${formatAutoReturnRemaining(d.out_since)}</div>`;
-    }
-
     // البطارية بتتلوّن أحمر لو واطية عشان الأدمن ياخد باله بسرعة
     const batLevel = parseInt(d.battery) || 100;
     const batClass = batLevel <= 20 ? 'badge-battery low' : 'badge-battery';
@@ -1038,7 +1007,6 @@ function renderBoard() {
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
         </div>
         ${breakLine}
-        ${autoReturnLine}
         ${actionButtons}
       </div>`;
     list.innerHTML += html;
@@ -1155,15 +1123,6 @@ function formatBreakRemaining(breakEnd) {
   return `<span style="color:${color}">${m}:${s}</span>`;
 }
 
-// وقت متبقي لحد ما المندوب يتحول Waiting تلقائيًا (لو Out وواصل نطاق الفرع 100م لمدة دقيقتين)
-function formatAutoReturnRemaining(outSince) {
-  const AUTO_RETURN_SEC = 120;
-  const elapsed = Math.floor(Date.now() / 1000) - outSince;
-  const diff = AUTO_RETURN_SEC - elapsed;
-  if (diff <= 0) return `<span class="auto-return-badge ready">🏠 هيرجع تلقائي دلوقتي</span>`;
-  return `<span class="auto-return-badge">🏠 رجوع تلقائي خلال ${diff}s</span>`;
-}
-
 function toggleTheme() {
   const html = document.documentElement;
   const isLight = html.getAttribute('data-theme') === 'light';
@@ -1196,11 +1155,6 @@ setInterval(() => {
     if (d.state === 'Break' && d.break_end) {
       const timerEl = document.getElementById(`btimer-${d.name}`);
       if (timerEl) timerEl.innerHTML = `⏱ ${formatBreakRemaining(d.break_end)}`;
-    }
-    // تايمر الـ auto-return — كل ثانية
-    if (d.state === 'Out' && d.out_since && d.distance != null && d.distance <= 100) {
-      const artimerEl = document.getElementById(`artimer-${d.name}`);
-      if (artimerEl) artimerEl.innerHTML = formatAutoReturnRemaining(d.out_since);
     }
   });
   // تحديث حالة الاتصال (Live/Weak/Offline) كل 5 ثواني بس — مش محتاجة دقة الثانية،
