@@ -1253,6 +1253,15 @@ function computeSpeedKmh(pos) {
 }
 
 function sendLocation(pos) {
+  // لو إحنا جوه تطبيق الأندرويد الـ native والصفحة في الخلفية دلوقتي،
+  // متبعتش الموقع من هنا خالص — الـ LocationForegroundService بتاع التطبيق هو
+  // المسؤول عن الـ GPS في الخلفية (بأذونات background location + foreground service
+  // حقيقية)، وله اتصال WebSocket منفصل خاص بيه. لو الاتنين بعتوا مع بعض، بيحصل
+  // تضارب بين رسالتين مختلفتين لنفس المندوب، وأحيانًا رسالة الـ WebView (اللي بتبقى
+  // متأخرة/مقيدة من نظام التشغيل في الخلفية) بتوصل بعد رسالة الـ Service الصح وتبوّظها.
+  // وقت ما الصفحة تبقى ظاهرة (foreground) تاني، الشرط ده بيبقى false والإرسال من هنا يشتغل عادي.
+  if (window.AndroidBridge && document.visibilityState === 'hidden') return;
+
   if (ws && ws.readyState === WebSocket.OPEN) {
     const speedKmh = computeSpeedKmh(pos);
     ws.send(JSON.stringify({
