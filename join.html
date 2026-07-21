@@ -1265,6 +1265,34 @@ function sendLocation(pos) {
   }
 }
 
+// طلب موقع GPS جديد فعلي مع محاولات إعادة حقيقية — بيستخدم في force_refresh عشان
+// مكنش فيه أي retry قبل كده (لو المحاولة الأولى فشلت/timeout في الخلفية، كان بيسيبها
+// وخلاص من غير ما حد يعرف إن التحديث فشل)
+let _freshLocRetryTimer = null;
+function requestFreshLocationWithRetry(attempt = 1) {
+  if (!navigator.geolocation) return;
+  clearTimeout(_freshLocRetryTimer);
+  const MAX_ATTEMPTS = 3;
+  // المحاولة الأولى بدقة عالية ومهلة قصيرة، والمحاولات اللي بعدها بنبقى أكتر تسامحًا
+  // (دقة أقل + مهلة أطول + قبول موقع مخزن عند المتصفح لحد 15 ثانية) عشان نزود فرصة
+  // ننجح لو GPS بطيء أو الموبايل في وضع توفير طاقة
+  const opts = attempt === 1
+    ? { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    : { enableHighAccuracy: attempt < MAX_ATTEMPTS, maximumAge: 15000, timeout: 15000 };
+
+  navigator.geolocation.getCurrentPosition(
+    pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
+    () => {
+      if (attempt < MAX_ATTEMPTS) {
+        _freshLocRetryTimer = setTimeout(() => requestFreshLocationWithRetry(attempt + 1), 2000);
+      }
+      // بعد MAX_ATTEMPTS فشل، بنسيبها — الـ watchPosition العادي (لو شغال) هيكمل يحاول لوحده،
+      // وهيتغطى برضه في دورة الـ force_refresh التلقائية الجاية من السيرفر
+    },
+    opts
+  );
+}
+
 function updateGpsDisplay(pos) {
   const speed = Math.round(computeSpeedKmh(pos));
   const acc = pos.coords.accuracy != null ? Math.round(pos.coords.accuracy) : '--';
@@ -1356,16 +1384,17 @@ function connectWS() {
     }
     else if (d.type === 'chat_message') showChatPopup(d.text);
     else if (d.type === 'force_refresh') {
-      // بعت آخر موقع معروف فوراً بدون انتظار
-      if (lastGpsPos) sendLocation(lastGpsPos);
-      // وبعدين طلب تحديث جديد في الخلفية
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => { lastGpsPos = pos; sendLocation(pos); updateGpsDisplay(pos); },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-        );
-      }
+      // بعت آخر موقع معروف فوراً — بس بس لو لسه "طازة" (أقل من 20 ثانية)
+      // لو lastGpsPos قديم (مثلاً التطبيق كان في الخلفية والـ watchPosition واقف)،
+      // بعته كإنه رد فوري بيدي انطباع غلط للسيرفر إن المندوب "رد" وهو فعليًا واقف مكانه
+      // من زمان — فبنسيبه وبنستنى الموقع الجديد الفعلي بس (تحت).
+      const posAgeMs = lastGpsPos ? (Date.now() - (lastGpsPos.timestamp || 0)) : Infinity;
+      if (lastGpsPos && posAgeMs < 20000) sendLocation(lastGpsPos);
+
+      // طلب موقع جديد فعلي — مع retry حقيقي لو المحاولة الأولى فشلت
+      // (كانت بتفشل بصمت في الخلفية من غير أي محاولة تانية، فمكنش بيوصل تحديث خالص)
+      requestFreshLocationWithRetry();
+
       if (batteryRef && ws.readyState === WebSocket.OPEN)
         ws.send(JSON.stringify({ type: 'battery', level: batteryRef.level }));
     }
