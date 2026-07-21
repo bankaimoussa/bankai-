@@ -195,6 +195,28 @@ def get_drivers_list(drivers: dict, queue: list):
             next_pos += 1
     return list(drivers.values())
 
+async def repair_queue_drift():
+    """
+    بتصلح أي drift فعليًا في fleet:queue داخل Redis (مش بس وقت العرض) — أي مندوب
+    حالته Waiting بس مش موجود في queue array بيترحّل لآخرها. من غير الدالة دي، كل
+    ريفرش/تحديث فوري كان بيكشف نفس الـ drift القديم تاني (get_drivers_list كانت
+    بتديله رقم احتياطي للعرض بس، من غير ما تصلح المصدر في Redis)، فكان بيبان للأدمن
+    إن المندوب ده "بيرجع فوق" رغم إن حد رتّبه صح — لأن كل broadcast كان بيرجّع
+    نفس الترتيب المبني على الـ drift القديم من غير أي تصليح حقيقي.
+    ماينفعش تتنده من مكان ماسك queue_lock بالفعل (زي جوه change_driver_state أو
+    الـ reorder handler) — دول عندهم نفس منطق التصليح مدمج فيهم أصلاً.
+    """
+    async with queue_lock:
+        drivers = await get_drivers_from_redis()
+        queue = await get_queue_from_redis()
+        changed = False
+        for name, d in drivers.items():
+            if d.get("state") == "Waiting" and name not in queue:
+                queue.append(name)
+                changed = True
+        if changed:
+            await save_queue_to_redis(queue)
+
 async def broadcast_state(event_type="update"):
     drivers = await get_drivers_from_redis()
     queue = await get_queue_from_redis()
@@ -366,6 +388,9 @@ async def do_force_refresh():
     # ننتظر شوية عشان نديله فرصة حقيقية إن الموبايلات المتصلة تبعت مواقعها الجديدة
     # (لو المندوب بيبعت location_update عادي، ده هيوصل خلال الفترة دي ويحدث Redis)
     await asyncio.sleep(2.5)
+    # نصلح أي drift في الطابور قبل الـ broadcast — عشان "تحديث فوري" ميكشفش drift قديم
+    # تاني من غير ما يصلحه فعليًا في Redis (كان بيبان إن مندوب معين "بيرجع فوق" لوحده)
+    await repair_queue_drift()
     # دلوقتي نعمل broadcast بأحدث داتا في Redis (بعد ما استنينا)
     await broadcast_state("update")
     return len(driver_connections)
@@ -562,7 +587,11 @@ async def manifest():
 async def admin_ws(ws: WebSocket):
     await ws.accept()
     admin_connections.append(ws)
-    
+
+    # نصلح أي drift في الطابور أول ما الأدمن يفتح/يعمل ريفرش للصفحة — عشان الريفرش
+    # العادي (F5) برضه يصلح المشكلة فورًا، مش بس "تحديث فوري"/الدورة التلقائية
+    await repair_queue_drift()
+
     drivers = await get_drivers_from_redis()
     queue = await get_queue_from_redis()
     await ws.send_text(json.dumps({
