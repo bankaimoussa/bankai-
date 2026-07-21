@@ -506,7 +506,19 @@ async def admin_ws(ws: WebSocket):
             data = json.loads(raw)
             if data["type"] == "reorder":
                 async with queue_lock:
-                    await save_queue_to_redis(data["new_queue"])
+                    current_queue = await get_queue_from_redis()
+                    new_queue = data["new_queue"]
+                    # لازم new_queue يبقى نفس أعضاء الطابور الحالي بالظبط (نفس الـ set) —
+                    # مجرد إعادة ترتيب، مش استبدال. لو الأدمن كان بيسحب وقت ما مندوب
+                    # اتضاف/اتشال من الطابور من عملية تانية (join / state change) في نفس اللحظة،
+                    # الـ new_queue اللي جاي من الـ DOM القديم ممكن يكون ناقص أو زيادة —
+                    # وقتها كنا بنستبدل الطابور بالكامل ونمسح مناديب بالغلط.
+                    # الحل: لو الـ set مش متطابق، نرفض ونسيب الطابور الحالي زي ما هو
+                    # (وبنعمل broadcast بالحالة الصح عشان الأدمن ياخد آخر تحديث فورًا).
+                    if set(new_queue) == set(current_queue):
+                        await save_queue_to_redis(new_queue)
+                    # لو مش متطابق، منعملش save خالص — بس الـ broadcast تحت هيرجّع للأدمن
+                    # الحالة الصحيحة فورًا (يعني الكارت هيرجع مكانه، مش هيفضل معلّق غلط)
                 await broadcast_state("update")
             elif data["type"] == "admin_change_state":
                 await change_driver_state(data["driver"], data["state"])
