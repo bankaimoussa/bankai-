@@ -282,7 +282,6 @@ async def change_driver_state(driver_name: str, new_state: str):
     drivers[driver_name]["state"] = new_state
 
     if new_state == "Waiting":
-        drivers[driver_name]["last_return"] = datetime.now().strftime("%I:%M %p")
         drivers[driver_name]["break_end"] = None
         # الأوردر بيتحسب هنا — لما المندوب يرجع من Out (يعني خلص التوصيل)، مش لما يخرج
         if prev_state == "Out":
@@ -290,7 +289,6 @@ async def change_driver_state(driver_name: str, new_state: str):
             await bump_weekly_stat(driver_name, orders_delta=1)
     else:
         if new_state == "Out":
-            drivers[driver_name]["last_out"] = datetime.now().strftime("%I:%M %p")
             drivers[driver_name]["out_since"] = int(time.time())
             drivers[driver_name]["break_end"] = None
         elif new_state == "Break":
@@ -301,6 +299,19 @@ async def change_driver_state(driver_name: str, new_state: str):
     async with queue_lock:
         queue = await get_queue_from_redis()
         if new_state == "Waiting":
+            # SAFETY NET — قبل ما نضيف driver_name نفسه، نتأكد الأول إن مفيش أي مندوب تاني
+            # حالته Waiting فعلاً بس "drifted" برة الـ queue array (يعني عنده queue_pos=0
+            # ضمنيًا رغم إنه فعليًا مستني). لو سبنا الحالة دي وأضفنا driver_name بـ append()،
+            # هو هياخد مكان في queue قبل المندوب الـ drifted (لأنه هيبان بره الـ queue تمامًا)،
+            # فيبان بصريًا إن الراجع من الأوردر "قفز" فوق مندوب كان مستني فعلاً من قبله —
+            # وده بالظبط العرض اللي كان بيحصل. تصليح الـ drift هنا (جوه نفس الـ lock، قبل
+            # append الحالي) بيضمن إن أصحاب الأولوية الأقدم يترتبوا صح قبل أي إضافة جديدة.
+            all_drivers = await get_drivers_from_redis()
+            for other_name, other_data in all_drivers.items():
+                if (other_name != driver_name
+                        and other_data.get("state") == "Waiting"
+                        and other_name not in queue):
+                    queue.append(other_name)
             if driver_name not in queue: queue.append(driver_name)
         else:
             if driver_name in queue: queue.remove(driver_name)
@@ -660,7 +671,6 @@ async def driver_ws(ws: WebSocket):
                     drivers[driver_name] = {
                         "name": driver_name, "state": "Waiting", 
                         "orders": 0, "returns": 0, "misses": 0,
-                        "last_out": "-", "last_return": datetime.now().strftime("%I:%M %p"),
                         "battery": "100%", "queue_pos": 0, "distance": None, "break_end": None,
                         "lat": data.get("lat"), "lng": data.get("lng"),
                         "speed": 0, "heading": 0, "last_seen": int(time.time()),
