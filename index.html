@@ -15,57 +15,60 @@
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
   :root {
-    --bg: #06060d;
-    --bg-2: #0c0c18;
-    --surface: rgba(20, 20, 32, 0.55);
-    --surface-2: rgba(28, 28, 44, 0.7);
-    --surface-hover: rgba(40, 40, 60, 0.85);
-    --border: rgba(255,255,255,0.06);
-    --border-strong: rgba(255,255,255,0.12);
-    --primary: #7c6af7;
-    --primary-glow: rgba(124, 106, 247, 0.4);
-    --out: #ffb454;
-    --break: #b8aaff;
-    --text: #f5f5fa;
-    --text-2: #c8c8d8;
-    --muted: #7a7a92;
-    --danger: #ff5c7c;
-    --success: #2dd4cf;
-    --offline: #5a5a72;
-    --weak: #ffa94d;
-    --radius: 18px;
-    --radius-sm: 12px;
+    /* ألوان أساسية موحدة مع join.html — نفس الهوية البصرية بين لوحة الأدمن وواجهة المندوب.
+       --out/--break/--offline/--weak خاصين بلوحة الأدمن بس (مالهمش نظير في join)،
+       اتعدلوا بأقرب تناغم مع الباليت الجديد مع الحفاظ على تباين واضح بين الحالات. */
+    --bg: #05091A;
+    --bg-2: #0B1330;
+    --surface: rgba(15, 24, 56, 0.55);
+    --surface-2: rgba(18, 27, 66, 0.7);
+    --surface-hover: rgba(27, 38, 80, 0.85);
+    --border: rgba(232,241,255,0.06);
+    --border-strong: rgba(232,241,255,0.12);
+    --primary: #3B8BFF;
+    --primary-glow: rgba(59, 139, 255, 0.4);
+    --out: #F97316;
+    --break: #8FB3FF;
+    --text: #E8F1FF;
+    --text-2: #B8C4E0;
+    --muted: #7C8BB5;
+    --danger: #EF4444;
+    --success: #10B981;
+    --offline: #4B5B8A;
+    --weak: #F97316;
+    --radius: 20px;
+    --radius-sm: 14px;
     --shadow: 0 16px 50px rgba(0,0,0,0.55);
     --shadow-sm: 0 4px 20px rgba(0,0,0,0.3);
   }
 
   [data-theme="light"] {
-    --bg: #eef0f8;
-    --bg-2: #e4e7f3;
+    --bg: #F5F8FF;
+    --bg-2: #E8F1FF;
     --surface: rgba(255, 255, 255, 0.75);
     --surface-2: rgba(255, 255, 255, 0.9);
-    --surface-hover: rgba(245, 245, 252, 0.95);
-    --border: rgba(0,0,0,0.06);
-    --border-strong: rgba(0,0,0,0.12);
-    --text: #1a1a2e;
-    --text-2: #3a3a52;
-    --muted: #7a7a92;
-    --shadow: 0 16px 50px rgba(0,0,0,0.1);
-    --shadow-sm: 0 4px 20px rgba(0,0,0,0.06);
-    --offline: #a0a0b8;
+    --surface-hover: rgba(245, 249, 255, 0.95);
+    --border: rgba(11,26,51,0.06);
+    --border-strong: rgba(11,26,51,0.12);
+    --text: #0B1A33;
+    --text-2: #3D4C6B;
+    --muted: #64748B;
+    --shadow: 0 16px 50px rgba(30,111,255,0.1);
+    --shadow-sm: 0 4px 20px rgba(30,111,255,0.06);
+    --offline: #94A3B8;
   }
   [data-theme="light"] .bg-grid {
-    background-image: linear-gradient(rgba(124, 106, 247, 0.04) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(124, 106, 247, 0.04) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(59, 139, 255, 0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(59, 139, 255, 0.04) 1px, transparent 1px);
   }
   [data-theme="light"] header h1 {
-    background: linear-gradient(135deg, #1a1a2e, #7c6af7);
+    background: linear-gradient(135deg, #0B1A33, #3B8BFF);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   [data-theme="light"] .column { background: rgba(255,255,255,0.85); }
   [data-theme="light"] .column h2 { background: rgba(255,255,255,0.9); }
   [data-theme="light"] .driver-card { background: rgba(255,255,255,0.7); }
-  [data-theme="light"] .custom-popup .leaflet-popup-content-wrapper { background: white; color: #1a1a2e; }
+  [data-theme="light"] .custom-popup .leaflet-popup-content-wrapper { background: white; color: #0B1A33; }
   [data-theme="light"] .custom-popup .leaflet-popup-tip { background: white; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Cairo', sans-serif; }
@@ -79,26 +82,41 @@
   @keyframes orbFloat1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(80px, 60px); } }
   @keyframes orbFloat2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-60px, -80px); } }
 
-  .bg-grid { position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(rgba(124, 106, 247, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 106, 247, 0.025) 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 30s linear infinite; pointer-events: none; }
+  .bg-grid { position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(rgba(59, 139, 255, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 139, 255, 0.025) 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 30s linear infinite; pointer-events: none; }
   @keyframes gridMove { 0% { transform: translate(0, 0); } 100% { transform: translate(50px, 50px); } }
 
   header { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 12px; flex-shrink: 0; }
   header h1 { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #f5f5fa, #9a9ab8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
   .header-actions { display: flex; gap: 10px; align-items: center; }
-  .btn-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.25s; backdrop-filter: blur(10px); }
-  .btn-action:hover { background: var(--surface-hover); border-color: var(--border-strong); }
-  .btn-force-update { background: rgba(45,212,207,0.1); border: 1.5px solid rgba(45,212,207,0.3); color: var(--success); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.25s; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(10px); }
-  .btn-force-update:hover { background: rgba(45,212,207,0.2); transform: scale(1.04); box-shadow: 0 4px 20px rgba(45,212,207,0.25); }
+  .btn-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1); backdrop-filter: blur(10px); }
+  .btn-action:hover { background: var(--surface-hover); border-color: var(--border-strong); transform: scale(1.03); }
+  /* Clear Data — كانت من غير أي تعريف CSS خالص (بتاخد ستايل المتصفح الافتراضي)، فده
+     كان سبب الشكل "البايظ" وسط باقي أزرار الهيدر. عرّفناها بنفس لغة الـ pill الموحدة
+     (blur + border + hover bounce) بس بلون --danger عشان تدي إحساس تحذيري مناسب
+     لكونها عملية حذف بيانات — نفس منطق أي عملية destructive في join.html. */
+  .btn-clear-data {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.25);
+    color: var(--danger); padding: 8px 16px; border-radius: 100px;
+    font-family: 'Outfit','Cairo',sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; backdrop-filter: blur(10px);
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+  }
+  .btn-clear-data:hover { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.4); transform: scale(1.03); box-shadow: 0 4px 16px rgba(239,68,68,0.2); }
+  .btn-force-update { background: rgba(16,185,129,0.1); border: 1.5px solid rgba(16,185,129,0.3); color: var(--success); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(10px); }
+  .btn-force-update:hover { background: rgba(16,185,129,0.2); transform: scale(1.04); box-shadow: 0 4px 20px rgba(16,185,129,0.25); }
   .btn-force-update.pinging { opacity: 0.6; pointer-events: none; }
-  .btn-auto-out { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.25s; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(10px); }
-  .btn-auto-out:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+  .btn-auto-out { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1); display: flex; align-items: center; gap: 7px; backdrop-filter: blur(10px); }
+  .btn-auto-out:hover { background: var(--surface-hover); border-color: var(--border-strong); transform: scale(1.03); }
   .btn-auto-out .auto-out-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: 0.25s; }
-  .btn-auto-out.active { background: rgba(255,180,84,0.12); border-color: rgba(255,180,84,0.4); color: var(--out); }
+  .btn-auto-out.active { background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.4); color: var(--out); }
   .btn-auto-out.active .auto-out-dot { background: var(--out); box-shadow: 0 0 8px var(--out); animation: autoOutPulse 1.4s ease-in-out infinite; }
   @keyframes autoOutPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   @keyframes distFlash { 0%,100%{opacity:1} 40%{opacity:0.3} }
   .dist-flash { animation: distFlash 0.4s ease; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* أنيميشن toast بنفس منطق join.html (bounce ناعم بدل ظهور مباشر) */
+  @keyframes adminToastIn { from { transform: translateY(-16px) scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
   .btn-force-update .spin-icon { display: inline-block; }
   .btn-force-update.pinging .spin-icon { animation: spin 0.7s linear infinite; }
 
@@ -109,7 +127,7 @@
     backdrop-filter: blur(10px);
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
+  .search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,139,255,0.15); }
   .search-box .search-icon { font-size: 13px; opacity: 0.6; }
   .search-box input {
     border: none; outline: none; background: transparent;
@@ -245,7 +263,7 @@
     background: var(--surface-2); padding: 6px 8px; border-radius: 8px;
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
     margin-bottom: 5px; display: flex; flex-direction: column; gap: 4px;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
   .driver-card.state-waiting { border-inline-start-color: var(--primary); }
@@ -260,44 +278,56 @@
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 19px; height: 19px; padding: 0 4px; border-radius: 6px;
-    background: rgba(124,106,247,0.15); color: var(--primary); font-size: 11px; font-weight: 800;
+    background: rgba(59,139,255,0.15); color: var(--primary); font-size: 11px; font-weight: 800;
   }
   .btn-kick {
     display: inline-flex; align-items: center; justify-content: center;
     width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
-    background: rgba(255,92,124,0.08); color: var(--danger); border: 1px solid rgba(255,92,124,0.18);
+    background: rgba(239,68,68,0.08); color: var(--danger); border: 1px solid rgba(239,68,68,0.18);
     font-size: 11px; cursor: pointer; transition: all 0.2s; padding: 0;
   }
-  .btn-kick:hover { background: rgba(255,92,124,0.18); transform: scale(1.08); }
+  .btn-kick:hover { background: rgba(239,68,68,0.18); transform: scale(1.08); }
 
   /* صف الحالة: GPS + مسافة + بطارية — كل عنصر واضح بشكل ودور منفصل */
   .indicators { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
   .badge { display: inline-flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
-  .badge-live { color: var(--success); border-color: rgba(45,212,207,0.25); background: rgba(45,212,207,0.06); }
+  .badge-live { color: var(--success); border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.06); }
   .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
-  .badge-offline { color: var(--offline); border-color: rgba(90,90,114,0.25); background: rgba(90,90,114,0.06); }
+  .badge-offline { color: var(--offline); border-color: rgba(75,91,138,0.25); background: rgba(75,91,138,0.06); }
   .badge-battery { color: var(--text-2); }
-  .badge-battery.low { color: var(--danger); border-color: rgba(255,92,124,0.25); background: rgba(255,92,124,0.06); }
+  .badge-battery.low { color: var(--danger); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
+
+  /* #status هو نفس عنصر .badge المستخدم جوه كروت المناديب (badge-live/badge-offline)،
+     لكن هنا بيظهر في الهيدر جنب أزرار كبيرة على شكل pill — فكان صغير جدًا وغير متسق
+     بصريًا. الـ override ده خاص بمكانه في الهيدر فقط (عن طريق الـ ID)، من غير ما يغير
+     حجم .badge العادية جوه الكروت، ومن غير أي لمس لمنطق JS اللي بيبدّل badge-live/badge-offline. */
+  #status {
+    padding: 8px 16px; font-size: 12px; border-radius: 100px;
+    backdrop-filter: blur(10px); gap: 6px;
+  }
+  #status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+  #status.badge-live::before { animation: statusPulseLive 2s ease-in-out infinite; }
+  @keyframes statusPulseLive { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .btn-locate {
     display: inline-flex; align-items: center; gap: 2px;
-    background: rgba(124, 106, 247, 0.1); color: var(--primary); border: 1px solid rgba(124,106,247,0.22);
+    background: rgba(59, 139, 255, 0.1); color: var(--primary); border: 1px solid rgba(59,139,255,0.22);
     padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; cursor: pointer;
     transition: all 0.2s; white-space: nowrap;
   }
-  .btn-locate:hover { background: rgba(124, 106, 247, 0.22); transform: scale(1.05); }
+  .btn-locate:hover { background: rgba(59, 139, 255, 0.22); transform: scale(1.05); }
 
   .card-actions { display: flex; gap: 3px; margin-top: 0; }
   .action-btn {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
     padding: 3px 5px; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s; border: 1px solid transparent;
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), filter 0.2s ease, box-shadow 0.2s ease; border: 1px solid transparent;
   }
   .action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
-  .btn-out { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); }
-  .btn-break { background: rgba(184,170,255,0.12); color: var(--break); border-color: rgba(184,170,255,0.22); }
-  .btn-notify { background: rgba(255,180,84,0.12); color: var(--out); border-color: rgba(255,180,84,0.22); flex: 0 0 auto; min-width: 34px; padding: 5px 8px; font-size: 14px; }
-  .btn-done { background: rgba(45,210,207,0.12); color: var(--success); border-color: rgba(45,210,207,0.22); }
+  .btn-out { background: rgba(249,115,22,0.12); color: var(--out); border-color: rgba(249,115,22,0.22); }
+  .btn-break { background: rgba(143,179,255,0.12); color: var(--break); border-color: rgba(143,179,255,0.22); }
+  .btn-notify { background: rgba(249,115,22,0.12); color: var(--out); border-color: rgba(249,115,22,0.22); flex: 0 0 auto; min-width: 34px; padding: 5px 8px; font-size: 14px; }
+  .btn-done { background: rgba(16,185,129,0.12); color: var(--success); border-color: rgba(16,185,129,0.22); }
   .break-timer { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
   /* ===== TABS ===== */
   .tab-bar {
@@ -312,14 +342,15 @@
     backdrop-filter: blur(10px);
   }
   .tab-btn.active {
-    background: linear-gradient(135deg, var(--primary), #6a5ae0); color: #fff;
+    background: linear-gradient(135deg, var(--primary), #1E6FFF); color: #fff;
     border-color: var(--primary);
     box-shadow: 0 4px 20px var(--primary-glow);
   }
   .tab-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
 
   .tab-panel { display: none; flex: 1; min-height: 0; }
-  .tab-panel.active { display: flex; flex-direction: column; }
+  .tab-panel.active { display: flex; flex-direction: column; animation: adminTabFadeIn 0.35s ease; }
+  @keyframes adminTabFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 </style>
 </head>
@@ -339,7 +370,7 @@
       <input type="text" id="driver-search" placeholder="دور على مندوب..." oninput="filterDrivers(this.value)">
       <button class="search-clear" id="search-clear" onclick="clearDriverSearch()" style="display:none">✖</button>
     </div>
-    <button class="btn-clear-data" onclick="showClearConfirm()">🗑 Clear Data</button>
+    <button class="btn-clear-data" onclick="showClearConfirm()"><span>🗑</span> Clear Data</button>
     <button class="btn-auto-out" id="btn-auto-out" onclick="toggleAutoOut()" title="أي مندوب Waiting بعيد عن الفرع أكتر من 200م هيتحول Out تلقائي">
       <span class="auto-out-dot"></span> Auto
     </button>
@@ -377,7 +408,7 @@
 
 <div class="tab-panel" id="tab-download">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:24px;padding:32px;">
-    <div style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#a78bfa,#6a5ae0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📲 تحميل تطبيق رواحل</div>
+    <div style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#8FB3FF,#1E6FFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📲 تحميل تطبيق رواحل</div>
     <div style="font-size:13px;color:var(--muted);text-align:center;">سكّن الـ QR بكاميرا الموبايل لتحميل التطبيق مباشرة</div>
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnwAAAJ8CAIAAADrj+sBAAAQZElEQVR4nO3cMW4DyRVFUcsQQGfy/lfpcELHkxDlme+rX81zFkB1N4u66OR9vV4//wAA/v/++dsXAACfQnQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILAJHvqQ/644//TH3Udf71r3+PfM62Zzh1Xye23fuJk+dzcl/l55wor/lE+bdObLv3E9u+0xtNfRfedAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIjG0vnyi3fKds23Q9MXXNN+61brueE+X3VXrqRnH5u9j2nZ7wf/49b7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARNLt5RPbdnqnbNtQ3bYNu22nt9zgPfHJ975NeV83bomfeOr/+RPedAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIrNte/mTbNkK3Xc+JT950PVE+n0/epp76W1NuPKtP5U0XACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjt5Ui5fbpth/apn3Oi3DouTT3Dqe9r27ZweVa33TvvedMFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBILJue9mO6HtTe63b/taJbfvMU7Y9w/Jznvp7L5/zjc/wxmue4k0XACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgEi6vTy1R3qjbRuqN+4Yl9fz1O/rxI3P+ZM/58S2zfZP5k0XACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgMjX6/Xz29fA/6DcNS23YW/cMX7qvZ8od3q3PZ/ybEwpnyHvedMFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBIPL92xfwV5T7sdu2aqeuubyebbZd87ad3inlObzxGX7yvZ/Y9r93ijddAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACJj28tTO6vb9lrLfeYT23ZWn7qPOsW+7ns37qif2Lbr/tTzcyNvugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBEvl6vn9++hj8pt5dP3LhZum339cQnX8+Nf+upbjw/U576v3fb5r83XQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAi31MfVG66ln/rxq3Rcke0/Fs3bgtPPZ+Tz7lx7/fEU8/zlG1n/sSN1zzFmy4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAkbHt5XIXd+pvlZ8z5akbs9v2mcvzvO2sbjsbJ27cnb7xf+a2rfUT23aevekCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBnbXt62EXrjxmx5zTduHZ/YtrO6baO4tO33tc2Ne9Enyt/gjWfMmy4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAkbHt5dK23eBttm1Tb9tV3rbFeqNtm7flGZs681Pnedt3cWLb8zkx9Qy96QJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQSbeXy73fbRuq2z6n3Gvdtl9dXs9T7708z1O2Xc+JbddzwjW/500XACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgMjX6/WT/bFy9/VEuYv71Gvetjt9orzmE9uez4lt3/uNvwveu/F3ccKbLgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACKiCwCR79++gL+i3Nssd1a37Yhu24+dej7l2ThRPudtz3DKtp3ebddz48b1iW3P+YQ3XQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAi67aXt226btsaLW37Lspt2G07tNs2wJ/qqRvFU27cft+2z+xNFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYDI1+v189vX8D8rdzKnlDuiJ7ZdT+nGTddt31d5X0/d+y3d+H1tOxtTvOkCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEPme+qBtm6VT13Ni6prL7dNtz7ncHy5t21Uun+G2v7Vtw3nb97XNUzecvekCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBnbXr5xR7Tc29y2+7rNtn3UbdvdJ9dj7/e9bd/pNtu2sqds+y686QJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAiugAQ+Xq9fkY+aNuW5lP3Y6ds2yOdMvW9O2Pvlc9n2+b2tt/OU8/h1BkrP+eEN10AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIt+/fQG/adum65Qb7+vGreNtm64npp7htu/9qZ9z4qnncNtZneJNFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYDI2Pby1G5nucl5Yttm6ZRte6TbnrPn8/eV+8Pl87lxV3nKtnO47fmc8KYLABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQGRse3lqk7PccD6xbc+WhnP43o37ulP/o8r94W27wdvO4ZTyvrzpAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABAZ216e8sm7pk+1bTt3ytT52XYOb9xVvnETuNzlnvp9lcqzUZ4xb7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARNZtL0/tWz51t3PbhurU8ylNfV83no1tu+XbtrK3bThv+32V17Pt/8YUb7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARMa2l7ftx27b/7xxH7XcwT7x1C3WbfdV/gZv/L1vu54p5X198v8Eb7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARMa2l2/cwDwxtRF6o227r+V3se3et13PNp+8h1x66m+w5E0XACKiCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgMjY9vKNm5xTe603bueW977NtrN64xkrz8a2386Jp+4GP/W+St50ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiMbS9v20ct95nLz7lx+3Tb2Zhy4zb1tmvedp637bqfKK/5kzfbp3jTBYCI6AJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQER0ASAytr28bWu03Dre9re2bZ+WZ2PKjWf1Rts2yafO6rbzfGLbWS2vp7wvb7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARL5er5+RDyq3T088dUf0xk3XG/eip2zbBPZd8Hfc+D9q21n1pgsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJA5Hvqg8pNzm07xuW2Z7lN/VQ3fu83fl/lNZ98Fzfuum87q9u+0ynld+pNFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYDI1+v189vX8CflBuaUch/1k7dPS9vufdv1TNl25k/YMd5j22/nhDddAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACLfUx+0bR91ytS257ad1anr2bZ9Wu7iTj3nG89PadvzObHte992PVNnbNtZPeFNFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYDI2PbyiW27uCe27aOW7A+/99Rd3BM3XvOJGzeBtz3n8n/CiW378N50ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIh8vV4/2R/btoH51D3Sqft66t8q3Xhf5ebtifJ/Qmnb/8MT287qiW1b0N50ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIis216eYsN5z+dM2XZfT90W3vZ8ptx45k/c+P9nm/I79aYLABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAiOgCQGRse3nb/ueUbfu6dnH//ueceOpzLm17Pjf+3+C9GzfSvekCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBnbXua9bfufJ7Zd8407veVe9Iltm8DlvZ/YduZPfPI1Tynv3ZsuAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILAJHvqQ/atqVZeupm6cl9nVzPjde8zbYN521nY9u9l8ozv+0cTinvy5suAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILAJGx7eUTT93kPFHuo27bod32DG88h9uu2X71Z9r2fG7cWvemCwAR0QWAiOgCQER0ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkAk3V4+Ue5kljui23Zfyz3kqfva9gynbNuGPfHJ3+m2LfEp287htu99ijddAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACLrtpd5b9s+6jZTW75Tn7NtT3vq3rc9n6nfxbZnOOWp5/DGfWZvugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBEbC9HprZGp9y4xbpt83bbxmx5xm48z9t2y7ftBpfPZ9tvp7x3b7oAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4ARNZtL2/bI32qqc3SbbZtSpe2Xc9Tt3Nv/O1s2zo+UW6kl7zpAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABBJt5e3bWDe6Kk7tOU1P3WfedtzPlF+F9u2oG/cKN5279ue4QlvugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBEvl6vn9++BgD4CN50ASAiugAQEV0AiIguAEREFwAiogsAEdEFgIjoAkBEdAEgIroAEBFdAIiILgBERBcAIqILABHRBYCI6AJARHQBICK6ABARXQCIiC4AREQXACKiCwAR0QWAyH8BYWhM691Im+EAAAAASUVORK5CYII=" style="border-radius:18px;width:260px;height:260px;box-shadow:0 16px 50px rgba(0,0,0,0.5);"/>
     <a href="https://drive.google.com/uc?export=download&id=1xNghNXXVu1HXhE-JxRTtp48pH4py-i9v" target="_blank" style="display:inline-block;padding:14px 40px;border-radius:100px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-family:'Cairo',sans-serif;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 4px 24px rgba(34,197,94,0.4);">⬇️ تحميل مباشر</a>
@@ -394,12 +425,12 @@
       border-radius:14px; padding:14px 16px; color:var(--text);
       font-family:'Cairo',sans-serif; font-size:14px; resize:none;
       transition:border-color 0.2s; outline:none; direction:rtl;
-    " onfocus="this.style.borderColor='rgba(124,106,247,0.6)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    " onfocus="this.style.borderColor='rgba(59,139,255,0.6)'" onblur="this.style.borderColor='var(--border)'"></textarea>
     <button onclick="sendChatMsg()" style="
       padding:14px; border-radius:14px; border:none;
-      background:linear-gradient(135deg,#7c6af7,#6a5ae0);
+      background:linear-gradient(135deg,#3B8BFF,#1E6FFF);
       color:#fff; font-family:'Cairo',sans-serif; font-size:15px; font-weight:800;
-      cursor:pointer; box-shadow:0 4px 20px rgba(124,106,247,0.4);
+      cursor:pointer; box-shadow:0 4px 20px rgba(59,139,255,0.4);
       transition:all 0.2s;
     " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       📤 إرسال للكل
@@ -926,7 +957,7 @@ function showToast(msg) {
     document.body.appendChild(c);
   }
   const t = document.createElement('div');
-  t.style.cssText = 'background:rgba(20,20,35,0.95);color:#f5f5fa;padding:10px 20px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);';
+  t.style.cssText = 'background:rgba(15,24,56,0.95);color:#E8F1FF;padding:10px 20px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;border:1px solid rgba(59,139,255,0.2);backdrop-filter:blur(10px);animation:adminToastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;';
   t.innerText = msg;
   c.appendChild(t);
   setTimeout(() => t.remove(), 3500);
