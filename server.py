@@ -193,7 +193,21 @@ def get_drivers_list(drivers: dict, queue: list):
         if d.get("state") == "Waiting" and name not in queue:
             d["queue_pos"] = next_pos
             next_pos += 1
-    return list(drivers.values())
+    # السبب الجذري لمشكلة "الترتيب بيتلخبط عشوائيًا لما حاجة تحصل": drivers هنا جايه من
+    # get_drivers_from_redis() اللي بتستخدم HGETALL على fleet:drivers (وده HASH في Redis،
+    # مش list). ترتيب مفاتيح HASH في Redis مش جزء من ضمانات الـ API — مش مرتبط بترتيب
+    # queue خالص، وممكن يتغير بين استدعاء وتاني لمجرد إن أي HSET حصل على أي مندوب (تحديث
+    # GPS/بطارية/حالة، وده بيحصل باستمرار). فكنا بنرجّع list(drivers.values()) بترتيب
+    # عشوائي فعليًا من ناحية insertion order في الـ hash، رغم إن queue_pos جوه كل عنصر
+    # كان محسوب صح. الفرونت إند بيرتب بـ queue_pos لكن كان الاعتماد الوحيد عليه؛ الأصح
+    # إننا نضمن الترتيب من مصدره هنا في السيرفر بدل ما نسيبه بالكامل لطرف العميل.
+    result = list(drivers.values())
+    result.sort(key=lambda d: (
+        0 if d.get("state") == "Waiting" else 1,
+        d.get("queue_pos", 0) if isinstance(d.get("queue_pos"), (int, float)) and d.get("queue_pos", 0) > 0 else float("inf"),
+        d.get("name", "")
+    ))
+    return result
 
 async def repair_queue_drift():
     """
