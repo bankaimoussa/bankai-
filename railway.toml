@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# لو /health رجع غير 200 (يعني Redis واقع أو السيرفر متعلق)، Railway هيعتبر
+# الـ deployment فشل ويعيد تشغيله تلقائي بدل ما يسيبه معلّق فترة طويلة.
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
