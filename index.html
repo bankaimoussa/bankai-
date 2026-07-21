@@ -982,7 +982,14 @@ function renderBoard() {
   // - Out: out_since تصاعديًا (اللي خرج الأول يظهر الأول)
   // - Break: break_end تصاعديًا (اللي هيرجع الأول يظهر الأول)
   const sortedDrivers = [...currentDrivers].sort((a, b) => {
-    if (a.state === 'Waiting' && b.state === 'Waiting') return a.queue_pos - b.queue_pos;
+    if (a.state === 'Waiting' && b.state === 'Waiting') {
+      // دفاعي: queue_pos ممكن يوصل مؤقتًا undefined/0/NaN (لحظة الـ join قبل ما
+      // الـ broadcast الصح يوصل) — لو حصل كده منسبش الترتيب لـ JS engine (غير مضمون)،
+      // بنحط أي قيمة غير صالحة في آخر القائمة دايمًا بدل ما تطلع فوق بالغلط
+      const qa = Number.isFinite(a.queue_pos) && a.queue_pos > 0 ? a.queue_pos : Infinity;
+      const qb = Number.isFinite(b.queue_pos) && b.queue_pos > 0 ? b.queue_pos : Infinity;
+      return qa - qb;
+    }
     if (a.state === 'Out' && b.state === 'Out') return (a.out_since || 0) - (b.out_since || 0);
     if (a.state === 'Break' && b.state === 'Break') return (a.break_end || 0) - (b.break_end || 0);
     return 0;
