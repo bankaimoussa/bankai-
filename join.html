@@ -1374,8 +1374,8 @@ function connectWS() {
     clearInterval(pingInterval);
     clearInterval(pongWatchdogInterval);
     if (kicked) return;
-    // لو على Android والـ app في الخلفية، متعملش reconnect — الـ Native Service شغال
-    if (window.AndroidBridge && document.visibilityState === 'hidden') return;
+    // بنعمل reconnect دايمًا حتى لو Android + الصفحة في الخلفية — الـ Native Service ممكن
+    // يتقتل في بعض الأجهزة (Xiaomi/Huawei/Oppo) رغم استثناء البطارية، فمنقدرش نعتمد عليه لوحده
     clearTimeout(reconnectTimer);
     // exponential backoff: أول محاولة سريعة (1 ثانية) وبعدين بتزيد تدريجيًا لحد 15 ثانية
     // عشان لو النت فعلاً واقع منضربش السيرفر بمعدل عالي ومنستنزفش البطارية بلا فايدة
