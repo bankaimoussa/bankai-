@@ -946,7 +946,21 @@ function renderStats(stats) {
   for (const [key, val] of Object.entries(stats)) { container.innerHTML += `<div class="stat-card"><span>${key}</span><strong>${val}</strong></div>`; }
 }
 
-function safeId(name) { return name.replace(/\s+/g, '_').replace(/[^\w-]/g, ''); }
+function safeId(name) {
+  // \w في JS بيطابق بس [A-Za-z0-9_] — يعني أي اسم عربي بالكامل كان بيتمسح تمامًا
+  // ويرجع "_" فاضي، فكل المناديب بأسماء عربية كانوا بياخدوا نفس الـ DOM id بالظبط
+  // (زي "كريم الصعيدي" و"مؤمن اشرف" اللي كانوا الاتنين بيرجعوا "_")، وده كان بيخلي
+  // getElementById يجيب كارت غلط ويحصل تضارب/تبديل في العرض والترتيب.
+  // الحل: منسمحش بمسح الحروف غير اللاتينية، بس نمسح حاجات فعلًا خطرة كـ id (زي المسافات
+  // والرموز اللي ممكن تكسر CSS selector)، وبنضيف hash قصير ثابت من الاسم الكامل عشان
+  // نضمن تفرّد الـ id حتى لو الاسم بعد التنضيف طلع فاضي أو فيه تشابه.
+  let base = name.replace(/\s+/g, '_').replace(/["'\\<>&#.,;:()\[\]{}]/g, '');
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return `d_${base}_${Math.abs(hash)}`;
+}
 
 function getDistanceBadge(dist, lastSeen, state) {
   const { statusClass, statusText } = getDriverStatusDetails(lastSeen, state);
