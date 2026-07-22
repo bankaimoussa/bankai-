@@ -1127,9 +1127,13 @@ async function sendDmMsg() {
     const data = await r.json();
     if (data.ok) {
       result.style.color = 'var(--success)';
-      result.textContent = data.ws ? '✅ اتبعتت (فورًا)' : '✅ اتبعتت كإشعار (التطبيق مش فاتح)';
+      result.textContent = data.ws
+        ? '✅ اتبعتت فورًا عن طريق WebSocket'
+        : (data.ws_existed
+            ? '⚠️ WebSocket موجود بس فشل الإرسال — اتبعتت كإشعار FCM بس'
+            : '⚠️ WebSocket مش مسجل عند السيرفر — اتبعتت كإشعار FCM بس');
       showToast(`💬 رسالة اتبعتت لـ ${_dmTargetDriver}`);
-      setTimeout(closeDmModal, 800);
+      setTimeout(closeDmModal, 1200);
     } else if (data.reason === 'driver_unreachable') {
       result.style.color = 'var(--danger)';
       result.textContent = data.had_token
