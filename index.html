@@ -644,11 +644,6 @@ function initMap() {
       0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
       100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
     }
-    @keyframes branchPing {
-      0%   { transform: scale(1);   opacity: 1; }
-      50%  { transform: scale(1.3); opacity: 0.7; }
-      100% { transform: scale(1);   opacity: 1; }
-    }
     .geofence-path {
       animation: geofencePulse 3s ease-in-out infinite, geofenceFill 3s ease-in-out infinite;
     }
@@ -663,13 +658,12 @@ function initMap() {
     }
     .radar-sweep-2 { animation-delay: 0.7s; }
     .radar-sweep-3 { animation-delay: 1.4s; }
-    .branch-icon { animation: branchPing 3s ease-in-out infinite; display:inline-block; }
   `;
   document.head.appendChild(geofenceStyle);
 
-  // Geofence circle 50m
+  // Geofence circle 100m
   window._branchCircle = L.circle([BRANCH_LAT, BRANCH_LNG], {
-    radius: 50,
+    radius: 100,
     color: '#8FB3FF',
     fillColor: '#3B8BFF',
     fillOpacity: 0.12,
@@ -687,18 +681,16 @@ function initMap() {
   });
   window._radarMarker = L.marker([BRANCH_LAT, BRANCH_LNG], { icon: radarIcon, interactive: false, zIndexOffset: -1000 }).addTo(map);
 
-  // Branch icon
+  // Branch icon — شكل بسيط: دايرة زرقاء صلبة بحدود بيضة، من غير أنيمشن أو إيموجي
   L.marker([BRANCH_LAT, BRANCH_LNG], {
     icon: L.divIcon({
-      html: `<div style="text-align:center;">
-        <div class="branch-icon" style="font-size:28px;filter:drop-shadow(0 0 8px rgba(59,139,255,0.9));">🏢</div>
-      </div>`,
+      html: `<div style="width:22px;height:22px;border-radius:50%;background:#3B8BFF;border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,139,255,0.25), 0 2px 8px rgba(0,0,0,0.5);"></div>`,
       className: '',
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
+      iconSize: [22, 22],
+      iconAnchor: [11, 11]
     }),
     zIndexOffset: 1000
-  }).addTo(map).bindPopup('<div style="text-align:center;font-weight:800;font-size:13px;">🏢 الفرع الرئيسي<br><span style="color:#8FB3FF;font-size:11px;">نطاق الإرجاع التلقائي: 50م</span></div>');
+  }).addTo(map).bindPopup('<div style="text-align:center;font-weight:800;font-size:13px;">🏢 الفرع الرئيسي<br><span style="color:#8FB3FF;font-size:11px;">نطاق الإرجاع التلقائي: 100م</span></div>');
 
   // update radar size on zoom
   map.on('zoom zoomend moveend', updateRadarSize);
