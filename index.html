@@ -248,7 +248,7 @@
   .popup-info strong { color: var(--primary); font-size: 14px; }
 
   #tab-board { flex: 1; min-height: 0; }
-  .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 1.3fr 1.7fr; gap: 16px; align-items: stretch; height: 100%; }
+  .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 1.8fr 1.2fr; gap: 16px; align-items: stretch; height: 100%; }
   .column { background: var(--surface); border-radius: var(--radius); padding: 10px; border: 1px solid var(--border); height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
@@ -290,7 +290,6 @@
     width: 19px; height: 19px; border-radius: 6px; flex-shrink: 0;
     background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.25);
     cursor: pointer; transition: transform 0.18s ease, background 0.18s ease; padding: 0;
-    margin-inline-start: auto;
   }
   .btn-kick svg { transition: transform 0.2s ease; }
   .btn-kick:hover { background: rgba(239,68,68,0.2); transform: scale(1.08); }
@@ -301,7 +300,7 @@
      شكلهم منفصل، عشان يبانوا كوحدة معلومات واحدة (مسافة + بطارية) مش بادجين تايهين */
   .indicators {
     display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; flex-shrink: 0;
-    padding: 3px 6px; border-radius: 9px;
+    padding: 3px 6px; border-radius: 9px; margin-inline-start: auto;
     border: 1.5px solid rgba(139, 179, 255, 0.35); background: rgba(139, 179, 255, 0.06);
   }
   .indicators .badge { border: none; background: transparent; padding: 3px 6px; }
