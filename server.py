@@ -136,7 +136,30 @@ async def save_driver_avatar(name: str, avatar_b64: str):
 async def get_driver_avatar(name: str):
     return await redis_client.hget("fleet:avatars", name)
 
+CHAT_HISTORY_MAX = 200  # أقصى عدد رسائل نحتفظ بيها لكل مندوب (تفادي تضخم الليستة في Redis)
+
+async def append_chat_history(driver_name: str, sender: str, text: str) -> dict:
+    """
+    بيسجل رسالة (من الإدارة أو من المندوب) في تاريخ الشات الخاص بيه في Redis،
+    عشان الـ modal عند الأدمن والمودال عند المندوب يقدروا يعرضوا كل المحادثة
+    مش بس آخر رسالة عابرة زي الـ toast/popup.
+    sender: "admin" أو "driver"
+    """
+    entry = {"from": sender, "text": text, "ts": int(time.time())}
+    raw = await redis_client.hget("fleet:chat_history", driver_name)
+    history = json.loads(raw) if raw else []
+    history.append(entry)
+    if len(history) > CHAT_HISTORY_MAX:
+        history = history[-CHAT_HISTORY_MAX:]
+    await redis_client.hset("fleet:chat_history", driver_name, json.dumps(history))
+    return entry
+
+async def get_chat_history(driver_name: str) -> List[dict]:
+    raw = await redis_client.hget("fleet:chat_history", driver_name)
+    return json.loads(raw) if raw else []
+
 async def bump_weekly_stat(name: str, orders_delta: int = 0, km_delta: float = 0.0):
+
     """يسجل إحصائية يومية للمندوب عشان نعرض تشارت آخر 7 أيام في تاب حسابي"""
     day_key = datetime.now().strftime("%Y-%m-%d")
     field = f"{name}:{day_key}"
@@ -281,6 +304,16 @@ async def broadcast_state(event_type="update", reorder_seq=None, reorder_source_
 async def broadcast_admin_event(event: str, driver: str, msg: str):
     """ توست بسيط للأدمن بس (join / out / return) — منفصل عن broadcast_state الكامل """
     payload = json.dumps({"type": "admin_event", "event": event, "driver": driver, "msg": msg})
+    dead_admins = []
+    for ws in admin_connections:
+        try: await ws.send_text(payload)
+        except: dead_admins.append(ws)
+    for ws in dead_admins: admin_connections.remove(ws)
+
+async def broadcast_driver_message_to_admins(driver: str, text: str):
+    """ رسالة وصلت من مندوب للإدارة — بتتبعت للأدمنز كـ event مخصوص عشان يتعمل toast
+        ويتفتح/يتحدث الـ modal بتاعه لو مفتوح دلوقتي """
+    payload = json.dumps({"type": "driver_message", "driver": driver, "text": text, "ts": int(time.time())})
     dead_admins = []
     for ws in admin_connections:
         try: await ws.send_text(payload)
@@ -498,6 +531,7 @@ async def send_chat(body: ChatBody):
             sent_ws.append(name)
         except:
             dead.append(name)
+        await append_chat_history(name, "admin", body.text.strip())
     for d in dead:
         if d in driver_connections: del driver_connections[d]
         driver_last_activity.pop(d, None)
@@ -551,6 +585,15 @@ async def kick_driver_http(body: KickBody):
         await broadcast_state("update")
     return {"ok": True, "was_present": was_present, "notified_ws": notified_ws}
 
+@app.get("/api/chat_history/{driver}")
+async def chat_history_endpoint(driver: str):
+    """
+    كل المحادثة (إدارة + مندوب) بترتيب زمني — بيستخدمها الـ modal عند الأدمن
+    (لما يدوس على مندوب) وعند المندوب (زرار "رسالة من الإدارة").
+    """
+    history = await get_chat_history(driver.strip())
+    return {"ok": True, "driver": driver.strip(), "history": history}
+
 @app.get("/api/debug_connections")
 async def debug_connections():
     """للتشخيص بس: بيوري مين فعليًا متسجل كـ WebSocket نشط عند السيرفر دلوقتي،
@@ -572,7 +615,9 @@ async def send_chat_to_driver(body: ChatDriverBody):
     if not driver_name or not text:
         return {"ok": False, "reason": "missing_fields"}
 
+    await append_chat_history(driver_name, "admin", text)
     msg = json.dumps({"type": "chat_message", "text": text})
+
     sent_ws = False
     ws_existed = driver_name in driver_connections
     dws = driver_connections.get(driver_name)
@@ -1024,6 +1069,13 @@ async def driver_ws(ws: WebSocket):
 
             elif data["type"] == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))
+
+            elif data["type"] == "driver_message" and driver_name:
+                # المندوب بعت رسالة للإدارة — نسجلها في التاريخ ونبلّغ كل الأدمنز فورًا
+                msg_text = (data.get("text") or "").strip()
+                if msg_text:
+                    await append_chat_history(driver_name, "driver", msg_text)
+                    await broadcast_driver_message_to_admins(driver_name, msg_text)
 
             elif data["type"] == "resync" and driver_name:
                 # المندوب طلب مزامنة فورية (مثلاً بعد ما التطبيق رجع من الخلفية)
