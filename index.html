@@ -895,6 +895,7 @@ setInterval(() => {
 const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/admin`;
 let ws;
 let currentDrivers = [];
+let _pendingUpdate = null; // آخر رسالة update وصلت أثناء drag شغال ولسه ماتطبقتش
 // _reorderSeqCounter: بنزوّد الرقم ده مع كل drag يعمله الأدمن ونبعته للسيرفر كـ client_seq.
 // _lastAckedReorderSeq: آخر seq اتأكد فعليًا (اتطبق) من رد السيرفر (reorder_seq جوه رسالة update).
 // المشكلة اللي كانت بتحصل: لو الأدمن عمل drag تاني بسرعة قبل ما رد drag الأول يوصل،
@@ -947,36 +948,21 @@ function connect() {
     const data = JSON.parse(e.data);
     
     if (data.type === 'update') {
-      // لو الرسالة دي رد على عملية reorder قديمة (data.reorder_seq أقل من آخر seq
-      // بعتناه)، فرد لعملية drag أحدث لسه في الطريق (أو وصل ولسه معلّق) — لازم نتجاهل
-      // الرسالة دي بالكامل ومنطبقهاش، عشان لو طبقناها هتكتب فوق الترتيب الأحدث اللي
-      // العميل عرضه بالفعل (optimistic) وترجعنا لنفس المشكلة: رقم #N من عملية،
-      // وترتيب الكارت في القايمة من عملية تانية. أي حقول تانية (battery/location) هتوصل
-      // برضه في رسائل update لاحقة أو delta events (battery_update/location_update)
-      // فمفيش داتا بتضيع فعليًا.
-      if (typeof data.reorder_seq === 'number' && data.reorder_seq < _reorderSeqCounter) {
+      // لو فيه drag شغال دلوقتي فعليًا (الأدمن لسه ماسك كارت وبيسحبه)، منعملش
+      // renderBoard() فورًا — ده كان بيمسح كل الـ DOM (كل الكروت بتتبنى من جديد)
+      // ويشيل الكارت اللي الأدمن ماسكه (_dragEl) من الصفحة وسط السحب نفسه، فالسحب
+      // كان بيتقطع فجأة أو يعلّق لأن dragover/dragend بيفضلوا مسجلين على عنصر
+      // "شبح" اتشال من الـ DOM. بدل كده، بنسيب البيانات الجديدة في _pendingUpdate
+      // وبنطبقها فور ما الـ drag يخلص (انظر dragend في attachDragHandlers).
+      // ملحوظة: كان فيه "suppress flag" شبه كده اتشال قبل كده لأنه كان بيسبب مشكلة
+      // تانية (كروت قديمة تفضل في أماكن غلط لو update بعده وصل من غير أي drag) —
+      // هنا الفرق إننا كمان بنعمل flush إجباري في dragend نفسه (مش بس بننتظر
+      // update تاني)، فمفيش داتا ممكن "تتقفل" وتفضل معلّقة أبد.
+      if (_dragEl) {
+        _pendingUpdate = data;
         return;
       }
-      if (typeof data.reorder_seq === 'number') {
-        _lastAckedReorderSeq = data.reorder_seq;
-      }
-      currentDrivers = data.drivers;
-      if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
-      // دايمًا renderBoard كامل — أي optimization بيتفادى الـ re-render بناءً على "نفس
-      // الترتيب" كان بيفشل لو حدث تاني (kick/join/location) وصل والـ suppress flag
-      // لسه معلقة من drag سابق، فيسيب كروت قديمة في أماكنها الغلط في الـ DOM رغم إن
-      // الأرقام (#N) اتحدثت صح. renderBoard رخيصة كفاية إنها تتنفذ كل مرة.
-      renderBoard();
-      // تحديث كامل الخريطة وتجاهل المنفصلين
-      const activeNames = currentDrivers.map(d => d.name);
-      Object.keys(driverMarkers).forEach(name => {
-        if (!activeNames.includes(name)) {
-          markersCluster.removeLayer(driverMarkers[name]);
-          delete driverMarkers[name];
-          if(driverTrails[name]) { map.removeLayer(driverTrails[name]); delete driverTrails[name]; }
-        }
-      });
-      currentDrivers.forEach(d => updateSingleMarkerAndTrail(d));
+      applyUpdateData(data);
     } 
     else if (data.type === 'location_update') {
       const dIndex = currentDrivers.findIndex(x => x.name === data.driver);
@@ -1262,6 +1248,42 @@ function getBatteryIcon(low) {
     : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="7" width="17" height="10" rx="2.5"/><path d="M22 10.5v3" stroke-linecap="round"/><rect x="4.5" y="9" width="10" height="6" rx="1" fill="currentColor" stroke="none"/></svg>`;
 }
 
+// بتطبق رسالة update فعليًا (بيانات المناديب + renderBoard + الخريطة) — منفصلة عن
+// ws.onmessage عشان نقدر نأجلها لو فيه drag شغال (انظر _pendingUpdate) ونطبقها
+// لاحقًا في dragend بنفس المنطق بالظبط.
+function applyUpdateData(data) {
+  // لو الرسالة دي رد على عملية reorder قديمة (data.reorder_seq أقل من آخر seq
+  // بعتناه)، فرد لعملية drag أحدث لسه في الطريق (أو وصل ولسه معلّق) — لازم نتجاهل
+  // الرسالة دي بالكامل ومنطبقهاش، عشان لو طبقناها هتكتب فوق الترتيب الأحدث اللي
+  // العميل عرضه بالفعل (optimistic) وترجعنا لنفس المشكلة: رقم #N من عملية،
+  // وترتيب الكارت في القايمة من عملية تانية. أي حقول تانية (battery/location) هتوصل
+  // برضه في رسائل update لاحقة أو delta events (battery_update/location_update)
+  // فمفيش داتا بتضيع فعليًا.
+  if (typeof data.reorder_seq === 'number' && data.reorder_seq < _reorderSeqCounter) {
+    return;
+  }
+  if (typeof data.reorder_seq === 'number') {
+    _lastAckedReorderSeq = data.reorder_seq;
+  }
+  currentDrivers = data.drivers;
+  if (typeof data.auto_out === 'boolean') setAutoOutButtonState(data.auto_out);
+  // دايمًا renderBoard كامل — أي optimization بيتفادى الـ re-render بناءً على "نفس
+  // الترتيب" كان بيفشل لو حدث تاني (kick/join/location) وصل والـ suppress flag
+  // لسه معلقة من drag سابق، فيسيب كروت قديمة في أماكنها الغلط في الـ DOM رغم إن
+  // الأرقام (#N) اتحدثت صح. renderBoard رخيصة كفاية إنها تتنفذ كل مرة.
+  renderBoard();
+  // تحديث كامل الخريطة وتجاهل المنفصلين
+  const activeNames = currentDrivers.map(d => d.name);
+  Object.keys(driverMarkers).forEach(name => {
+    if (!activeNames.includes(name)) {
+      markersCluster.removeLayer(driverMarkers[name]);
+      delete driverMarkers[name];
+      if(driverTrails[name]) { map.removeLayer(driverTrails[name]); delete driverTrails[name]; }
+    }
+  });
+  currentDrivers.forEach(d => updateSingleMarkerAndTrail(d));
+}
+
 function renderBoard() {
   const lists = { Waiting: document.getElementById('list-waiting'), Out: document.getElementById('list-out'), Break: document.getElementById('list-break') };
   Object.values(lists).forEach(l => l.innerHTML = '');
@@ -1403,6 +1425,15 @@ function attachDragHandlers() {
       card.classList.remove('dragging');
       _dragEl = null;
       commitNewOrder();
+      // لو فيه update اتأجل أثناء ما كنا ماسكين الكارت (انظر ws.onmessage)، نطبقه
+      // دلوقتي بعد ما الـ drag خلص وcommitNewOrder بعتت الترتيب الجديد. لو الرسالة
+      // المؤجلة دي كانت أصلاً رد على drag أقدم (reorder_seq قديم)، applyUpdateData
+      // هترفضها عادي زي أي وقت تاني.
+      if (_pendingUpdate) {
+        const pending = _pendingUpdate;
+        _pendingUpdate = null;
+        applyUpdateData(pending);
+      }
     });
   });
 
