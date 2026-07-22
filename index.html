@@ -262,7 +262,7 @@
   .driver-card {
     background: var(--surface-2); padding: 6px 8px; border-radius: 8px;
     border: 1px solid var(--border); border-inline-start: 3px solid var(--border-strong);
-    margin-bottom: 5px; display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: 5px; display: flex; align-items: center; gap: 6px;
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
   }
   .driver-card:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateX(2px); box-shadow: var(--shadow-sm); }
@@ -271,25 +271,33 @@
   .driver-card.state-break { border-inline-start-color: var(--break); }
   .draggable-card { cursor: grab; }
   .draggable-card.dragging { opacity: 0.4; cursor: grabbing; }
-  .drag-handle { color: var(--muted); cursor: grab; margin-left: 4px; font-size: 14px; }
+  .drag-handle { color: var(--muted); cursor: grab; margin-left: 2px; font-size: 14px; flex-shrink: 0; }
 
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; margin-bottom: 0; }
-  .card-name { font-weight: 700; font-size: 12.5px; color: var(--text); word-break: break-word; line-height: 1.25; display: flex; align-items: center; gap: 3px; }
+  /* الكارت بقى صف واحد أفقي: رقم + اسم + مؤشرات + أزرار أيقونات + حذف — كله جنب بعض */
+  .card-name {
+    font-weight: 700; font-size: 13.5px; color: var(--text); line-height: 1;
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap;
+  }
+  .card-name .name-text { min-width: 68px; overflow: hidden; text-overflow: ellipsis; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 19px; height: 19px; padding: 0 4px; border-radius: 6px;
-    background: rgba(59,139,255,0.15); color: var(--primary); font-size: 11px; font-weight: 800;
+    min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px;
+    background: rgba(59,139,255,0.22); color: var(--primary); font-size: 11px; font-weight: 800;
   }
+  [data-theme="light"] .queue-num { background: rgba(59,139,255,0.15); }
   .btn-kick {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
-    background: rgba(239,68,68,0.08); color: var(--danger); border: 1px solid rgba(239,68,68,0.18);
-    font-size: 11px; cursor: pointer; transition: all 0.2s; padding: 0;
+    width: 19px; height: 19px; border-radius: 6px; flex-shrink: 0;
+    background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.25);
+    cursor: pointer; transition: transform 0.18s ease, background 0.18s ease; padding: 0;
   }
-  .btn-kick:hover { background: rgba(239,68,68,0.18); transform: scale(1.08); }
+  .btn-kick svg { transition: transform 0.2s ease; }
+  .btn-kick:hover { background: rgba(239,68,68,0.2); transform: scale(1.08); }
+  .btn-kick:hover svg { transform: rotate(90deg); }
+  .btn-kick:active { transform: scale(0.92); }
 
   /* صف الحالة: GPS + مسافة + بطارية — كل عنصر واضح بشكل ودور منفصل */
-  .indicators { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+  .indicators { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; flex-shrink: 0; }
   .badge { display: inline-flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.04); padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap; }
   .badge-live { color: var(--success); border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.06); }
   .badge-weak { color: var(--warning, #f5a623); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
@@ -309,26 +317,39 @@
   #status.badge-live::before { animation: statusPulseLive 2s ease-in-out infinite; }
   @keyframes statusPulseLive { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  .btn-locate {
-    display: inline-flex; align-items: center; gap: 2px;
-    background: rgba(59, 139, 255, 0.1); color: var(--primary); border: 1px solid rgba(59,139,255,0.22);
-    padding: 1px 5px; border-radius: 5px; font-size: 9.5px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s; white-space: nowrap;
+  /* أزرار أيقونات موحدة: Locate + أوردر + بريك + جرس كلهم نفس شكل الدائرة، بيتلونوا بس لما يكون فيه داعي (Locate/حذف) */
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 24px; height: 24px; border-radius: 7px; cursor: pointer; padding: 0;
+    background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid var(--border);
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   }
-  .btn-locate:hover { background: rgba(59, 139, 255, 0.22); transform: scale(1.05); }
+  .icon-btn svg { transition: transform 0.25s ease; pointer-events: none; }
+  .icon-btn:hover { transform: translateY(-1px) scale(1.06); background: var(--surface-hover); border-color: var(--border-strong); color: var(--text); }
+  .icon-btn:hover svg { transform: rotate(-6deg) scale(1.08); }
+  .icon-btn:active { transform: scale(0.92); }
+  .btn-locate { background: rgba(59,139,255,0.1); color: var(--primary); border-color: rgba(59,139,255,0.28); }
+  .btn-locate:hover { background: rgba(59,139,255,0.22); color: var(--primary); }
+  .btn-notify:hover svg { animation: bellring 0.4s ease; }
+  @keyframes bellring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
 
-  .card-actions { display: flex; gap: 3px; margin-top: 0; }
+  .card-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-inline-start: auto; }
   .action-btn {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
     padding: 3px 5px; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), filter 0.2s ease, box-shadow 0.2s ease; border: 1px solid transparent;
   }
   .action-btn:hover { transform: translateY(-1px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
-  .btn-out { background: rgba(249,115,22,0.12); color: var(--out); border-color: rgba(249,115,22,0.22); }
-  .btn-break { background: rgba(143,179,255,0.12); color: var(--break); border-color: rgba(143,179,255,0.22); }
-  .btn-notify { background: rgba(249,115,22,0.12); color: var(--out); border-color: rgba(249,115,22,0.22); flex: 0 0 auto; min-width: 34px; padding: 5px 8px; font-size: 14px; }
   .btn-done { background: rgba(16,185,129,0.12); color: var(--success); border-color: rgba(16,185,129,0.22); }
-  .break-timer { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+  .break-timer { font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px; flex-shrink: 0; white-space: nowrap; }
+  /* الوضع الفاتح: خلفية الكارت بتبقى فاتحة، فلازم نضمن كل الأزرار المحايدة (icon-btn/action غير الملونة) تفضل واضحة وملموسة فوقها */
+  [data-theme="light"] .icon-btn { background: rgba(11,26,51,0.04); border-color: rgba(11,26,51,0.1); color: var(--text-2); }
+  [data-theme="light"] .icon-btn:hover { background: rgba(11,26,51,0.08); border-color: rgba(11,26,51,0.18); color: var(--text); }
+  [data-theme="light"] .btn-locate { background: rgba(59,139,255,0.08); color: var(--primary); border-color: rgba(59,139,255,0.25); }
+  [data-theme="light"] .btn-locate:hover { background: rgba(59,139,255,0.16); }
+  [data-theme="light"] .btn-kick { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.22); }
+  [data-theme="light"] .card-name { color: var(--text); }
+  [data-theme="light"] .badge { background: rgba(11,26,51,0.03); border-color: rgba(11,26,51,0.08); }
   /* ===== TABS ===== */
   .tab-bar {
     position: relative; z-index: 1;
@@ -1023,12 +1044,19 @@ function renderBoard() {
     const list = lists[d.state];
     if(!list) return;
     
+    // أيقونات SVG بدل الإيموجي — نفس منطق الأزرار القديم بالظبط (نفس onclick ونفس title)، بس شكل الزرار بقى دائرة أيقونة موحدة
+    const icnLocate = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.2"/></svg>`;
+    const icnOut = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 19l14-14M9 19l10-10M19 5l-7 7"/></svg>`;
+    const icnBreak = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
+    const icnBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a6 6 0 00-6 6v3.6L4 15v1h16v-1l-2-3.4V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>`;
+    const icnKick = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
     let actionButtons = '';
     if (d.state === 'Waiting') {
       actionButtons = `<div class="card-actions">
-        <button class="action-btn btn-out" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر"><span>🚀</span> أوردر</button>
-        <button class="action-btn btn-break" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك"><span>☕</span> بريك</button>
-        <button class="action-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">🔔</button>
+        <button class="icon-btn" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر">${icnOut}</button>
+        <button class="icon-btn" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك">${icnBreak}</button>
+        <button class="icon-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">${icnBell}</button>
       </div>`;
     } else if (d.state === 'Out') {
       actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
@@ -1051,17 +1079,15 @@ function renderBoard() {
     const isDraggable = d.state === 'Waiting';
     let html = `
       <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
-        <div class="card-top">
-          <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}${d.name}</div>
-          <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">✖</button>
-        </div>
+        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
         <div class="indicators">
-          <button class="btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة"><span>📍</span> Locate</button>
+          <button class="icon-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">${icnLocate}</button>
           <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
         </div>
         ${breakLine}
         ${actionButtons}
+        <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">${icnKick}</button>
       </div>`;
     list.innerHTML += html;
   });
