@@ -503,6 +503,50 @@ async def send_chat(body: ChatBody):
         except: pass
     return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
 
+class ChatDriverBody(BaseModel):
+    driver: str
+    text: str
+
+@app.post("/api/chat_driver")
+async def send_chat_to_driver(body: ChatDriverBody):
+    """رسالة خاصة لمندوب واحد بس (مش broadcast) — بتظهر عنده هو بس في الـ App"""
+    driver_name = body.driver.strip()
+    text = body.text.strip()
+    if not driver_name or not text:
+        return {"ok": False, "reason": "missing_fields"}
+
+    msg = json.dumps({"type": "chat_message", "text": text})
+    sent_ws = False
+    dws = driver_connections.get(driver_name)
+    if dws:
+        try:
+            await dws.send_text(msg)
+            sent_ws = True
+        except:
+            if driver_name in driver_connections: del driver_connections[driver_name]
+            driver_last_activity.pop(driver_name, None)
+
+    sent_fcm = False
+    if _FCM_SA_JSON:
+        try:
+            token = await redis_client.hget("fleet:fcm_tokens", driver_name)
+            if token:
+                access_token = _get_fcm_access_token()
+                async with httpx.AsyncClient() as client:
+                    r = await client.post(
+                        f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send",
+                        json={"message": {"token": token, "data": {"type": "chat_message", "title": "📢 رسالة من الإدارة", "body": text}, "android": {"priority": "high"}}},
+                        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                        timeout=10
+                    )
+                    if r.status_code == 200: sent_fcm = True
+        except:
+            pass
+
+    if not sent_ws and not sent_fcm:
+        return {"ok": False, "reason": "driver_unreachable"}
+    return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
+
 class NotifyBody(BaseModel):
     driver: str
 
