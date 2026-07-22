@@ -1074,12 +1074,27 @@ document.addEventListener('click', () => {
 });
 
 // "إنهاء الشيفت" من المنيو = نفس فعل الحذف القديم (btn-kick) بمسمى واضح للأدمن:
-// بيشيل الكارت ويعمل logout فعلي عند المندوب في التطبيق (بيرجعله لشاشة تسجيل الدخول)
-function logoutDriver(driverName) {
+// بيشيل الكارت ويعمل logout فعلي عند المندوب في التطبيق (بيرجعله لشاشة تسجيل الدخول).
+// بنستخدم HTTP بدل الـ WebSocket عشان العملية تنفذ حتى لو اتصال الأدمن الـ WS مش متصل وقتها.
+async function logoutDriver(driverName) {
   document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
   if (!confirm(`تسجيل خروج ${driverName} وإنهاء شيفته؟`)) return;
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'kick_driver', driver: driverName }));
+  try {
+    const r = await fetch('/api/kick_driver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driver: driverName })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast(data.notified_ws
+        ? `⚪ ${driverName} اتعمله إنهاء شيفت`
+        : `⚪ ${driverName} اتشال — بس مكنش متصل دلوقتي (هياخد أوفلاين لما يفتح التطبيق تاني)`);
+    } else {
+      showToast(`❌ فشل إنهاء الشيفت: ${data.reason || 'خطأ'}`);
+    }
+  } catch (e) {
+    showToast('❌ خطأ في الاتصال بالسيرفر');
   }
 }
 
@@ -1112,9 +1127,14 @@ async function sendDmMsg() {
     const data = await r.json();
     if (data.ok) {
       result.style.color = 'var(--success)';
-      result.textContent = '✅ اتبعتت';
+      result.textContent = data.ws ? '✅ اتبعتت (فورًا)' : '✅ اتبعتت كإشعار (التطبيق مش فاتح)';
       showToast(`💬 رسالة اتبعتت لـ ${_dmTargetDriver}`);
-      setTimeout(closeDmModal, 600);
+      setTimeout(closeDmModal, 800);
+    } else if (data.reason === 'driver_unreachable') {
+      result.style.color = 'var(--danger)';
+      result.textContent = data.had_token
+        ? '❌ مقدرش يبعتها (لا الـ App فاتح ولا الإشعار قبل)'
+        : '❌ المندوب مش متصل دلوقتي ومفيش توكن إشعارات مسجل ليه';
     } else {
       result.style.color = 'var(--danger)';
       result.textContent = `❌ فشل الإرسال: ${data.reason || ''}`;
