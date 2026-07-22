@@ -259,19 +259,20 @@
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 1.8fr 1.2fr; gap: 16px; align-items: stretch; height: 100%; }
   .column {
-    background: var(--surface); border-radius: 26px; padding: 12px; border: 1px solid var(--border);
-    height: 100%; overflow-y: auto; min-height: 0; backdrop-filter: blur(16px);
+    background: var(--surface); border-radius: 26px; padding: 0; border: 1px solid var(--border);
+    height: 100%; overflow-y: auto; overflow-x: hidden; min-height: 0; backdrop-filter: blur(16px);
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
   .column::-webkit-scrollbar { width: 5px; }
   .column::-webkit-scrollbar-track { background: transparent; }
   .column::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+  .column-body { padding: 0 12px 12px; }
   .column h2 {
     font-size: 11px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
     color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px;
-    position: sticky; top: -12px; background: var(--surface); padding: 14px 4px 10px; margin: -12px -12px 10px; z-index: 2;
-    border-bottom: 1px solid var(--border); border-radius: 26px 26px 0 0;
+    position: sticky; top: 0; background: var(--surface); padding: 16px 16px 10px; z-index: 2;
+    border-bottom: 1px solid var(--border);
   }
 
   .col-waiting { border-color: rgba(59,139,255,0.35); box-shadow: var(--shadow-sm), 0 0 0 1px rgba(59,139,255,0.08), 0 0 24px rgba(59,139,255,0.06); }
@@ -461,9 +462,9 @@
 
 <div class="tab-panel active" id="tab-board">
 <div class="board">
-  <div class="column col-waiting"><h2 id="wait-h">Waiting <span id="count-waiting" class="badge">0</span></h2><div id="list-waiting"></div></div>
-  <div class="column col-out"><h2 id="out-h">Out <span id="count-out" class="badge">0</span></h2><div id="list-out"></div></div>
-  <div class="column col-break"><h2 id="break-h">Break <span id="count-break" class="badge">0</span></h2><div id="list-break"></div></div>
+  <div class="column col-waiting"><h2 id="wait-h">Waiting <span id="count-waiting" class="badge">0</span></h2><div class="column-body"><div id="list-waiting"></div></div></div>
+  <div class="column col-out"><h2 id="out-h">Out <span id="count-out" class="badge">0</span></h2><div class="column-body"><div id="list-out"></div></div></div>
+  <div class="column col-break"><h2 id="break-h">Break <span id="count-break" class="badge">0</span></h2><div class="column-body"><div id="list-break"></div></div></div>
 </div>
 </div>
 
