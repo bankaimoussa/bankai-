@@ -38,3 +38,18 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
+// لما المندوب يدوس ع نوتيفيكيشن "دورك جه" — نفتحله التطبيق أو نركز عليه لو مفتوح أصلاً.
+// فتح/تركيز التطبيق بيخلي الصفحة تبقى visible، وده بيوقف الاهتزاز المستمر تلقائيًا من جوه join.html
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/join';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    })
+  );
+});
