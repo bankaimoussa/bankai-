@@ -275,14 +275,14 @@
 
   /* الكارت بقى صف واحد أفقي: رقم + اسم + مؤشرات + أزرار أيقونات + حذف — كله جنب بعض */
   .card-name {
-    font-weight: 700; font-size: 13.5px; color: var(--text); line-height: 1;
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap;
+    font-weight: 800; font-size: 15.5px; color: var(--text); line-height: 1;
+    display: flex; align-items: center; gap: 7px; flex-shrink: 0; white-space: nowrap;
   }
-  .card-name .name-text { min-width: 68px; overflow: hidden; text-overflow: ellipsis; }
+  .card-name .name-text { min-width: 68px; overflow: hidden; text-overflow: ellipsis; margin-inline-end: 10px; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px;
-    background: rgba(59,139,255,0.22); color: var(--primary); font-size: 11px; font-weight: 800;
+    min-width: 24px; height: 24px; padding: 0 6px; border-radius: 7px;
+    background: rgba(59,139,255,0.25); color: var(--primary); font-size: 13px; font-weight: 900;
   }
   [data-theme="light"] .queue-num { background: rgba(59,139,255,0.15); }
   .btn-kick {
@@ -1098,7 +1098,7 @@ function renderBoard() {
     const isDraggable = d.state === 'Waiting';
     let html = `
       <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
-        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
+        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
         <div class="indicators">
           <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
@@ -1205,7 +1205,7 @@ function commitNewOrder() {
     const card = document.getElementById(safeId(name));
     if (card) {
       const numEl = card.querySelector('.queue-num');
-      if (numEl) numEl.textContent = `#${i + 1}`;
+      if (numEl) numEl.textContent = `${i + 1}`;
     }
   });
 
