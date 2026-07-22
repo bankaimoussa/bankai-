@@ -384,11 +384,21 @@
   .dm-overlay.open { display: flex; }
   .dm-box {
     background: #0F1838; border: 1px solid var(--border-strong); border-radius: 20px;
-    padding: 22px; width: 92%; max-width: 360px; box-shadow: var(--shadow);
+    padding: 22px; width: 92%; max-width: 400px; max-height: 82vh; display: flex; flex-direction: column;
+    box-shadow: var(--shadow);
   }
   [data-theme="light"] .dm-box { background: #ffffff; }
   .dm-title { font-family: 'Cairo',sans-serif; font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
   .dm-sub { font-family: 'Cairo',sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .dm-thread {
+    flex: 1; overflow-y: auto; min-height: 120px; max-height: 40vh; margin-bottom: 12px;
+    display: flex; flex-direction: column; gap: 8px; padding: 4px 2px;
+  }
+  .dm-thread-empty { font-family: 'Cairo',sans-serif; font-size: 12.5px; color: var(--muted); text-align: center; margin: auto; }
+  .dm-msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; font-family: 'Cairo',sans-serif; font-size: 13px; line-height: 1.5; word-break: break-word; }
+  .dm-msg-admin { align-self: flex-start; background: var(--primary); color: #fff; border-bottom-left-radius: 4px; }
+  .dm-msg-driver { align-self: flex-end; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 4px; }
+  .dm-msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; display: block; }
   .dm-textarea {
     width: 100%; min-height: 90px; resize: vertical; border-radius: 12px;
     background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
@@ -1007,6 +1017,11 @@ function connect() {
       // توست لأي تغيير مهم في حالة المندوب: دخول / خروج لأوردر / رجوع من أوردر أو بريك / إنهاء شيفت
       showToast(data.msg);
     }
+    else if (data.type === 'driver_message') {
+      // مندوب بعت رسالة للإدارة — توست فوري + تحديث المودال لو مفتوح على نفس المندوب دلوقتي
+      showToast(`💬 ${data.driver} بعتلك رسالة: ${data.text}`);
+      if (_dmTargetDriver === data.driver) loadDmThread(data.driver);
+    }
   };
 }
 
@@ -1136,8 +1151,36 @@ async function logoutDriver(driverName) {
   }
 }
 
-// ===== شات خاص: رسالة تظهر عند المندوب ده بس =====
+// ===== شات خاص: كل المحادثة مع مندوب واحد (مودال) =====
 let _dmTargetDriver = null;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renderDmThread(history) {
+  const el = document.getElementById('dm-thread');
+  if (!el) return;
+  if (!history || !history.length) {
+    el.innerHTML = '<div class="dm-thread-empty">لسه مفيش رسائل مع المندوب ده</div>';
+    return;
+  }
+  el.innerHTML = history.map(m => {
+    const cls = m.from === 'driver' ? 'dm-msg-driver' : 'dm-msg-admin';
+    const time = m.ts ? new Date(m.ts * 1000).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
+    return `<div class="dm-msg ${cls}">${escapeHtml(m.text)}<span class="dm-msg-time">${time}</span></div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+async function loadDmThread(driverName) {
+  const el = document.getElementById('dm-thread');
+  if (el) el.innerHTML = '<div class="dm-thread-empty">⏳ بيحمّل...</div>';
+  try {
+    const r = await fetch(`/api/chat_history/${encodeURIComponent(driverName)}`);
+    const data = await r.json();
+    if (_dmTargetDriver === driverName) renderDmThread(data.history || []);
+  } catch (e) {
+    if (el) el.innerHTML = '<div class="dm-thread-empty">❌ فشل تحميل المحادثة</div>';
+  }
+}
 function openDmModal(driverName) {
   document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
   _dmTargetDriver = driverName;
@@ -1145,6 +1188,7 @@ function openDmModal(driverName) {
   document.getElementById('dm-textarea').value = '';
   document.getElementById('dm-result').textContent = '';
   document.getElementById('dm-overlay').classList.add('open');
+  loadDmThread(driverName);
   setTimeout(() => document.getElementById('dm-textarea').focus(), 50);
 }
 function closeDmModal() {
@@ -1171,7 +1215,8 @@ async function sendDmMsg() {
             ? '⚠️ WebSocket موجود بس فشل الإرسال — اتبعتت كإشعار FCM بس'
             : '⚠️ WebSocket مش مسجل عند السيرفر — اتبعتت كإشعار FCM بس');
       showToast(`💬 رسالة اتبعتت لـ ${_dmTargetDriver}`);
-      setTimeout(closeDmModal, 1200);
+      document.getElementById('dm-textarea').value = '';
+      loadDmThread(_dmTargetDriver);
     } else if (data.reason === 'driver_unreachable') {
       result.style.color = 'var(--danger)';
       result.textContent = data.had_token
@@ -1605,8 +1650,9 @@ async function doClearAll() {
 
 <div id="dm-overlay" class="dm-overlay" onclick="if(event.target===this) closeDmModal()">
   <div class="dm-box">
-    <div class="dm-title">💬 رسالة لـ <span id="dm-driver-name"></span></div>
-    <div class="dm-sub">الرسالة هتظهر عند المندوب ده بس</div>
+    <div class="dm-title">💬 محادثة مع <span id="dm-driver-name"></span></div>
+    <div class="dm-sub">كل الرسائل اللي اتبعتت له ومنه</div>
+    <div id="dm-thread" class="dm-thread"><div class="dm-thread-empty">⏳ بيحمّل...</div></div>
     <textarea id="dm-textarea" class="dm-textarea" placeholder="اكتب رسالتك هنا..."></textarea>
     <div id="dm-result" class="dm-result"></div>
     <div class="dm-actions">
