@@ -170,7 +170,7 @@
 
   /* Map & Markers */
   #map-container { position: relative; z-index: 1; margin-bottom: 14px; transition: margin 0.4s ease; flex-shrink: 0; }
-  #map { height: 460px; width: 100%; border-radius: var(--radius); border: 1px solid rgba(124,106,247,0.35); box-shadow: 0 0 0 1px rgba(124,106,247,0.1), 0 8px 40px rgba(0,0,0,0.5); background: #0d0d1a; transition: height 0.4s ease, opacity 0.3s ease; overflow: hidden; position: relative; }
+  #map { height: 460px; width: 100%; border-radius: var(--radius); border: 1px solid rgba(59,139,255,0.35); box-shadow: 0 0 0 1px rgba(59,139,255,0.1), 0 8px 40px rgba(0,0,0,0.5); background: #0d0d1a; transition: height 0.4s ease, opacity 0.3s ease; overflow: hidden; position: relative; }
   /* الخريطة الافتراضية (CartoDB dark_all) باهتة جدًا في التباين — الشوارع بالكاد بتتشاف.
      بنرفع contrast/brightness على الـ tile pane نفسها (مش على الماركرز فوقها) عشان
      الشوارع تبقى واضحة من غير ما نلمس ألوان الواجهة، وبنضيف vignette خفيف بلون
@@ -178,7 +178,7 @@
   [data-theme="dark"] #map .leaflet-tile-pane { filter: brightness(1.35) contrast(1.25) saturate(1.15); }
   #map::after {
     content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 400;
-    box-shadow: inset 0 0 90px rgba(124,106,247,0.18), inset 0 0 20px rgba(0,0,0,0.35);
+    box-shadow: inset 0 0 90px rgba(59,139,255,0.18), inset 0 0 20px rgba(0,0,0,0.35);
   }
   #map-container.collapsed #map { height: 0; opacity: 0; border: none; box-shadow: none; margin: 0; }
   #map-container.collapsed { margin-bottom: 14px; }
@@ -193,49 +193,57 @@
   .leaflet-marker-icon { transition: transform 1s linear; }
 
   /* === Driver Markers === */
+  /* ===== ماركر المندوب الجديد: شكل pin نضيف + توهج نابض هادي بدل الحلقات المتوسعة ===== */
   .driver-marker-wrap {
     position: relative;
     display: flex; flex-direction: column; align-items: center;
     pointer-events: none;
   }
-  .driver-marker-pulse {
+  .driver-marker-glow {
     position: absolute;
-    width: 36px; height: 36px;
+    width: 30px; height: 30px;
     border-radius: 50%;
-    background: transparent;
-    border: 2px solid currentColor;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-    animation: markerPulse 2.2s ease-out infinite;
+    background: radial-gradient(circle, currentColor 0%, transparent 70%);
+    top: 4px; left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.35;
+    animation: markerBreathe 2.4s ease-in-out infinite;
     pointer-events: none;
+    filter: blur(1px);
   }
-  @keyframes markerPulse {
-    0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.9; }
-    100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; }
+  @keyframes markerBreathe {
+    0%, 100% { opacity: 0.22; transform: translate(-50%,-50%) scale(0.85); }
+    50%      { opacity: 0.5;  transform: translate(-50%,-50%) scale(1.15); }
   }
 
-  .driver-marker-point {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    border: 2.5px solid rgba(255,255,255,0.95);
-    box-shadow: 0 0 0 4px rgba(6,6,13,0.55), 0 0 16px 2px currentColor, 0 0 3px rgba(0,0,0,0.4);
+  .driver-marker-pin {
     position: relative;
-    transition: background 0.4s, transform 0.6s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s;
+    width: 26px; height: 26px;
     z-index: 2;
+    transition: transform 0.6s cubic-bezier(.25,.8,.25,1);
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+  }
+  .driver-marker-pin svg { display: block; width: 100%; height: 100%; }
+  .driver-marker-dot {
+    position: absolute; top: 50%; left: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #fff;
+    transform: translate(-50%, -60%);
+    z-index: 3;
+    box-shadow: 0 0 4px rgba(255,255,255,0.8);
   }
   .driver-marker-arrow {
+    position: absolute; top: -9px; left: 50%;
     width: 0; height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-bottom: 10px solid rgba(255,255,255,0.85);
-    position: absolute;
-    top: -12px; left: 50%;
+    border-left: 4.5px solid transparent;
+    border-right: 4.5px solid transparent;
+    border-bottom: 8px solid rgba(255,255,255,0.9);
     transform: translateX(-50%);
     filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+    z-index: 4;
   }
   .driver-marker-name {
-    margin-top: 6px;
+    margin-top: 3px;
     font-size: 10px;
     font-weight: 800;
     color: #fff;
@@ -246,8 +254,18 @@
     border-radius: 20px;
     backdrop-filter: blur(6px);
     letter-spacing: 0.3px;
-    border: 1px solid rgba(124,106,247,0.35);
+    border: 1px solid rgba(59,139,255,0.35);
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  /* ===== تلوين تجميعات الماركرز (clusters) بألوان الثيم الأزرق بدل الأخضر/الأصفر الافتراضي ===== */
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+    background-color: rgba(59,139,255,0.25) !important;
+  }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+    background-color: rgba(59,139,255,0.55) !important;
+    color: #fff !important;
+    font-weight: 800;
   }
 
   /* Popups */
@@ -255,6 +273,7 @@
   .custom-popup .leaflet-popup-tip { background: var(--surface-2); }
   .popup-info { font-size: 13px; line-height: 1.7; }
   .popup-info strong { color: var(--primary); font-size: 14px; }
+  .popup-stopwatch { font-family: 'Outfit', monospace; font-weight: 800; letter-spacing: 0.5px; color: var(--warn, #f59e0b); }
 
   #tab-board { flex: 1; min-height: 0; }
   .board { position: relative; z-index: 1; display: grid; grid-template-columns: 2fr 1.8fr 1.2fr; gap: 16px; align-items: stretch; height: 100%; }
@@ -606,7 +625,7 @@ function initMap() {
   markersCluster = L.markerClusterGroup({
     disableClusteringAtZoom: 15,
     spiderfyOnMaxZoom: true,
-    polygonOptions: { fillColor: '#7c6af7', color: '#7c6af7', weight: 1, opacity: 0.2, fillOpacity: 0.1 }
+    polygonOptions: { fillColor: '#3B8BFF', color: '#3B8BFF', weight: 1, opacity: 0.2, fillOpacity: 0.1 }
   });
   map.addLayer(markersCluster);
 
@@ -636,7 +655,7 @@ function initMap() {
     .radar-sweep {
       position: absolute;
       border-radius: 50%;
-      border: 2px solid rgba(124,106,247,0.8);
+      border: 2px solid rgba(59,139,255,0.8);
       pointer-events: none;
       width: var(--radar-px, 80px);
       height: var(--radar-px, 80px);
@@ -651,8 +670,8 @@ function initMap() {
   // Geofence circle 50m
   window._branchCircle = L.circle([BRANCH_LAT, BRANCH_LNG], {
     radius: 50,
-    color: '#a78bfa',
-    fillColor: '#7c6af7',
+    color: '#8FB3FF',
+    fillColor: '#3B8BFF',
     fillOpacity: 0.12,
     weight: 2.5,
     dashArray: '8 5',
@@ -672,14 +691,14 @@ function initMap() {
   L.marker([BRANCH_LAT, BRANCH_LNG], {
     icon: L.divIcon({
       html: `<div style="text-align:center;">
-        <div class="branch-icon" style="font-size:28px;filter:drop-shadow(0 0 8px rgba(124,106,247,0.9));">🏢</div>
+        <div class="branch-icon" style="font-size:28px;filter:drop-shadow(0 0 8px rgba(59,139,255,0.9));">🏢</div>
       </div>`,
       className: '',
       iconSize: [34, 34],
       iconAnchor: [17, 17]
     }),
     zIndexOffset: 1000
-  }).addTo(map).bindPopup('<div style="text-align:center;font-weight:800;font-size:13px;">🏢 الفرع الرئيسي<br><span style="color:#a78bfa;font-size:11px;">نطاق الإرجاع التلقائي: 50م</span></div>');
+  }).addTo(map).bindPopup('<div style="text-align:center;font-weight:800;font-size:13px;">🏢 الفرع الرئيسي<br><span style="color:#8FB3FF;font-size:11px;">نطاق الإرجاع التلقائي: 50م</span></div>');
 
   // update radar size on zoom
   map.on('zoom zoomend moveend', updateRadarSize);
@@ -726,6 +745,17 @@ function formatAgo(diffSec) {
   const m = Math.floor(diffSec / 60);
   if (m < 60) return `${m}m`;
   return `${Math.floor(m / 60)}h`;
+}
+
+// ستوب ووتش الأوردر: من لحظة ما المندوب "خرج" (state = Out) لحد دلوقتي، بيعد لايف
+function formatStopwatch(outSinceTs) {
+  if (!outSinceTs) return null;
+  const totalSec = Math.max(0, Math.floor(Date.now() / 1000) - outSinceTs);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 // ===== حركة ناعمة للماركر بدل القفزة المباشرة =====
@@ -778,7 +808,7 @@ function updateSingleMarkerAndTrail(d) {
   if (!map || !d.lat || !d.lng) return;
 
   const { color, statusText } = getDriverStatusDetails(d.last_seen, d.state);
-  const speed = d.speed ? Math.round(d.speed) : 0; // already km/h from client
+  const speed = d.speed ? Math.round(d.speed) : 0; // already km/h from client — بيتحدد بيه شكل السهم بس دلوقتي
   const heading = d.heading != null ? d.heading : 0;
 
   // 1. تحديث أو رسم الـ Trail (مسار المندوب الأخير)
@@ -801,24 +831,37 @@ function updateSingleMarkerAndTrail(d) {
   const distDisplay = d.distance != null
     ? (d.distance < 1000 ? `${d.distance}m` : `${(d.distance/1000).toFixed(1)}km`)
     : '--';
+
+  // ستوب ووتش من لحظة خروج الأوردر (state === 'Out') بدل السرعة
+  const stopwatchRow = (d.state === 'Out' && d.out_since)
+    ? `⏱️ Order time: <span class="popup-stopwatch" data-out-since="${d.out_since}">${formatStopwatch(d.out_since)}</span><br>`
+    : '';
+
   const popupHtml = `
     <div class="popup-info">
       <strong>${d.name}</strong><br>
       Status: ${statusText}<br>
-      Speed: ${speed} km/h<br>
+      ${stopwatchRow}
       Distance: ${distDisplay}
     </div>
   `;
+
+  const pinSvg = `<svg viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="13" cy="13" r="10" fill="${color}" fill-opacity="0.22"/>
+    <circle cx="13" cy="13" r="6.5" fill="${color}" stroke="rgba(255,255,255,0.95)" stroke-width="2"/>
+  </svg>`;
 
   if (driverMarkers[d.name]) {
     animateMarkerTo(driverMarkers[d.name], d.lat, d.lng);
     // getElement() على markerCluster بيرجع الـ wrapper مش الـ icon مباشرة
     const iconEl = driverMarkers[d.name]._icon;
     if (iconEl) {
-      const point = iconEl.querySelector('.driver-marker-point');
-      if (point) {
-        point.style.background = color;
-        point.style.transform = `rotate(${heading}deg)`;
+      const glow = iconEl.querySelector('.driver-marker-glow');
+      if (glow) glow.style.color = color;
+      const pin = iconEl.querySelector('.driver-marker-pin');
+      if (pin) {
+        pin.innerHTML = pinSvg;
+        pin.style.transform = `rotate(${heading}deg)`;
       }
       const arrow = iconEl.querySelector('.driver-marker-arrow');
       if (arrow) arrow.style.display = speed > 3 ? 'block' : 'none';
@@ -831,20 +874,30 @@ function updateSingleMarkerAndTrail(d) {
       className: 'custom-div-icon',
       html: `
         <div class="driver-marker-wrap">
-          <div class="driver-marker-pulse" style="color:${color};border-color:${color};"></div>
-          <div class="driver-marker-point" style="background:${color};color:${color};transform:rotate(${heading}deg);">
+          <div class="driver-marker-glow" style="color:${color};"></div>
+          <div class="driver-marker-pin" style="transform:rotate(${heading}deg);">
+            ${pinSvg}
             ${speed > 3 ? '<div class="driver-marker-arrow"></div>' : ''}
           </div>
+          <div class="driver-marker-dot"></div>
           <div class="driver-marker-name">${d.name}</div>
         </div>
       `,
-      iconSize: [24, 40], iconAnchor: [12, 12]
+      iconSize: [26, 40], iconAnchor: [13, 13]
     });
     const marker = L.marker([d.lat, d.lng], {icon: icon}).bindPopup(popupHtml, {className: 'custom-popup'});
     driverMarkers[d.name] = marker;
     markersCluster.addLayer(marker);
   }
 }
+
+// بيحدّث نص الستوب ووتش لايف كل ثانية لأي popup مفتوح، من غير ما يعيد بناء البوب أب كله
+setInterval(() => {
+  document.querySelectorAll('.popup-stopwatch[data-out-since]').forEach(el => {
+    const outSince = parseInt(el.getAttribute('data-out-since'), 10);
+    if (outSince) el.textContent = formatStopwatch(outSince);
+  });
+}, 1000);
 
 // --- WebSocket & Board Logic ---
 const WSURL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/admin`;
