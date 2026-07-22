@@ -231,23 +231,38 @@ async def repair_queue_drift():
         if changed:
             await save_queue_to_redis(queue)
 
-async def broadcast_state(event_type="update", reorder_seq=None):
+async def broadcast_state(event_type="update", reorder_seq=None, reorder_source_ws=None):
     drivers = await get_drivers_from_redis()
     queue = await get_queue_from_redis()
     drivers_list = get_drivers_list(drivers, queue)
     stats = get_dashboard_stats(drivers)
     auto_out = await get_auto_out_enabled()
 
-    payload = {"type": event_type, "drivers": drivers_list, "stats": stats, "auto_out": auto_out}
-    # reorder_seq بيتبعت بس لما الـ broadcast جاي من عملية reorder — العميل بيستخدمه
-    # عشان يتجاهل ردود قديمة توصل بعد رد أحدث (سباق بين عمليتين drag سريعتين).
-    # انظر: ws/admin reorder handler + index.html ws.onmessage
+    base_payload = {"type": event_type, "drivers": drivers_list, "stats": stats, "auto_out": auto_out}
+    msg = json.dumps(base_payload)
+
+    # reorder_seq بيتبعت بس لما الـ broadcast جاي من عملية reorder — وبيتبعت بس لصاحب
+    # الطلب (reorder_source_ws) مش لكل الأدمنز. السبب: لو فيه أكتر من أدمن فاتحين
+    # الداشبورد في نفس الوقت، كل واحد عنده _reorderSeqCounter مستقل في الفرونت إند.
+    # لو بعتنا نفس reorder_seq (اللي جاي من client_seq بتاع أدمن معين) لكل الأدمنز،
+    # أدمن تاني معندوش أي drag معلّق هيقارن الرقم ده بـ counter بتاعه هو (غالبًا 0 أو
+    # رقم مختلف تمامًا) والمقارنة هتبقى بلا معنى — ممكن تسقط update شرعي أو تتقبل
+    # واحد لازم يترفض. الحل: صاحب الطلب بس ياخد رسالة فيها reorder_seq (يقارنها مع
+    # الـ counter بتاعه هو بالظبط)، وباقي الأدمنز ياخدوا نفس الـ update لكن من غير
+    # reorder_seq خالص، فتتطبق عندهم عادي زي أي update تاني (join/kick/state change).
+    reorder_msg = None
     if reorder_seq is not None:
-        payload["reorder_seq"] = reorder_seq
-    msg = json.dumps(payload)
+        reorder_payload = dict(base_payload)
+        reorder_payload["reorder_seq"] = reorder_seq
+        reorder_msg = json.dumps(reorder_payload)
+
     dead_admins = []
     for ws in admin_connections:
-        try: await ws.send_text(msg)
+        try:
+            if reorder_msg is not None and ws is reorder_source_ws:
+                await ws.send_text(reorder_msg)
+            else:
+                await ws.send_text(msg)
         except: dead_admins.append(ws)
     for ws in dead_admins: admin_connections.remove(ws)
 
@@ -744,7 +759,7 @@ async def admin_ws(ws: WebSocket):
                     # client_seq اللي الأدمن بعته مع الطلب عشان العميل يعرف يتجاهل أي رد
                     # لعملية reorder أقدم لو وصل بعد رد لعملية أحدث. ده اللي كان بيسبب
                     # "الرقم #N بييجي من عملية، وترتيب الكارت في القايمة بييجي من عملية تانية".
-                    await broadcast_state("update", reorder_seq=data.get("client_seq"))
+                    await broadcast_state("update", reorder_seq=data.get("client_seq"), reorder_source_ws=ws)
             elif data["type"] == "admin_change_state":
                 await change_driver_state(data["driver"], data["state"])
             elif data["type"] == "set_auto_out":
