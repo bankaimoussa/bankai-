@@ -536,6 +536,15 @@ async def kick_driver_http(body: KickBody):
         await broadcast_state("update")
     return {"ok": True, "was_present": was_present, "notified_ws": notified_ws}
 
+@app.get("/api/debug_connections")
+async def debug_connections():
+    """للتشخيص بس: بيوري مين فعليًا متسجل كـ WebSocket نشط عند السيرفر دلوقتي،
+       عشان نتأكد إن اسم المندوب اللي الأدمن بيبعته مطابق تمامًا للاسم المسجل هنا."""
+    return {
+        "connected_driver_names": list(driver_connections.keys()),
+        "count": len(driver_connections)
+    }
+
 class ChatDriverBody(BaseModel):
     driver: str
     text: str
@@ -581,7 +590,7 @@ async def send_chat_to_driver(body: ChatDriverBody):
 
     if not sent_ws and not sent_fcm:
         return {"ok": False, "reason": "driver_unreachable", "ws_existed": ws_existed, "had_token": had_token}
-    return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
+    return {"ok": True, "ws": sent_ws, "fcm": sent_fcm, "ws_existed": ws_existed}
 
 class NotifyBody(BaseModel):
     driver: str
