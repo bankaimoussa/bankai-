@@ -518,6 +518,43 @@
     display: flex; align-items: center; justify-content: center; gap: 6px;
   }
   .btn-admin-msg:active { transform: scale(0.97); }
+
+  /* ===== مودال محادثة الإدارة ===== */
+  .amsg-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 99999;
+    align-items: flex-end; justify-content: center; backdrop-filter: blur(10px);
+  }
+  .amsg-overlay.open { display: flex; }
+  .amsg-box {
+    background: var(--card); border: 1px solid var(--border2); border-radius: 22px 22px 0 0;
+    padding: 18px; width: 100%; max-width: 420px; max-height: 78vh; display: flex; flex-direction: column;
+  }
+  .amsg-title { font-family: var(--font); font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 12px; text-align: center; }
+  .amsg-thread {
+    flex: 1; overflow-y: auto; min-height: 100px; max-height: 46vh; margin-bottom: 10px;
+    display: flex; flex-direction: column; gap: 8px; padding: 4px 2px;
+  }
+  .amsg-thread-empty { font-family: var(--font); font-size: 12.5px; color: var(--muted); text-align: center; margin: auto; }
+  .amsg-msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; font-family: var(--font); font-size: 13px; line-height: 1.5; word-break: break-word; }
+  .amsg-msg-admin { align-self: flex-start; background: linear-gradient(135deg,#7c6af7,#5b4fd4); color: #fff; border-bottom-left-radius: 4px; }
+  .amsg-msg-driver { align-self: flex-end; background: var(--surface-2, rgba(255,255,255,0.06)); color: var(--text); border: 1px solid var(--border); border-bottom-right-radius: 4px; }
+  .amsg-msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; display: block; }
+  .amsg-input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .amsg-textarea {
+    flex: 1; min-height: 42px; max-height: 90px; resize: none; border-radius: 12px;
+    background: var(--surface-2, rgba(255,255,255,0.06)); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 12px; font-family: var(--font); font-size: 13.5px; outline: none;
+  }
+  .amsg-send-btn {
+    flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg,#7c6af7,#5b4fd4); color: #fff; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .amsg-send-btn:active { transform: scale(0.94); }
+  .amsg-close-btn {
+    margin-top: 10px; padding: 10px; border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: var(--font); font-size: 12.5px; font-weight: 700; cursor: pointer;
+  }
   .btn-end-shift-wide {
     padding: 14px; border-radius: 14px; border: none;
     background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff;
@@ -919,7 +956,7 @@
 
       <!-- Bottom action row (visual, matches mockup) -->
       <div class="bottom-action-row">
-        <button class="btn-admin-msg" type="button" style="width:100%">📢 رسالة من الإدارة</button>
+        <button class="btn-admin-msg" type="button" style="width:100%" onclick="openAdminMsgModal()">📢 رسالة من الإدارة</button>
       </div>
     </div>
 
@@ -1717,7 +1754,67 @@ function showChatPopup(text) {
   }
   if (chatPopupTimer) clearTimeout(chatPopupTimer);
   chatPopupTimer = setTimeout(() => popup.classList.remove('show'), 6000);
-  popup.onclick = () => { popup.classList.remove('show'); clearTimeout(chatPopupTimer); };
+  // دوس على التوست نفسه يفتح مودال المحادثة الكاملة بدل ما يقفلها بس
+  popup.onclick = () => { popup.classList.remove('show'); clearTimeout(chatPopupTimer); openAdminMsgModal(); };
+  // لو المودال مفتوح فعلاً دلوقتي، حدّث المحادثة جوّاه فورًا
+  if (document.getElementById('amsg-overlay')?.classList.contains('open')) loadAdminMsgThread();
+}
+
+// ===== مودال محادثة الإدارة (كل الرسائل: منها وإليها) =====
+function escapeHtmlDriver(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renderAdminMsgThread(history) {
+  const el = document.getElementById('amsg-thread');
+  if (!el) return;
+  if (!history || !history.length) {
+    el.innerHTML = '<div class="amsg-thread-empty">لسه مفيش رسائل مع الإدارة</div>';
+    return;
+  }
+  el.innerHTML = history.map(m => {
+    const cls = m.from === 'driver' ? 'amsg-msg-driver' : 'amsg-msg-admin';
+    const time = m.ts ? new Date(m.ts * 1000).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
+    return `<div class="amsg-msg ${cls}">${escapeHtmlDriver(m.text)}<span class="amsg-msg-time">${time}</span></div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+async function loadAdminMsgThread() {
+  const el = document.getElementById('amsg-thread');
+  if (!driverName) return;
+  try {
+    const r = await fetch(`/api/chat_history/${encodeURIComponent(driverName)}`);
+    const data = await r.json();
+    renderAdminMsgThread(data.history || []);
+  } catch (e) {
+    if (el) el.innerHTML = '<div class="amsg-thread-empty">❌ فشل تحميل المحادثة</div>';
+  }
+}
+function openAdminMsgModal() {
+  const popup = document.getElementById('chat-popup');
+  if (popup) popup.classList.remove('show');
+  document.getElementById('amsg-overlay').classList.add('open');
+  document.getElementById('amsg-thread').innerHTML = '<div class="amsg-thread-empty">⏳ بيحمّل...</div>';
+  loadAdminMsgThread();
+}
+function closeAdminMsgModal() {
+  document.getElementById('amsg-overlay').classList.remove('open');
+}
+function sendAdminMsg() {
+  const ta = document.getElementById('amsg-textarea');
+  const text = ta.value.trim();
+  if (!text) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('❌ مفيش اتصال بالسيرفر دلوقتي'); return; }
+  ws.send(JSON.stringify({ type: 'driver_message', text }));
+  ta.value = '';
+  // إضافة فورية للمحادثة محليًا (متفائل) — هتتأكد لما نعمل reload للـ thread
+  const el = document.getElementById('amsg-thread');
+  if (el) {
+    const emptyMsg = el.querySelector('.amsg-thread-empty');
+    if (emptyMsg) el.innerHTML = '';
+    const now = new Date();
+    el.insertAdjacentHTML('beforeend', `<div class="amsg-msg amsg-msg-driver">${escapeHtmlDriver(text)}<span class="amsg-msg-time">${now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}</span></div>`);
+    el.scrollTop = el.scrollHeight;
+  }
 }
 
 function handleKick() {
@@ -2228,6 +2325,19 @@ if ('serviceWorker' in navigator) {
     <div style="font-size:11px;color:#a78bfa;font-weight:700;margin-bottom:5px;">📢 رسالة من الإدارة</div>
     <div id="chat-popup-text" style="font-size:14.5px;font-weight:700;color:#fff;line-height:1.5;word-break:break-word;"></div>
     <div id="chat-popup-time" style="font-size:10px;color:#8b8bb0;margin-top:7px;"></div>
+  </div>
+</div>
+
+<!-- Admin Messages Modal -->
+<div id="amsg-overlay" class="amsg-overlay" onclick="if(event.target===this) closeAdminMsgModal()">
+  <div class="amsg-box">
+    <div class="amsg-title">📢 محادثة مع الإدارة</div>
+    <div id="amsg-thread" class="amsg-thread"><div class="amsg-thread-empty">⏳ بيحمّل...</div></div>
+    <div class="amsg-input-row">
+      <textarea id="amsg-textarea" class="amsg-textarea" placeholder="اكتب رسالتك..." rows="1"></textarea>
+      <button class="amsg-send-btn" type="button" onclick="sendAdminMsg()">➤</button>
+    </div>
+    <button class="amsg-close-btn" type="button" onclick="closeAdminMsgModal()">إغلاق</button>
   </div>
 </div>
 
