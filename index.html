@@ -320,7 +320,7 @@
   /* أزرار أيقونات موحدة: Locate + أوردر + بريك + جرس كلهم نفس شكل الدائرة، بيتلونوا بس لما يكون فيه داعي (Locate/حذف) */
   .icon-btn {
     display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-    width: 24px; height: 24px; border-radius: 7px; cursor: pointer; padding: 0;
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer; padding: 0;
     background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid var(--border);
     transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
   }
@@ -333,7 +333,7 @@
   .btn-notify:hover svg { animation: bellring 0.4s ease; }
   @keyframes bellring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
 
-  .card-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; margin-inline-start: auto; }
+  .card-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; margin-inline-start: auto; }
   .action-btn {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
     padding: 3px 5px; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer;
@@ -1045,11 +1045,11 @@ function renderBoard() {
     if(!list) return;
     
     // أيقونات SVG بدل الإيموجي — نفس منطق الأزرار القديم بالظبط (نفس onclick ونفس title)، بس شكل الزرار بقى دائرة أيقونة موحدة
-    const icnLocate = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.2"/></svg>`;
-    const icnOut = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 19l14-14M9 19l10-10M19 5l-7 7"/></svg>`;
-    const icnBreak = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
-    const icnBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a6 6 0 00-6 6v3.6L4 15v1h16v-1l-2-3.4V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>`;
-    const icnKick = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+    const icnLocate = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.2"/></svg>`;
+    const icnOut = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 19l14-14M9 19l10-10M19 5l-7 7"/></svg>`;
+    const icnBreak = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
+    const icnBell = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a6 6 0 00-6 6v3.6L4 15v1h16v-1l-2-3.4V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>`;
+    const icnKick = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
     let actionButtons = '';
     if (d.state === 'Waiting') {
@@ -1057,11 +1057,12 @@ function renderBoard() {
         <button class="icon-btn" onclick="adminAction('${d.name}', 'Out')" title="ابعته لأوردر">${icnOut}</button>
         <button class="icon-btn" onclick="adminAction('${d.name}', 'Break')" title="ابعته بريك">${icnBreak}</button>
         <button class="icon-btn btn-notify" onclick="notifyDriver('${d.name}')" title="نبّهه إن دوره جه">${icnBell}</button>
+        <button class="icon-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">${icnLocate}</button>
       </div>`;
     } else if (d.state === 'Out') {
-      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button><button class="icon-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">${icnLocate}</button></div>`;
     } else if (d.state === 'Break') {
-      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button></div>`;
+      actionButtons = `<div class="card-actions"><button class="action-btn btn-done" onclick="adminAction('${d.name}', 'Waiting')" title="رجّعه للطابور"><span>✅</span> رجع</button><button class="icon-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">${icnLocate}</button></div>`;
     }
 
     // Break timer display
@@ -1081,7 +1082,6 @@ function renderBoard() {
       <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
         <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
         <div class="indicators">
-          <button class="icon-btn btn-locate" onclick="locateDriver('${d.name}')" title="اعرض على الخريطة">${icnLocate}</button>
           <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
         </div>
