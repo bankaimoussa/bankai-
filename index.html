@@ -55,8 +55,17 @@
     --muted: #64748B;
     --shadow: 0 16px 50px rgba(30,111,255,0.1);
     --shadow-sm: 0 4px 20px rgba(30,111,255,0.06);
-    --offline: #94A3B8;
+    --offline: #64748B;
+    --break: #3D63C9;
+    --out: #DC5A00;
+    --weak: #C2620A;
+    --success: #0E9F6E;
+    --danger: #DC2626;
   }
+  [data-theme="light"] .col-break { border-color: rgba(61,99,201,0.3); box-shadow: var(--shadow-sm), 0 0 0 1px rgba(61,99,201,0.08), 0 0 24px rgba(61,99,201,0.05); }
+  [data-theme="light"] .badge-offline { border-color: rgba(100,116,139,0.3); background: rgba(100,116,139,0.08); }
+  [data-theme="light"] .badge-weak { border-color: rgba(194,98,10,0.3); background: rgba(194,98,10,0.08); }
+
   [data-theme="light"] .bg-grid {
     background-image: linear-gradient(rgba(59, 139, 255, 0.04) 1px, transparent 1px),
                       linear-gradient(90deg, rgba(59, 139, 255, 0.04) 1px, transparent 1px);
@@ -288,16 +297,17 @@
 
   /* الكارت بقى صف واحد أفقي: رقم + اسم + مؤشرات + أزرار أيقونات + حذف — كله جنب بعض */
   .card-name {
-    font-weight: 700; font-size: 13.5px; color: var(--text); line-height: 1.5;
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap;
+    font-weight: 800; font-size: 15px; color: var(--text); line-height: 1.5;
+    display: flex; align-items: center; gap: 7px; flex-shrink: 0; white-space: nowrap;
+    letter-spacing: 0.1px;
   }
   .card-name .name-text { min-width: 68px; overflow: visible; text-overflow: ellipsis; padding-bottom: 2px; }
   .queue-num {
     display: inline-flex; align-items: center; justify-content: center;
-    min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px;
-    background: rgba(59,139,255,0.22); color: var(--primary); font-size: 11px; font-weight: 800;
+    min-width: 22px; height: 22px; padding: 0 6px; border-radius: 7px;
+    background: rgba(59,139,255,0.28); color: var(--primary); font-size: 12.5px; font-weight: 900;
   }
-  [data-theme="light"] .queue-num { background: rgba(59,139,255,0.15); }
+  [data-theme="light"] .queue-num { background: rgba(59,139,255,0.18); color: #1a5fd6; }
   .btn-kick {
     display: inline-flex; align-items: center; justify-content: center;
     width: 19px; height: 19px; border-radius: 6px; flex-shrink: 0;
@@ -1118,7 +1128,7 @@ function renderBoard() {
     const isDraggable = d.state === 'Waiting';
     let html = `
       <div class="driver-card ${stateClass}${isDraggable ? ' draggable-card' : ''}" id="${safeId(d.name)}" data-name="${d.name}" ${isDraggable ? 'draggable="true"' : ''}>
-        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">#${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
+        <div class="card-name">${isDraggable ? '<span class="drag-handle">⠿</span>' : ''}${d.queue_pos > 0 && d.state === 'Waiting' ? `<span class="queue-num">${d.queue_pos}</span>` : ''}<span class="name-text">${d.name}</span></div>
         <div class="indicators">
           <span id="dist-${safeId(d.name)}">${getDistanceBadge(d.distance, d.last_seen, d.state)}</span>
           <span class="badge ${batClass}" id="bat-${safeId(d.name)}">${batIcon} ${d.battery || '100%'}</span>
@@ -1225,7 +1235,7 @@ function commitNewOrder() {
     const card = document.getElementById(safeId(name));
     if (card) {
       const numEl = card.querySelector('.queue-num');
-      if (numEl) numEl.textContent = `#${i + 1}`;
+      if (numEl) numEl.textContent = `${i + 1}`;
     }
   });
 
