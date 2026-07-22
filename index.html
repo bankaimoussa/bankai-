@@ -320,6 +320,72 @@
   .btn-kick:hover svg { transform: rotate(90deg); }
   .btn-kick:active { transform: scale(0.92); }
 
+  /* ===== زرار الـ 3 نقط (بديل الـ X المباشر) + المنيو المنسدلة بتاعته =====
+     نفس مكان وحجم btn-kick القديم بالظبط عشان مايتحركش شكل الكارت، بس دلوقتي
+     بيفتح منيو فيها "إنهاء الشيفت" (نفس فعل الحذف القديم) و"رسالة" (شات خاص بالمندوب ده بس) */
+  .card-menu-wrap { position: relative; flex-shrink: 0; }
+  .btn-more {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 19px; height: 19px; border-radius: 6px; flex-shrink: 0;
+    background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border);
+    cursor: pointer; transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease; padding: 0;
+  }
+  .btn-more:hover { background: var(--surface-hover); color: var(--text); transform: scale(1.08); }
+  .btn-more:active { transform: scale(0.92); }
+  [data-theme="light"] .btn-more { background: rgba(11,26,51,0.04); border-color: rgba(11,26,51,0.1); }
+
+  .card-menu {
+    position: absolute; top: calc(100% + 6px); inset-inline-end: 0; z-index: 40;
+    min-width: 168px; background: #0F1838; border: 1px solid var(--border-strong);
+    border-radius: 12px; padding: 6px; box-shadow: var(--shadow);
+    backdrop-filter: blur(14px); display: none; flex-direction: column; gap: 2px;
+  }
+  .card-menu.open { display: flex; animation: cardMenuIn 0.16s ease; }
+  @keyframes cardMenuIn { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
+  [data-theme="light"] .card-menu { background: #ffffff; }
+  .card-menu-item {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: start;
+    background: none; border: none; color: var(--text); font-family: 'Cairo','Outfit',sans-serif;
+    font-size: 12.5px; font-weight: 700; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .card-menu-item svg { flex-shrink: 0; }
+  .card-menu-item:hover { background: rgba(255,255,255,0.06); }
+  [data-theme="light"] .card-menu-item:hover { background: rgba(11,26,51,0.05); }
+  .card-menu-item.danger { color: var(--danger); }
+  .card-menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+  .card-menu-item.accent { color: var(--primary); }
+  .card-menu-item.accent:hover { background: rgba(59,139,255,0.1); }
+
+  /* ===== مودال الشات الخاص بمندوب واحد ===== */
+  .dm-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 99999;
+    align-items: center; justify-content: center; backdrop-filter: blur(10px);
+  }
+  .dm-overlay.open { display: flex; }
+  .dm-box {
+    background: #0F1838; border: 1px solid var(--border-strong); border-radius: 20px;
+    padding: 22px; width: 92%; max-width: 360px; box-shadow: var(--shadow);
+  }
+  [data-theme="light"] .dm-box { background: #ffffff; }
+  .dm-title { font-family: 'Cairo',sans-serif; font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .dm-sub { font-family: 'Cairo',sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .dm-textarea {
+    width: 100%; min-height: 90px; resize: vertical; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 12px; font-family: 'Cairo',sans-serif; font-size: 13.5px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .dm-textarea:focus { border-color: var(--primary); }
+  .dm-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .dm-actions button {
+    flex: 1; padding: 12px; border-radius: 12px; font-family: 'Cairo',sans-serif;
+    font-size: 13.5px; font-weight: 700; cursor: pointer; border: 1px solid transparent;
+  }
+  .dm-btn-cancel { background: rgba(255,255,255,0.05); border-color: var(--border) !important; color: var(--text-2); }
+  .dm-btn-send { background: var(--primary); color: #fff; }
+  .dm-result { margin-top: 8px; font-size: 12px; font-family: 'Cairo',sans-serif; min-height: 16px; }
+
   /* صف الحالة: GPS + مسافة + بطارية — دلوقتي جوه بوردر واحد في نص الكارت بدل ما يكونوا
      شكلهم منفصل، عشان يبانوا كوحدة معلومات واحدة (مسافة + بطارية) مش بادجين تايهين */
   .indicators {
@@ -993,6 +1059,72 @@ function locateDriver(name) {
 function adminAction(driverName, newState) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'admin_change_state', driver: driverName, state: newState })); }
 function kickDriver(driverName) { if(confirm(`Remove ${driverName}?`)) if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'kick_driver', driver: driverName })); }
 
+// ===== منيو الـ 3 نقط جوه الكارت =====
+function toggleCardMenu(evt, driverName) {
+  evt.stopPropagation();
+  const id = 'menu-' + safeId(driverName);
+  const menu = document.getElementById(id);
+  if (!menu) return;
+  const wasOpen = menu.classList.contains('open');
+  document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
+  if (!wasOpen) menu.classList.add('open');
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
+});
+
+// "إنهاء الشيفت" من المنيو = نفس فعل الحذف القديم (btn-kick) بمسمى واضح للأدمن:
+// بيشيل الكارت ويعمل logout فعلي عند المندوب في التطبيق (بيرجعله لشاشة تسجيل الدخول)
+function logoutDriver(driverName) {
+  document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
+  if (!confirm(`تسجيل خروج ${driverName} وإنهاء شيفته؟`)) return;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'kick_driver', driver: driverName }));
+  }
+}
+
+// ===== شات خاص: رسالة تظهر عند المندوب ده بس =====
+let _dmTargetDriver = null;
+function openDmModal(driverName) {
+  document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
+  _dmTargetDriver = driverName;
+  document.getElementById('dm-driver-name').textContent = driverName;
+  document.getElementById('dm-textarea').value = '';
+  document.getElementById('dm-result').textContent = '';
+  document.getElementById('dm-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('dm-textarea').focus(), 50);
+}
+function closeDmModal() {
+  document.getElementById('dm-overlay').classList.remove('open');
+  _dmTargetDriver = null;
+}
+async function sendDmMsg() {
+  const text = document.getElementById('dm-textarea').value.trim();
+  const result = document.getElementById('dm-result');
+  if (!text || !_dmTargetDriver) { result.style.color = 'var(--danger)'; result.textContent = '⚠️ اكتب رسالة الأول'; return; }
+  result.style.color = 'var(--muted)'; result.textContent = '⏳ بيبعت...';
+  try {
+    const r = await fetch('/api/chat_driver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driver: _dmTargetDriver, text })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      result.style.color = 'var(--success)';
+      result.textContent = '✅ اتبعتت';
+      showToast(`💬 رسالة اتبعتت لـ ${_dmTargetDriver}`);
+      setTimeout(closeDmModal, 600);
+    } else {
+      result.style.color = 'var(--danger)';
+      result.textContent = `❌ فشل الإرسال: ${data.reason || ''}`;
+    }
+  } catch (e) {
+    result.style.color = 'var(--danger)';
+    result.textContent = '❌ خطأ في الاتصال';
+  }
+}
+
 async function notifyDriver(driverName) {
   try {
     const r = await fetch('/api/notify_driver', {
@@ -1099,6 +1231,9 @@ function renderBoard() {
     const icnBreak = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
     const icnBell = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a6 6 0 00-6 6v3.6L4 15v1h16v-1l-2-3.4V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>`;
     const icnKick = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+    const icnMore = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>`;
+    const icnChat = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`;
+    const icnLogout = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
     let actionButtons = '';
     if (d.state === 'Waiting') {
@@ -1136,7 +1271,13 @@ function renderBoard() {
         </div>
         ${breakLine}
         ${actionButtons}
-        <button class="btn-kick" onclick="kickDriver('${d.name}')" title="امسحه">${icnKick}</button>
+        <div class="card-menu-wrap">
+          <button class="btn-more" onclick="toggleCardMenu(event, '${d.name}')" title="خيارات">${icnMore}</button>
+          <div class="card-menu" id="menu-${safeId(d.name)}">
+            <button class="card-menu-item accent" onclick="openDmModal('${d.name}')">${icnChat} رسالة</button>
+            <button class="card-menu-item danger" onclick="logoutDriver('${d.name}')">${icnLogout} إنهاء الشيفت</button>
+          </div>
+        </div>
       </div>`;
     list.innerHTML += html;
   });
@@ -1354,6 +1495,19 @@ async function doClearAll() {
 }
 
 </script>
+
+<div id="dm-overlay" class="dm-overlay" onclick="if(event.target===this) closeDmModal()">
+  <div class="dm-box">
+    <div class="dm-title">💬 رسالة لـ <span id="dm-driver-name"></span></div>
+    <div class="dm-sub">الرسالة هتظهر عند المندوب ده بس</div>
+    <textarea id="dm-textarea" class="dm-textarea" placeholder="اكتب رسالتك هنا..."></textarea>
+    <div id="dm-result" class="dm-result"></div>
+    <div class="dm-actions">
+      <button class="dm-btn-cancel" onclick="closeDmModal()">إلغاء</button>
+      <button class="dm-btn-send" onclick="sendDmMsg()">إرسال</button>
+    </div>
+  </div>
+</div>
 
 <div id="clear-confirm-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:99999;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);align-items:center;justify-content:center;">
   <div style="background:#12121e;border:1px solid rgba(239,68,68,0.35);border-radius:24px;padding:36px 32px;text-align:center;max-width:340px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,0.9),0 0 0 1px rgba(239,68,68,0.1);">
