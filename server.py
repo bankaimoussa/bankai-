@@ -503,6 +503,39 @@ async def send_chat(body: ChatBody):
         except: pass
     return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
 
+class KickBody(BaseModel):
+    driver: str
+
+@app.post("/api/kick_driver")
+async def kick_driver_http(body: KickBody):
+    """نفس فعل kick_driver اللي بيتبعت عن طريق الـ WebSocket، لكن كـ HTTP endpoint —
+       fallback لو اتصال الأدمن الـ WebSocket مش شغال وقت الضغط على الزرار."""
+    d_name = body.driver.strip()
+    if not d_name:
+        return {"ok": False, "reason": "missing_driver"}
+    drivers = await get_drivers_from_redis()
+    was_present = d_name in drivers
+    if was_present:
+        await delete_driver_from_redis(d_name)
+    async with queue_lock:
+        queue = await get_queue_from_redis()
+        if d_name in queue:
+            queue.remove(d_name)
+            await save_queue_to_redis(queue)
+        await delete_fcm_token(d_name)
+
+        notified_ws = False
+        if d_name in driver_connections:
+            try:
+                await driver_connections[d_name].send_text(json.dumps({"type": "kicked"}))
+                notified_ws = True
+            except:
+                pass
+            del driver_connections[d_name]
+        driver_last_activity.pop(d_name, None)
+        await broadcast_state("update")
+    return {"ok": True, "was_present": was_present, "notified_ws": notified_ws}
+
 class ChatDriverBody(BaseModel):
     driver: str
     text: str
@@ -517,6 +550,7 @@ async def send_chat_to_driver(body: ChatDriverBody):
 
     msg = json.dumps({"type": "chat_message", "text": text})
     sent_ws = False
+    ws_existed = driver_name in driver_connections
     dws = driver_connections.get(driver_name)
     if dws:
         try:
@@ -527,9 +561,11 @@ async def send_chat_to_driver(body: ChatDriverBody):
             driver_last_activity.pop(driver_name, None)
 
     sent_fcm = False
+    had_token = False
     if _FCM_SA_JSON:
         try:
             token = await redis_client.hget("fleet:fcm_tokens", driver_name)
+            had_token = bool(token)
             if token:
                 access_token = _get_fcm_access_token()
                 async with httpx.AsyncClient() as client:
@@ -544,7 +580,7 @@ async def send_chat_to_driver(body: ChatDriverBody):
             pass
 
     if not sent_ws and not sent_fcm:
-        return {"ok": False, "reason": "driver_unreachable"}
+        return {"ok": False, "reason": "driver_unreachable", "ws_existed": ws_existed, "had_token": had_token}
     return {"ok": True, "ws": sent_ws, "fcm": sent_fcm}
 
 class NotifyBody(BaseModel):
