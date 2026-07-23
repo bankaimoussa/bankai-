@@ -551,6 +551,7 @@
 
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('board')">📋 لوحة التحكم</button>
+  <button class="tab-btn" onclick="switchTab('all-drivers')">👥 كل المناديب</button>
   <button class="tab-btn" onclick="switchTab('download')">📲 تحميل الآب</button>
   <button class="tab-btn" onclick="switchTab('chat')">💬 رسالة جماعية</button>
 </div>
@@ -563,6 +564,20 @@
 </div>
 </div>
 
+
+<div class="tab-panel" id="tab-all-drivers">
+  <div style="display:flex;flex-direction:column;gap:14px;padding:24px;max-width:680px;margin:0 auto;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:16px;font-weight:900;color:var(--text);">👥 كل المناديب المسجلين</div>
+      <button onclick="loadAllDrivers()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 12px;color:var(--muted);font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;">🔄 تحديث</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+      كل اسم دخل النظام مرة على الأقل. "ADD" بيحط المندوب في Waiting فورًا ويبعتله إشعار
+      يطلب منه يفتح التطبيق — مش بيشغّل حاجة عنده من غير ما هو يفتح فعليًا.
+    </div>
+    <div id="all-drivers-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
 
 <div class="tab-panel" id="tab-download">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:24px;padding:32px;">
@@ -1606,6 +1621,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   event.currentTarget.classList.add('active');
+  if (name === 'all-drivers') loadAllDrivers();
 }
 
 
@@ -1632,6 +1648,70 @@ async function sendChatMsg() {
     }
   } catch(e) {
     result.style.color = 'var(--danger)'; result.textContent = '❌ خطأ في الاتصال';
+  }
+}
+
+async function loadAllDrivers() {
+  const container = document.getElementById('all-drivers-list');
+  container.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">⏳ بيحمّل...</div>';
+  try {
+    const r = await fetch('/api/all_drivers');
+    const data = await r.json();
+    if (!data.ok || !data.drivers.length) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">مفيش مناديب مسجلين لسه</div>';
+      return;
+    }
+    container.innerHTML = data.drivers.map(d => {
+      const statusColor = d.online ? 'var(--success)' : 'var(--muted)';
+      const statusText = d.online ? `🟢 أونلاين${d.state ? ' · ' + d.state : ''}` : '⚪ أوفلاين';
+      const canAdd = !d.online;
+      const addBtn = canAdd
+        ? `<button class="add-driver-btn" data-name="${escapeHtml(d.name)}" style="background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:10px;padding:8px 18px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;">➕ ADD</button>`
+        : `<span style="font-size:11px;color:var(--muted);white-space:nowrap;">شغال بالفعل</span>`;
+      const noFcmWarning = (!d.has_fcm_token && canAdd)
+        ? `<div style="font-size:10px;color:var(--warning, #f5a623);margin-top:2px;">⚠️ مفيش إشعارات مسجلة له — ممكن الإشعار ميوصلوش</div>`
+        : '';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;">
+          <div style="min-width:0;">
+            <div style="font-weight:800;color:var(--text);font-size:14px;">${escapeHtml(d.name)}</div>
+            <div style="font-size:12px;color:${statusColor};margin-top:2px;">${statusText}</div>
+            ${noFcmWarning}
+          </div>
+          ${addBtn}
+        </div>`;
+    }).join('');
+    container.querySelectorAll('.add-driver-btn').forEach(btn => {
+      btn.addEventListener('click', () => addDriverFromList(btn.dataset.name, btn));
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:20px;">❌ خطأ في تحميل القائمة</div>';
+  }
+}
+
+async function addDriverFromList(name, btnEl) {
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳...';
+  try {
+    const r = await fetch('/api/add_driver', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({driver: name})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast(data.fcm_sent ? `✅ ${name} اتضاف وهيوصله إشعار` : `✅ ${name} اتضاف — لكن الإشعار ميوصلوش (مفيش token)`);
+      loadAllDrivers();
+    } else {
+      const reasons = {already_active: 'شغال بالفعل', not_registered: 'مش مسجل في النظام', missing_driver: 'اسم ناقص'};
+      showToast('❌ ' + (reasons[data.reason] || 'فشلت الإضافة'));
+      btnEl.disabled = false;
+      btnEl.textContent = '➕ ADD';
+    }
+  } catch(e) {
+    showToast('❌ خطأ في الاتصال');
+    btnEl.disabled = false;
+    btnEl.textContent = '➕ ADD';
   }
 }
 
