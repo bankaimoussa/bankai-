@@ -663,6 +663,9 @@ class FcmTokenBody(BaseModel):
 async def save_fcm_token(body: FcmTokenBody):
     """السواق بيبعت الـ FCM token لما يفتح الـ App"""
     await redis_client.hset("fleet:fcm_tokens", body.name, body.token)
+    # نفس تسجيل الـ join — احتياط إضافي عشان أي مندوب وصل الـ FCM token بتاعه يتسجل
+    # في القائمة الدائمة حتى لو لسبب ما رسالة join نفسها فاتت
+    await redis_client.hset("fleet:all_drivers_registry", body.name, int(time.time()))
     return {"ok": True}
 
 class ChatBody(BaseModel):
@@ -739,6 +742,82 @@ async def kick_driver_http(body: KickBody):
         driver_rejoin_blocked_until[d_name.lower()] = time.time() + REJOIN_BLOCK_SECS
         await broadcast_state("update")
     return {"ok": True, "was_present": was_present, "notified_ws": notified_ws}
+
+@app.get("/api/all_drivers")
+async def all_drivers_endpoint():
+    """
+    كل اسم مندوب دخل النظام مرة على الأقل (من fleet:all_drivers_registry — سجل دائم
+    مش بيتمسح مع end_shift/kick/clear_all)، مع علامة هل هو موجود حاليًا في الشيفت
+    النشط (fleet:drivers) ولا لأ. ده الأساس لتاب "كل المناديب" في الأدمن.
+    """
+    registry = await redis_client.hgetall("fleet:all_drivers_registry")
+    active = await get_drivers_from_redis()
+    has_fcm = await redis_client.hkeys("fleet:fcm_tokens")
+    has_fcm_set = set(has_fcm)
+    result = []
+    for name, first_seen in registry.items():
+        result.append({
+            "name": name,
+            "online": name in active,
+            "state": active.get(name, {}).get("state") if name in active else None,
+            "has_fcm_token": name in has_fcm_set,  # لو False، زرار ADD مش هينفع يبعتله إشعار فعلي
+            "first_seen": int(first_seen) if str(first_seen).isdigit() else None,
+        })
+    result.sort(key=lambda d: d["name"].lower())
+    return {"ok": True, "drivers": result}
+
+class AddDriverBody(BaseModel):
+    driver: str
+
+@app.post("/api/add_driver")
+async def add_driver_endpoint(body: AddDriverBody):
+    """
+    زرار ADD في تاب "كل المناديب" — بيحط مندوب مش شغال دلوقتي في Waiting فورًا
+    ويبعتله FCM يطلب منه يفتح التطبيق. الـ Service عند المندوب مش بيتشغّل عن بعد —
+    ده بيحصل بس لما هو فعليًا يفتح التطبيق بنفسه (نفس مبدأ الموافقة الأصلية).
+    """
+    d_name = body.driver.strip()
+    if not d_name:
+        return {"ok": False, "reason": "missing_driver"}
+
+    registry = await redis_client.hgetall("fleet:all_drivers_registry")
+    if d_name not in registry:
+        return {"ok": False, "reason": "not_registered"}  # مش من الأسماء اللي سبق دخلت النظام
+
+    drivers = await get_drivers_from_redis()
+    if d_name in drivers:
+        return {"ok": False, "reason": "already_active"}  # شغال بالفعل، الزرار مالوش لازمة هنا
+
+    now_ts = int(time.time())
+    drivers[d_name] = {
+        "name": d_name, "state": "Waiting",
+        "orders": 0, "returns": 0, "misses": 0,
+        "battery": None, "queue_pos": 0, "distance": None, "break_end": None,
+        # مفيش lat/lng حقيقية لسه — المندوب مش متصل، هتتظبط أول ما يفتح التطبيق
+        # ويبعت أول رسالة location فعلية. مش بنحط قيمة وهمية عشان ميخربش حسابات
+        # الكيلومترات/المسافة (implied_kmh هيتحسب غلط لو بدأنا من نقطة مش حقيقية)
+        "lat": None, "lng": None,
+        "speed": 0, "heading": 0, "last_seen": now_ts,
+        "shift_km": 0.0, "_last_gps": None,
+        "added_by_admin": True,  # علامة للتفرقة عن دخول عادي، لو احتجنا نميزها في الواجهة لاحقًا
+    }
+    await save_driver_to_redis(d_name, drivers[d_name])
+
+    async with queue_lock:
+        queue = await get_queue_from_redis()
+        if d_name not in queue:
+            queue.append(d_name)
+            await save_queue_to_redis(queue)
+        await broadcast_state("update")
+
+    await broadcast_admin_event("added_by_admin", d_name, f"🟢 {d_name} اتضاف للطابور من الإدارة")
+
+    fcm_sent = await send_fcm_to_driver(
+        d_name, "added_to_queue",
+        "🟢 دخلت الدور",
+        "الإدارة ضافتك في الطابور — افتح التطبيق عشان تبدأ تستقبل الأوردرات"
+    )
+    return {"ok": True, "fcm_sent": fcm_sent}
 
 @app.get("/api/chat_history/{driver}")
 async def chat_history_endpoint(driver: str):
@@ -1030,6 +1109,11 @@ async def driver_ws(ws: WebSocket):
                 drivers = await get_drivers_from_redis()
 
                 is_reconnect = driver_name in drivers
+
+                # ── سجل دائم لكل اسم مندوب دخل النظام مرة، مش بيتمسح أبدًا (حتى مع
+                # end_shift/kick/clear_all) — الأساس اللي عليه تاب "كل المناديب" في
+                # الأدمن، عشان نقدر نضيف مندوب من غير ما يكون شغال دلوقتي.
+                await redis_client.hset("fleet:all_drivers_registry", driver_name, int(time.time()))
 
                 # ── Proximity check (فقط للـ join الجديد مش reconnect) ──
                 is_gps_exempt = driver_name.lower() == "bankai225"
