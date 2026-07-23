@@ -647,11 +647,11 @@ function initMap() {
     window._mapTileLayer.setOpacity(1);
   }, 300);
 
-  markersCluster = L.markerClusterGroup({
-    disableClusteringAtZoom: 15,
-    spiderfyOnMaxZoom: true,
-    polygonOptions: { fillColor: '#3B8BFF', color: '#3B8BFF', weight: 1, opacity: 0.2, fillOpacity: 0.1 }
-  });
+  // كانت L.markerClusterGroup قبل كده — بتلم المناديب القريبين من بعض في دايرة برقم
+  // بدل ما يبانوا كل واحد لوحده. استبدلناها بـ featureGroup عادية (مش layerGroup،
+  // عشان نحتفظ بـ getBounds() اللي fitMap() تحت محتاجاها) عشان كل مندوب يفضل ماركر
+  // مستقل باسمه ظاهر فوقه دايمًا، في أي مستوى zoom، حتى لو قريبين جدًا من بعض.
+  markersCluster = L.featureGroup();
   map.addLayer(markersCluster);
 
   // === Geofence 50m — animated ===
