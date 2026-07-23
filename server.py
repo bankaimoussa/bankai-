@@ -1114,7 +1114,6 @@ async def driver_ws(ws: WebSocket):
             
             elif data["type"] == "location" and driver_name:
                 driver_last_location_msg[driver_name] = time.time()
-                dist = haversine(data["lat"], data["lng"], BRANCH_LAT, BRANCH_LNG)
                 now_ts = int(time.time())
                 
                 # HGET لمندوب واحد بس بدل HGETALL لكل الأسطول — الـ handler ده بينده
@@ -1130,25 +1129,46 @@ async def driver_ws(ws: WebSocket):
                         step_m = haversine(last_gps["lat"], last_gps["lng"], data["lat"], data["lng"])
                         dt = max(1, now_ts - last_gps.get("ts", now_ts))
                         implied_kmh = (step_m / dt) * 3.6
-                        # نتجاهل: jitter وهو واقف (<5م) + قفزات GPS الوهمية (>300م لحظيًا)
-                        # + أي نقلة سرعتها المضمنة أعلى من 120 كم/س (يعني الموبايل قفل شوية وفتح في مكان تاني بره النطاق ده)
-                        # + أي فجوة زمنية كبيرة (>30 ثانية) بين آخر نقطة والنقطة دي — دي علامة على reconnect/انقطاع نت
-                        #   مش سير فعلي، فلو حسبناها هتضيف كيلومترات وهمية بسبب GPS drift وقت الانقطاع
-                        if dt <= 30 and 5 <= step_m <= 300 and implied_kmh <= 120:
-                            shift_km = round(shift_km + step_m / 1000, 3)
+
+                    # فحص إضافي ضد "قفزة مزدوجة" (double-jump): قفزة GPS وهمية لمكان بعيد ممكن
+                    # تفلت من فحص implied_kmh العادي لو الفرق الزمني بينها وبين النقطة اللي قبلها
+                    # كان كبير كفاية (implied_kmh يطلع معقول رغم إن النقلة وهمية). نتأكد كمان إن
+                    # النقطة الجديدة قريبة من آخر موقع "معروض" (مفلتر) مش بس من آخر نقطة خام —
+                    # لو بعيدة عن الاتنين مع بعض بسرعة عالية، يبقى تأكيد أقوى إنها outlier فعلاً.
+                    prev_display_lat = driver.get("display_lat", driver.get("lat"))
+                    prev_display_lng = driver.get("display_lng", driver.get("lng"))
+                    step_from_display_m = None
+                    if prev_display_lat is not None and prev_display_lng is not None:
+                        step_from_display_m = haversine(prev_display_lat, prev_display_lng, data["lat"], data["lng"])
+
+                    # نتجاهل: jitter وهو واقف (<5م) + قفزات GPS الوهمية (>300م لحظيًا)
+                    # + أي نقلة سرعتها المضمنة أعلى من 120 كم/س (يعني الموبايل قفل شوية وفتح في مكان تاني بره النطاق ده)
+                    # + أي فجوة زمنية كبيرة (>30 ثانية) بين آخر نقطة والنقطة دي — دي علامة على reconnect/انقطاع نت
+                    #   مش سير فعلي، فلو حسبناها هتضيف كيلومترات وهمية بسبب GPS drift وقت الانقطاع
+                    if implied_kmh is not None and 5 <= step_m <= 300 and dt <= 30 and implied_kmh <= 120:
+                        shift_km = round(shift_km + step_m / 1000, 3)
+
+                    # نقطة outlier = سرعة ضمنية شاذة من آخر نقطة خام، أو بعيدة جدًا عن آخر موقع
+                    # معروض بسرعة ضمنية شاذة برضه (يمسك القفزة المزدوجة اللي بتفلت من الفحص التاني)
+                    point_is_outlier = (implied_kmh is not None and implied_kmh > 120)
+                    if not point_is_outlier and step_from_display_m is not None and dt > 0:
+                        implied_kmh_from_display = (step_from_display_m / dt) * 3.6
+                        point_is_outlier = step_from_display_m > 300 and implied_kmh_from_display > 120
+
+                    # المسافة من الفرع (auto-out/auto-return) بتتحسب من النقطة المعروضة/المفلترة
+                    # مش من data الخام مباشرة — عشان قفزة GPS وهمية ما تأثرش على قرارات تشغيلية
+                    if point_is_outlier and prev_display_lat is not None:
+                        display_lat, display_lng = prev_display_lat, prev_display_lng
+                    else:
+                        display_lat, display_lng = data["lat"], data["lng"]
+                    dist = haversine(display_lat, display_lng, BRANCH_LAT, BRANCH_LNG)
 
                     # تنعيم (EMA) للمسافة المعروضة بس — عشان الرقم اللي بيشوفه الأدمن مايرقصش
                     # كل تحديث بسبب jitter الـ GPS الطبيعي وهو واقف مكانه ثابت.
-                    # المسافة الخام (dist) لسه بتتحسب زي ما هي وبتُستخدم في auto-out/auto-return
-                    # تحت عشان القرارات دي حساسة للوقت ومحتاجة القيمة الفعلية مش المنعّمة.
                     prev_display_dist = driver.get("distance")
-                    # implied_kmh فوق ده — لو >120 كم/س، النقطة دي على الأغلب انعكاس/قفزة GPS شاذة
-                    # مش حركة حقيقية، فمنسمحش لها تسحب المسافة المعروضة معاها (اللي كانت بتسبب 1m ثم رقم صح ثم 1m)
-                    point_is_outlier = implied_kmh is not None and implied_kmh > 120
 
                     if point_is_outlier and prev_display_dist is not None:
                         # نتجاهل القفزة الشاذة بالكامل: نفضل على آخر رقم معروض صحيح
-                        # (lat/lng الفعلية لسه بتتسجل تحت عشان الماركر ميجمدش، بس المسافة المعروضة مبتتأثرش)
                         display_dist = prev_display_dist
                     elif prev_display_dist is not None:
                         # لو الفرق كبير (>15م) نعتبرها حركة فعلية ونتبعها بسرعة أكبر (alpha أعلى)
@@ -1162,12 +1182,19 @@ async def driver_ws(ws: WebSocket):
                     driver.update({
                         "distance": display_dist,
                         "raw_distance": dist,
-                        "lat": data["lat"],
-                        "lng": data["lng"],
+                        # الماركر المعروض للأدمن — بيفضل على آخر نقطة صحيحة لو دي outlier،
+                        # عشان الماركر ميقفزش لحظيًا لمكان غلط ثم يرجع
+                        "lat": display_lat,
+                        "lng": display_lng,
+                        "display_lat": display_lat,
+                        "display_lng": display_lng,
                         "speed": data.get("speed", 0),
                         "heading": data.get("heading", 0),
                         "last_seen": now_ts,
                         "shift_km": shift_km,
+                        # _last_gps بتسجل النقطة الخام دايمًا (مش المفلترة) — لازم نفضل نقيس من
+                        # الإحداثية الحقيقية اللي جاية من الموبايل عشان implied_kmh يفضل دقيق
+                        # للمقارنة القادمة، حتى لو النقطة دي اتصنّفت outlier ومتتجاهلش في العرض
                         "_last_gps": {"lat": data["lat"], "lng": data["lng"], "ts": now_ts}
                     })
                     await save_driver_to_redis(driver_name, driver)
