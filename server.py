@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -40,6 +40,11 @@ async def health_check():
 
 BRANCH_LAT = 31.2071871
 BRANCH_LNG = 29.9328765
+
+# سر بسيط عشان أي حد يعرف رابط السيرفر مايقدرش يبعت check-in وهمي.
+# لازم يتطابق مع WEBHOOK_SECRET في الـ Tampermonkey script. يفضّل يتحط في
+# environment variable على Railway بدل ما يفضل مكتوب هنا صريح.
+CHECKIN_WEBHOOK_SECRET = os.environ.get("CHECKIN_WEBHOOK_SECRET", "qcd2-checkin-sync")
 
 # FCM v1 — Service Account JSON من environment variable
 FIREBASE_PROJECT_ID = "rwa7el-87810"
@@ -819,6 +824,82 @@ async def add_driver_endpoint(body: AddDriverBody):
     )
     return {"ok": True, "fcm_sent": fcm_sent}
 
+class CheckinWebhookBody(BaseModel):
+    name: str
+    ticket: str
+
+@app.post("/api/checkin_webhook")
+async def checkin_webhook(body: CheckinWebhookBody, x_webhook_secret: str = Header(default="")):
+    """
+    استقبال تذاكر check-in من الـ Tampermonkey script (check-in-tool.vercel.app).
+    مندوب بيعمل check-in تلقائي = زي add_driver بالظبط، لكن:
+      - بيتاكد من X-Webhook-Secret بدل جلسة أدمن (السكريبت مش عنده لوجين)
+      - لو الاسم مش مسجل قبل كده في fleet:all_drivers_registry، بيسجله تلقائي
+        بدل ما يرفض الطلب — التذكرة نفسها هي أول ظهور للمندوب في النظام غالبًا
+    """
+    if x_webhook_secret != CHECKIN_WEBHOOK_SECRET:
+        return Response(
+            content=json.dumps({"ok": False, "reason": "invalid_secret"}),
+            media_type="application/json",
+            status_code=401
+        )
+
+    d_name = body.name.strip()
+    ticket = body.ticket.strip()
+    if not d_name or not ticket:
+        return Response(
+            content=json.dumps({"ok": False, "reason": "missing_fields"}),
+            media_type="application/json",
+            status_code=400
+        )
+
+    # تسجيل تلقائي لو الاسم جديد على النظام (مختلف عن add_driver اللي بيرفض
+    # الأسماء الغير مسجلة، لأن هنا مصدر البيانات خارجي مش شاشة أدمن بتختار من قايمة)
+    registry = await redis_client.hgetall("fleet:all_drivers_registry")
+    if d_name not in registry:
+        await redis_client.hset("fleet:all_drivers_registry", d_name, int(time.time()))
+
+    drivers = await get_drivers_from_redis()
+    if d_name in drivers:
+        current_state = drivers[d_name].get("state")
+        if current_state == "Out":
+            # المندوب كان طالع بأوردر وعمل scan تاني — اعتبرها رجوعه، رجّعه Waiting
+            # (بنستخدم change_driver_state نفسها المستخدمة في كل تحويلات الحالة التانية
+            # عشان نضمن نفس معالجة الطابور/الـ order count/توست الأدمن)
+            await change_driver_state(d_name, "Waiting")
+            await broadcast_admin_event("checkin_webhook", d_name, f"🎫 {d_name} رجع Waiting من تذكرة check-in (تذكرة #{ticket})")
+            return {"ok": True, "reason": "returned_from_out", "ticket": ticket}
+        return {"ok": False, "reason": "already_active", "ticket": ticket}
+
+    now_ts = int(time.time())
+    drivers[d_name] = {
+        "name": d_name, "state": "Waiting",
+        "orders": 0, "returns": 0, "misses": 0,
+        "battery": None, "queue_pos": 0, "distance": None, "break_end": None,
+        "lat": None, "lng": None,
+        "speed": 0, "heading": 0, "last_seen": now_ts,
+        "shift_km": 0.0, "_last_gps": None,
+        "added_by_admin": False,
+        "checkin_ticket": ticket,  # مرجع للتذكرة الأصلية، مفيد لو احتجنا نتتبع مصدرها لاحقًا
+    }
+    await save_driver_to_redis(d_name, drivers[d_name])
+
+    async with queue_lock:
+        queue = await get_queue_from_redis()
+        if d_name not in queue:
+            queue.append(d_name)
+            await save_queue_to_redis(queue)
+        await broadcast_state("update")
+
+    await broadcast_admin_event("checkin_webhook", d_name, f"🎫 {d_name} اتضاف تلقائي (تذكرة #{ticket})")
+
+    fcm_sent = await send_fcm_to_driver(
+        d_name, "added_to_queue",
+        "🟢 دخلت الدور",
+        "اتسجلت في الطابور — افتح التطبيق عشان تبدأ تستقبل الأوردرات"
+    )
+    return {"ok": True, "fcm_sent": fcm_sent, "ticket": ticket}
+
 @app.get("/api/chat_history/{driver}")
 async def chat_history_endpoint(driver: str):
     """
@@ -944,7 +1025,15 @@ def no_cache_html(filepath: str):
 async def root(): return no_cache_html("index.html")
 
 @app.get("/join")
-async def join_page(): return no_cache_html("join.html")
+async def join_page():
+    # مقطوعة عن قصد — الدخول للطابور بقى بس عن طريق check-in_webhook
+    # (سكريبت check-in-tool). الصفحة والمنطق اللي وراها لسه موجودين في الكود
+    # (join.html + /ws/driver) بس مش متاحين للمناديب دلوقتي.
+    return Response(
+        content=json.dumps({"ok": False, "reason": "join_disabled"}),
+        media_type="application/json",
+        status_code=410
+    )
 
 @app.get("/download")
 async def download_page(): return no_cache_html("download.html")
@@ -1074,6 +1163,11 @@ async def admin_ws(ws: WebSocket):
 
 @app.websocket("/ws/driver")
 async def driver_ws(ws: WebSocket):
+    # مقطوعة عن قصد — join.html مش بيتحدث مع السيستم خالص دلوقتي. الدخول
+    # للطابور بقى بس عن طريق /api/checkin_webhook. الكود الأصلي لسه تحت
+    # (مش متشال) لو احتجنا نرجعه يومًا، بس مش بيتنفذ لأننا بنقفل الاتصال فورًا.
+    await ws.close(code=1008, reason="join_disabled")
+    return
     await ws.accept()
     driver_name = None
     try:
