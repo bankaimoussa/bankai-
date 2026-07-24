@@ -1,13 +1,18 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import asyncio
 import redis.asyncio as aioredis
-import json, math, time, httpx
+import json, math, time, httpx, csv, io
 from typing import Dict, List
 from datetime import datetime
+try:
+    from zoneinfo import ZoneInfo
+    CAIRO_TZ = ZoneInfo("Africa/Cairo")
+except Exception:
+    CAIRO_TZ = None  # لو tzdata مش متوفرة على البيئة، هنرجع لتوقيت UTC كـ fallback
 import google.auth.transport.requests
 import google.oauth2.service_account
 
@@ -828,30 +833,16 @@ class CheckinWebhookBody(BaseModel):
     name: str
     ticket: str
 
-@app.post("/api/checkin_webhook")
-async def checkin_webhook(body: CheckinWebhookBody, x_webhook_secret: str = Header(default="")):
+async def process_checkin_ticket(d_name: str, ticket: str) -> dict:
     """
-    استقبال تذاكر check-in من الـ Tampermonkey script (check-in-tool.vercel.app).
-    مندوب بيعمل check-in تلقائي = زي add_driver بالظبط، لكن:
-      - بيتاكد من X-Webhook-Secret بدل جلسة أدمن (السكريبت مش عنده لوجين)
-      - لو الاسم مش مسجل قبل كده في fleet:all_drivers_registry، بيسجله تلقائي
-        بدل ما يرفض الطلب — التذكرة نفسها هي أول ظهور للمندوب في النظام غالبًا
+    منطق استقبال تذكرة check-in واحدة، بمعزل عن مصدرها (webhook فردي أو
+    CSV import بالجملة). بيرجع dict فيه ok/reason عشان الطرفين (endpoint
+    الفردي والـ import bulk) يقدروا يستخدموه من غير تكرار كود.
     """
-    if x_webhook_secret != CHECKIN_WEBHOOK_SECRET:
-        return Response(
-            content=json.dumps({"ok": False, "reason": "invalid_secret"}),
-            media_type="application/json",
-            status_code=401
-        )
-
-    d_name = body.name.strip()
-    ticket = body.ticket.strip()
+    d_name = d_name.strip()
+    ticket = str(ticket).strip()
     if not d_name or not ticket:
-        return Response(
-            content=json.dumps({"ok": False, "reason": "missing_fields"}),
-            media_type="application/json",
-            status_code=400
-        )
+        return {"ok": False, "reason": "missing_fields", "ticket": ticket}
 
     # تسجيل تلقائي لو الاسم جديد على النظام (مختلف عن add_driver اللي بيرفض
     # الأسماء الغير مسجلة، لأن هنا مصدر البيانات خارجي مش شاشة أدمن بتختار من قايمة)
@@ -900,9 +891,112 @@ async def checkin_webhook(body: CheckinWebhookBody, x_webhook_secret: str = Head
     )
     return {"ok": True, "fcm_sent": fcm_sent, "ticket": ticket}
 
+@app.post("/api/checkin_webhook")
+async def checkin_webhook(body: CheckinWebhookBody, x_webhook_secret: str = Header(default="")):
+    """
+    استقبال تذاكر check-in من الـ Tampermonkey script (check-in-tool.vercel.app).
+    """
+    if x_webhook_secret != CHECKIN_WEBHOOK_SECRET:
+        return Response(
+            content=json.dumps({"ok": False, "reason": "invalid_secret"}),
+            media_type="application/json",
+            status_code=401
+        )
+    return await process_checkin_ticket(body.name, body.ticket)
+
+@app.post("/api/import_csv")
+async def import_csv_endpoint(file: UploadFile = File(...), start_ticket: int = Form(...)):
+    """
+    زرار "Import Excel" في الأدمن — بياخد ملف CSV بنفس فورمات تقرير check-in-tool
+    (Ticket Number, Name, Date, Time, Device ID) ورقم تذكرة بداية، وبيعمل:
+      1. فلترة الصفوف اللي Ticket Number >= start_ticket
+      2. فلترة الصفوف اللي عمود Date فيها مش تاريخ النهاردة (بتوقيت مصر،
+         وقت الاستيراد الفعلي) — أي صف من يوم تاني بيتجاهل حتى لو رقمه
+         في المدى المطلوب
+      3. ترتيبهم تصاعدي (من start_ticket لحد أعلى رقم في الملف)
+      4. إزالة تكرار الإيميلات — لو نفس الإيميل ظهر أكتر من مرة، بياخد أول
+         ظهور بس حسب الترتيب التصاعدي (يعني أقرب تذكرة لـ start_ticket)
+      5. كل تذكرة يونيك بتعدي على process_checkin_ticket بنفس منطق الـ webhook
+         الفردي بالظبط (رجوع من Out لـ Waiting، رفض already_active، إلخ)
+    """
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("utf-8", errors="replace")
+
+    today_cairo = (
+        datetime.now(CAIRO_TZ).date() if CAIRO_TZ
+        else datetime.utcnow().date()  # fallback نادر لو tzdata مش متوفرة
+    )
+
+    reader = csv.DictReader(io.StringIO(text))
+    rows = []
+    skipped_other_day = 0
+    for row in reader:
+        try:
+            t_num = int(str(row.get("Ticket Number", "")).strip())
+        except (TypeError, ValueError):
+            continue  # صف تالف أو مفيهوش رقم تذكرة صالح، اتجاهله
+        name = (row.get("Name") or "").strip()
+        if not name:
+            continue
+        if t_num < start_ticket:
+            continue
+
+        date_str = (row.get("Date") or "").strip()
+        try:
+            # فورمات الملف: 7/23/2026
+            row_date = datetime.strptime(date_str, "%m/%d/%Y").date()
+        except ValueError:
+            continue  # تاريخ مش قابل للقراءة، اتجاهل الصف بدل ما نخمن
+        if row_date != today_cairo:
+            skipped_other_day += 1
+            continue
+
+        rows.append((t_num, name))
+
+    # ترتيب تصاعدي: من start_ticket لحد أعلى رقم
+    rows.sort(key=lambda r: r[0])
+
+    # إزالة تكرار الإيميلات — أول ظهور بس (يعني الأقرب لـ start_ticket كسبت)
+    seen_emails = set()
+    unique_rows = []
+    for t_num, name in rows:
+        if name in seen_emails:
+            continue
+        seen_emails.add(name)
+        unique_rows.append((t_num, name))
+
+    results = {"added": [], "returned_from_out": [], "already_active": [], "failed": []}
+    for t_num, name in unique_rows:
+        try:
+            res = await process_checkin_ticket(name, str(t_num))
+            if res.get("ok") and res.get("reason") == "returned_from_out":
+                results["returned_from_out"].append({"ticket": t_num, "name": name})
+            elif res.get("ok"):
+                results["added"].append({"ticket": t_num, "name": name})
+            elif res.get("reason") == "already_active":
+                results["already_active"].append({"ticket": t_num, "name": name})
+            else:
+                results["failed"].append({"ticket": t_num, "name": name, "reason": res.get("reason")})
+        except Exception as e:
+            results["failed"].append({"ticket": t_num, "name": name, "reason": str(e)})
+
+    return {
+        "ok": True,
+        "today_cairo": today_cairo.isoformat(),
+        "skipped_other_day": skipped_other_day,
+        "total_rows_in_range": len(rows),
+        "unique_processed": len(unique_rows),
+        "summary": {k: len(v) for k, v in results.items()},
+        "details": results,
+    }
+
 @app.get("/api/chat_history/{driver}")
 async def chat_history_endpoint(driver: str):
     """
+
     كل المحادثة (إدارة + مندوب) بترتيب زمني — بيستخدمها الـ modal عند الأدمن
     (لما يدوس على مندوب) وعند المندوب (زرار "رسالة من الإدارة").
     """
